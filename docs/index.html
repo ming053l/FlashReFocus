@@ -1,0 +1,415 @@
+<title>FlashFocus</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@112,600;112,800&family=IBM+Plex+Mono:wght@400;500&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&display=swap">
+<style>
+:root{
+  --bg:#F3F4F6; --surface:#FFFFFF; --ink:#15171C; --muted:#5A616E; --line:#D8DCE2;
+  --af:#15803D; --af-soft:#DCFCE7; --ours:#7657AC; --base:#A3A9B3; --base-ink:#6B7280;
+  --shadow:0 1px 2px rgba(20,24,32,.06),0 8px 24px rgba(20,24,32,.06);
+  --display:"Archivo","Helvetica Neue",Arial,sans-serif;
+  --serif:"Source Serif 4",Georgia,"Times New Roman",serif;
+  --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  color-scheme:dark; --bg:#0E1013; --surface:#171A1F; --ink:#E7E9ED; --muted:#9AA2AF; --line:#2A2F37;
+  --af:#4ADE80; --af-soft:#123222; --ours:#B39BE0; --base:#59606B; --base-ink:#9AA2AF;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.35);}}
+:root[data-theme="dark"]{
+  color-scheme:dark; --bg:#0E1013; --surface:#171A1F; --ink:#E7E9ED; --muted:#9AA2AF; --line:#2A2F37;
+  --af:#4ADE80; --af-soft:#123222; --ours:#B39BE0; --base:#59606B; --base-ink:#9AA2AF;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.35);}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:17px/1.62 var(--serif);padding-inline:16px;padding-block:0 64px}
+.wrap{max-width:1040px;margin:0 auto}
+.col{max-width:68ch}
+h1,h2,h3{font-family:var(--display);font-stretch:112%;text-wrap:balance;margin:0}
+h2{font-size:clamp(22px,2.6vw,28px);font-weight:800;letter-spacing:-.01em}
+h3{font-size:17px;font-weight:600}
+p{margin:0}
+a{color:var(--af)}
+.eyebrow{font:500 12px/1 var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+section{display:grid;gap:18px;padding-block:52px 8px;border-top:1px solid var(--line);margin-top:52px}
+.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+
+/* hero */
+header{padding-block:56px 12px;display:grid;gap:18px}
+.title{font-size:clamp(36px,6.4vw,68px);font-weight:800;line-height:1.02;letter-spacing:-.02em}
+.title .flash{color:var(--af)}
+.subtitle{font-family:var(--display);font-stretch:112%;font-weight:600;font-size:clamp(18px,2.4vw,24px);color:var(--muted)}
+.authors{font-size:16px;display:flex;flex-wrap:wrap;gap:4px 18px}
+.authors sup{font-family:var(--mono);font-size:11px;color:var(--muted)}
+.affil{font-size:14px;color:var(--muted);display:flex;flex-wrap:wrap;gap:4px 18px}
+.note{font-size:13px;color:var(--muted)}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-top:6px}
+.stat{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 16px;display:grid;gap:4px}
+.stat b{font:500 clamp(26px,3.4vw,34px)/1 var(--mono);color:var(--ink)}
+.stat span{font-size:14px;color:var(--muted);line-height:1.35}
+
+/* viewer */
+.viewer{background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);overflow:hidden}
+.stage{position:relative;background:#000;aspect-ratio:1024/682}
+.stage video{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;display:block}
+.controls{display:grid;gap:12px;padding:16px 18px 18px}
+.row{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;justify-content:space-between}
+.tabs{display:flex;gap:6px;flex-wrap:wrap}
+.tabs button{font:500 13px/1 var(--mono);padding:8px 12px;border-radius:999px;border:1px solid var(--line);background:transparent;color:var(--muted);cursor:pointer}
+.tabs button[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.tabs button:focus-visible,.ring input:focus-visible,.play:focus-visible{outline:2px solid var(--af);outline-offset:2px}
+.readout{font:500 13px/1.3 var(--mono);color:var(--muted)}
+.readout b{color:var(--af);font-weight:500}
+.ring{display:grid;gap:6px}
+.ring input{width:100%;accent-color:var(--af);height:28px}
+.scale{display:flex;justify-content:space-between;font:500 11px/1 var(--mono);color:var(--muted);letter-spacing:.06em;padding-inline:2px}
+.ticks{height:8px;background-image:repeating-linear-gradient(90deg,var(--line) 0 1px,transparent 1px 100%);background-size:calc(100%/20) 8px;border-bottom:1px solid var(--line)}
+.play{font:500 13px/1 var(--mono);padding:8px 14px;border-radius:8px;border:1px solid var(--af);background:var(--af-soft);color:var(--ink);cursor:pointer}
+
+figure{margin:0;display:grid;gap:10px}
+figure img{width:100%;height:auto;border-radius:10px;border:1px solid var(--line);background:#fff}
+figcaption{font-size:14.5px;color:var(--muted);line-height:1.5}
+.two{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,6fr);gap:28px;align-items:start}
+@media (max-width:820px){.two{grid-template-columns:1fr}}
+ul.points{margin:0;padding-left:1.1em;display:grid;gap:8px}
+
+/* chart */
+.chart{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 16px 10px;position:relative}
+.chart svg{width:100%;height:auto;display:block;overflow:visible}
+.chart text{font-family:var(--mono);fill:var(--muted);font-size:11px}
+.chart .lab{fill:var(--ink);font-size:12px}
+.chart .val{fill:var(--ink);font-size:11.5px}
+.chart .val.ours{fill:var(--ours);font-weight:500}
+.chart .grid{stroke:var(--line);stroke-width:1}
+.chart .axis{stroke:var(--base-ink);stroke-width:1}
+.tip{position:absolute;pointer-events:none;background:var(--ink);color:var(--bg);font:500 12px/1.35 var(--mono);padding:6px 8px;border-radius:6px;white-space:nowrap}
+.legend{display:flex;gap:16px;flex-wrap:wrap;font:500 12px/1 var(--mono);color:var(--muted);padding:2px 0 6px}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px;vertical-align:-1px}
+
+/* tables */
+.tbl{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-radius:12px}
+table{border-collapse:collapse;width:100%;font:13.5px/1.3 var(--mono);font-variant-numeric:tabular-nums}
+th,td{padding:9px 12px;text-align:right;white-space:nowrap;border-bottom:1px solid var(--line)}
+th:first-child,td:first-child{text-align:left}
+thead th{font-weight:500;color:var(--muted);font-size:12px}
+tbody tr:last-child td{border-bottom:0}
+tr.ours td{color:var(--ours);font-weight:500}
+td.best{background:var(--af-soft)}
+.group td{color:var(--muted);font-size:12px;letter-spacing:.06em;text-transform:uppercase;text-align:left;background:transparent}
+.dual{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+@media (max-width:720px){.dual{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.dual figcaption{font:500 12px/1.3 var(--mono)}
+.sbs{background:#000;border-radius:12px;overflow:hidden;border:1px solid var(--line)}
+.sbs video{width:100%;display:block}
+pre{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 16px;overflow-x:auto;font:13px/1.5 var(--mono);margin:0}
+.copy{justify-self:start;font:500 12px/1 var(--mono);padding:7px 12px;border-radius:8px;border:1px solid var(--line);background:transparent;color:var(--ink);cursor:pointer}
+@media (prefers-reduced-motion:reduce){*{scroll-behavior:auto}}
+</style>
+
+<div class="wrap">
+<header>
+  <div class="eyebrow">Single-image refocusing</div>
+  <h1 class="title"><span class="flash">Flash</span>Focus</h1>
+  <p class="subtitle">Interactive Image Refocusing in Seconds</p>
+  <div class="authors">
+    <span>Ching-Heng Cheng<sup>1*</sup></span><span>Chia-Ming Lee<sup>2*</sup></span><span>Ming-Ching Chang<sup>2</sup></span>
+    <span>Xin Li<sup>2</sup></span><span>Yu-Lun Liu<sup>3</sup></span><span>Chih-Chung Hsu<sup>3&dagger;</sup></span>
+  </div>
+  <div class="affil"><span><sup class="mono">1</sup> National Cheng Kung University</span><span><sup class="mono">2</sup> State University of New York at Albany</span><span><sup class="mono">3</sup> National Yang Ming Chiao Tung University</span></div>
+  <p class="note">* Equal contribution &nbsp;&middot;&nbsp; &dagger; Corresponding author: <span class="mono">chihchung@nycu.edu.tw</span></p>
+  <div class="stats">
+    <div class="stat"><b>2.50 s</b><span>complete refocus at 1536&times;1536</span></div>
+    <div class="stat"><b>0.47 s</b><span>each further focal edit</span></div>
+    <div class="stat"><b>148&times;</b><span>faster than GenRefocus, 54.5&times; than DiffCamera</span></div>
+    <div class="stat"><b>1.3M</b><span>parameters in the bokeh renderer</span></div>
+  </div>
+</header>
+
+<section aria-labelledby="try">
+  <div class="eyebrow">Try it</div>
+  <h2 id="try">Pull focus from far to near</h2>
+  <p class="col">Each frame below is one focal edit rendered by FlashFocus from the same restored all-in-focus image, 3CReal inputs at a long side of 1024. Drag the focus ring to move the focal plane, or play the sweep.</p>
+  <div class="viewer">
+    <div class="stage"><video id="rackVid" muted playsinline preload="auto" poster="assets/poster_04.jpg" src="assets/rack_04.mp4"></video></div>
+    <div class="controls">
+      <div class="row">
+        <div class="tabs" role="group" aria-label="Scene">
+          <button type="button" data-scene="04" aria-pressed="true">Stone gate</button>
+          <button type="button" data-scene="59" aria-pressed="false">Brick wall</button>
+          <button type="button" data-scene="02" aria-pressed="false">Garden lamp</button>
+        </div>
+        <div class="row" style="gap:12px">
+          <span class="readout" id="rackRead">frame <b>1</b>/57</span>
+          <button type="button" class="play" id="rackPlay">Play sweep</button>
+        </div>
+      </div>
+      <div class="ring">
+        <div class="ticks" aria-hidden="true"></div>
+        <label class="sr" for="rackRing" style="position:absolute;left:-9999px">Focus position</label>
+        <input id="rackRing" type="range" min="0" max="56" step="1" value="0">
+        <div class="scale" aria-hidden="true"><span>&infin; far</span><span>focus</span><span>near</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section aria-labelledby="abs">
+  <div class="eyebrow">Abstract</div>
+  <h2 id="abs">Diffusion only where information is lost</h2>
+  <p class="col">Single-image refocusing changes the focal plane and depth of field of a photograph after capture, which requires recovering detail lost to defocus and rendering new, depth-consistent blur. Recent generative methods run a large diffusion model for every focal edit, making exploration slow. FlashFocus applies diffusion only where information is lost: a latent diffusion model restores an all-in-focus image once, in a single step, using pixel and detail LoRAs, mixed real and synthetic defocus supervision, and a high-frequency decoder refiner. A 1.3M-parameter renderer then produces each focal setting from a depth-derived defocus map with defocus-bias attention, pre-trained on synthetic scenes and adapted to real lens pairs. We also introduce 3CReal, a benchmark of 89 deep-/shallow-depth-of-field pairs from three camera and lens systems. FlashFocus achieves the best perceptual fidelity for zero-shot bokeh rendering on EBB! Val176 and 3CReal and strong perceptual quality for deblurring on DPDD and RealDOF. A complete refocus takes 2.5&nbsp;s, 54.5&times; and 148.3&times; faster than DiffCamera and GenRefocus, each further edit takes about half a second, and the explicit defocus map further enables aperture control and tilt-shift effects.</p>
+</section>
+
+<section aria-labelledby="paradigm">
+  <div class="eyebrow">Why it is fast</div>
+  <div class="two">
+    <div style="display:grid;gap:14px">
+      <h2 id="paradigm">Restore once, render every edit</h2>
+      <p>Single-stage diffusion (DiffCamera, MagicBokeh) regenerates the photo for every focal setting and keeps no reusable all-in-focus image. Two-stage generative refocusing (GenRefocus) reuses the restored image but renders bokeh with a second 12B diffusion transformer, so every edit still costs a full generative pass.</p>
+      <p>FlashFocus restores once with one-step diffusion. Rendering a new focal setting is determined by depth and the focal plane, so it needs no generation: a 1.3M-parameter network renders it in under half a second, and the depth of the restored image is computed once and reused by every later edit.</p>
+    </div>
+    <figure>
+      <img src="assets/paradigm.jpg" alt="Three refocusing paradigms and a bar chart of inference seconds for GenRefocus, DiffCamera, MagicBokeh and FlashFocus" loading="lazy">
+      <figcaption>Refocusing paradigms and inference seconds at 1536&times;1536 on one RTX PRO 6000 (log scale).</figcaption>
+    </figure>
+  </div>
+</section>
+
+<section aria-labelledby="method">
+  <div class="eyebrow">Method</div>
+  <h2 id="method">Two stages with different jobs</h2>
+  <figure>
+    <img src="assets/overview.jpg" alt="Overview of FlashFocus: Stage I one-step diffusion deblurring with a decoder refiner, Stage II defocus-aware bokeh renderer" loading="lazy">
+    <figcaption>(A) Stage I restores an all-in-focus image in one step with a frozen latent diffusion U-Net and an optional decoder refiner; (B) &omega; mixes the pixel and detail LoRA passes to trade fidelity for detail. (C) Stage II computes a defocus map from monocular depth and the selected focal point, and (D) renders bokeh in a single feed-forward pass with defocus-biased attention.</figcaption>
+  </figure>
+  <ul class="points col">
+    <li><b>Stage I, generative deblurring.</b> A pixel LoRA first learns faithful deblurring, a detail LoRA then adds texture, and the weight &omega; trades one for the other at inference. A decoder refiner injects a Laplacian pyramid of the input to recover detail lost in VAE decoding.</li>
+    <li><b>Stage II, deterministic rendering.</b> A residual renderer conditioned on the defocus map, focal point and strength adds blur without regenerating content, so focused regions keep the restored detail.</li>
+  </ul>
+</section>
+
+<section aria-labelledby="speed">
+  <div class="eyebrow">Cost</div>
+  <h2 id="speed">Seconds per refocus</h2>
+  <p class="col">Wall-clock time at 1536&times;1536 on one NVIDIA RTX PRO 6000, including image read and write per call. <em>First</em> covers restoration and the first rendering; <em>new focus</em> is each further focal edit on the same image.</p>
+  <div class="chart" id="costChart" aria-label="Bar chart of seconds per refocus, log scale">
+    <div class="legend"><span><i style="background:var(--ours)"></i>FlashFocus</span><span><i style="background:var(--base)"></i>Baselines</span><span>&dagger; no restoration, renders directly from the input</span></div>
+    <svg id="costSvg" viewBox="0 0 960 300" role="img"></svg>
+    <div class="tip" id="costTip" hidden></div>
+  </div>
+  <div class="tbl"><table>
+    <thead><tr><th>Method</th><th>Params (B)</th><th>First (s)</th><th>New focus (s)</th><th>TFLOPs first</th><th>TFLOPs new</th><th>Memory (GB)</th></tr></thead>
+    <tbody>
+      <tr><td>DiffCamera</td><td>12.33</td><td>136.35</td><td>136.35</td><td>19,363</td><td>19,363</td><td>28.37</td></tr>
+      <tr><td>GenRefocus</td><td>18.30</td><td>370.65</td><td>217.32</td><td>42,031</td><td>24,763</td><td>42.82</td></tr>
+      <tr><td>BokehDiff&dagger;</td><td>3.83</td><td>&ndash;</td><td>3.43</td><td>&ndash;</td><td>73.4</td><td>11.82</td></tr>
+      <tr><td>MagicBokeh&dagger;</td><td>1.73</td><td>&ndash;</td><td>6.13</td><td>&ndash;</td><td>113</td><td class="best">5.29</td></tr>
+      <tr class="ours"><td>FlashFocus</td><td class="best">1.70</td><td class="best">2.50</td><td class="best">0.47</td><td class="best">120</td><td class="best">0.85</td><td>16.94</td></tr>
+    </tbody></table></div>
+</section>
+
+<section aria-labelledby="consistency">
+  <div class="eyebrow">Consistency</div>
+  <h2 id="consistency">Each edit changes the blur and nothing else</h2>
+  <p class="col">We sweep the focal point over eight depths on three scenes each from 3CReal and RealBokeh test, give GenRefocus the same inputs and focal points, and set our strength so both methods blur the background by the same amount for every focal setting. FlashFocus keeps in-focus regions close to the restored image and barely changes pixels whose blur should stay the same. GenRefocus regenerates the image at every edit.</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Method</th><th>In-focus PSNR &uarr;</th><th>In-focus LPIPS &darr;</th><th>Consistency PSNR &uarr;</th><th>Seconds per edit &darr;</th></tr></thead>
+    <tbody>
+      <tr class="group"><td colspan="5">3CReal</td></tr>
+      <tr><td>GenRefocus</td><td>28.96</td><td>0.155</td><td>43.84</td><td>77</td></tr>
+      <tr class="ours"><td>FlashFocus</td><td class="best">44.44</td><td class="best">0.036</td><td class="best">49.91</td><td class="best">0.10</td></tr>
+      <tr class="group"><td colspan="5">RealBokeh test</td></tr>
+      <tr><td>GenRefocus</td><td>25.38</td><td>0.186</td><td>40.19</td><td>&ndash;</td></tr>
+      <tr class="ours"><td>FlashFocus</td><td class="best">38.81</td><td class="best">0.048</td><td class="best">49.31</td><td>&ndash;</td></tr>
+    </tbody></table></div>
+  <p class="note">Long side 1024. In-focus fidelity compares each result with the all-in-focus input near the focal depth; consistency compares consecutive edits where the expected blur does not change. Where GenRefocus blurs more than our trained range, FlashFocus extrapolates the strength or renders twice to match it. Seconds per edit are measured on 3CReal on an otherwise idle GPU.</p>
+  <div class="tabs" role="group" aria-label="Comparison scene">
+    <button type="button" data-sbs="04" aria-pressed="true">Stone gate</button>
+    <button type="button" data-sbs="59" aria-pressed="false">Brick wall</button>
+    <button type="button" data-sbs="02" aria-pressed="false">Garden lamp</button>
+  </div>
+  <div class="sbs"><video id="sbsVid" muted playsinline loop autoplay preload="metadata" src="assets/sbs_04.mp4"></video></div>
+  <p class="note">Same eight focal points, left FlashFocus, right GenRefocus; the label shows the measured seconds per edit at this resolution.</p>
+</section>
+
+<section aria-labelledby="strength">
+  <div class="eyebrow">Control</div>
+  <h2 id="strength">Aperture as a dial</h2>
+  <p class="col">With the focal point fixed, the strength behaves like an aperture: the background blur grows while the subject stays sharp. Strength controllability (LVCorr) is 0.858 on LFDOF and 0.840 on 3CReal, against 0.690 and 0.666 for GenRefocus. The renderer is trained for strengths 0 to 1; the range from 1 to 2 extrapolates past training and keeps opening the aperture for a stronger look.</p>
+  <div class="viewer">
+    <div class="stage"><video id="strVid" muted playsinline preload="auto" poster="assets/poster_04.jpg" src="assets/strength_04.mp4"></video></div>
+    <div class="controls">
+      <div class="row">
+        <div class="tabs" role="group" aria-label="Strength scene">
+          <button type="button" data-str="04" aria-pressed="true">Stone gate</button>
+          <button type="button" data-str="59" aria-pressed="false">Brick wall</button>
+          <button type="button" data-str="02" aria-pressed="false">Garden lamp</button>
+        </div>
+        <span class="readout" id="strRead">strength <b>0.00</b></span>
+      </div>
+      <div class="ring">
+        <div class="ticks" aria-hidden="true"></div>
+        <label for="strRing" style="position:absolute;left:-9999px">Blur strength</label>
+        <input id="strRing" type="range" min="0" max="40" step="1" value="0">
+        <div class="scale" aria-hidden="true"><span>0 &middot; pinhole</span><span>1 &middot; trained maximum</span><span>2 &middot; extrapolated</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section aria-labelledby="dual">
+  <div class="eyebrow">Beyond a real lens</div>
+  <h2 id="dual">Two focal planes</h2>
+  <p class="col">A physical lens has one focal plane. Because the renderer reads an explicit depth map, FlashFocus can keep two subjects at different depths sharp while the space around them stays blurred: each pixel is blurred by its distance to the nearer of the two planes, with no retraining.</p>
+  <div class="tabs" role="group" aria-label="Two-focal-plane scene">
+    <button type="button" data-dual="21" aria-pressed="true">Trunk and stump</button>
+    <button type="button" data-dual="rb42" aria-pressed="false">Two birches</button>
+    <button type="button" data-dual="3c19" aria-pressed="false">Flower and bench</button>
+  </div>
+  <div class="dual" id="dualGrid">
+    <figure><img data-k="A" src="assets/dual_21_A.jpg" alt="Focus on the first subject; the second one is blurred" loading="lazy"><figcaption id="dualCapA">Focus on A (the trunk)</figcaption></figure>
+    <figure><img data-k="B" src="assets/dual_21_B.jpg" alt="Focus on the second subject; the first one is blurred" loading="lazy"><figcaption id="dualCapB">Focus on B (the stump)</figcaption></figure>
+    <figure><img data-k="dual" src="assets/dual_21_dual.jpg" alt="Both subjects sharp with the rest blurred" loading="lazy"><figcaption>Both A and B, the rest blurred</figcaption></figure>
+    <figure><img data-k="depth" src="assets/dual_21_depth.jpg" alt="Edited depth map for two focal planes" loading="lazy"><figcaption>Edited depth</figcaption></figure>
+  </div>
+</section>
+
+<section aria-labelledby="results">
+  <div class="eyebrow">Benchmarks</div>
+  <h2 id="results">Bokeh rendering and deblurring</h2>
+  <p class="col">Zero-shot bokeh rendering on EBB! Val176 and our 3CReal benchmark, where every method receives the same all-in-focus input and focal point. 3CReal contains 89 deep-/shallow-depth-of-field pairs from three camera and lens systems unseen in training.</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Method</th><th>PSNR &uarr;</th><th>SSIM &uarr;</th><th>LPIPS &darr;</th><th>CLIP-I &uarr;</th><th>LVCorr &uarr;</th></tr></thead>
+    <tbody>
+      <tr class="group"><td colspan="6">EBB! Val176</td></tr>
+      <tr><td>GenRefocus</td><td>23.80</td><td>0.868</td><td>0.2025</td><td>0.964</td><td>0.690</td></tr>
+      <tr><td>MagicBokeh</td><td>23.14</td><td>0.844</td><td>0.2398</td><td>0.933</td><td>0.799</td></tr>
+      <tr class="ours"><td>FlashFocus</td><td class="best">24.52</td><td class="best">0.892</td><td class="best">0.1805</td><td class="best">0.973</td><td class="best">0.858</td></tr>
+      <tr class="group"><td colspan="6">3CReal</td></tr>
+      <tr><td>GenRefocus</td><td>26.38</td><td>0.853</td><td>0.2426</td><td>0.972</td><td>0.666</td></tr>
+      <tr><td>MagicBokeh</td><td>25.64</td><td>0.833</td><td>0.2543</td><td>0.943</td><td>0.759</td></tr>
+      <tr class="ours"><td>FlashFocus</td><td class="best">27.98</td><td class="best">0.886</td><td class="best">0.2178</td><td class="best">0.981</td><td class="best">0.840</td></tr>
+      <tr class="group"><td colspan="6">RealBokeh validation (219 pairs, 2000&times;1500; not zero-shot for Bokehlicious and FlashFocus)</td></tr>
+      <tr><td>Bokehlicious</td><td class="best">29.81</td><td class="best">0.932</td><td class="best">0.1086</td><td class="best">0.987</td><td>&ndash;</td></tr>
+      <tr><td>MagicBokeh</td><td>22.25</td><td>0.827</td><td>0.2730</td><td>0.934</td><td>&ndash;</td></tr>
+      <tr class="ours"><td>FlashFocus</td><td>26.37</td><td>0.898</td><td>0.1956</td><td>0.970</td><td>&ndash;</td></tr>
+    </tbody></table></div>
+  <p class="note">LVCorr is measured on LFDOF for the EBB! block and on 3CReal for the 3CReal block. Excerpt of the paper's Table 3; the full table compares nine methods. RealBokeh validation (Appendix Table G.1) shares the cameras and lenses of the RealBokeh training pairs, which Bokehlicious and FlashFocus were trained on; GenRefocus, run on the first 10 pairs only (about an hour per image), scores 23.38 dB PSNR and 0.264 LPIPS there against 25.44 dB and 0.250 for FlashFocus.</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Deblurring (LPIPS &darr;)</th><th>DPDD</th><th>RealDOF</th></tr></thead>
+    <tbody>
+      <tr><td>GenRefocus</td><td>0.1686</td><td>0.2447</td></tr>
+      <tr><td>Restormer</td><td>0.1762</td><td>0.2863</td></tr>
+      <tr class="ours"><td>FlashFocus + refiner</td><td class="best">0.1557</td><td class="best">0.2437</td></tr>
+    </tbody></table></div>
+</section>
+
+<section aria-labelledby="cite">
+  <div class="eyebrow">Citation</div>
+  <h2 id="cite">BibTeX</h2>
+<pre id="bib">@misc{cheng2026flashfocus,
+  title  = {FlashFocus: Interactive Image Refocusing in Seconds},
+  author = {Cheng, Ching-Heng and Lee, Chia-Ming and Chang, Ming-Ching and
+            Li, Xin and Liu, Yu-Lun and Hsu, Chih-Chung},
+  year   = {2026}
+}</pre>
+  <button type="button" class="copy" id="copyBib">Copy BibTeX</button>
+</section>
+</div>
+
+<script>
+(function(){
+  // frame-accurate scrubbing on all-intra videos
+  function scrubber(video, input, fps, onFrame){
+    function show(){ var i=+input.value; try{ video.currentTime=(i+0.5)/fps; }catch(e){} onFrame(i); }
+    input.addEventListener('input', show);
+    video.addEventListener('loadeddata', show);
+    return show;
+  }
+  var rack=document.getElementById('rackVid'), ring=document.getElementById('rackRing'), rr=document.getElementById('rackRead');
+  var showRack=scrubber(rack, ring, 24, function(i){ rr.innerHTML='frame <b>'+(i+1)+'</b>/57'; });
+  var playing=null, pbtn=document.getElementById('rackPlay');
+  function stop(){ if(playing){ clearInterval(playing); playing=null; pbtn.textContent='Play sweep'; } }
+  pbtn.addEventListener('click', function(){
+    if(playing){ stop(); return; }
+    pbtn.textContent='Stop';
+    var dir=1;
+    playing=setInterval(function(){
+      var v=+ring.value+dir; if(v>56){v=55;dir=-1;} if(v<0){v=1;dir=1;}
+      ring.value=v; showRack();
+    }, 80);
+  });
+  ring.addEventListener('pointerdown', stop);
+  function tabs(attr, video, prefix, after){
+    document.querySelectorAll('['+attr+']').forEach(function(b){
+      b.addEventListener('click', function(){
+        document.querySelectorAll('['+attr+']').forEach(function(x){ x.setAttribute('aria-pressed', x===b?'true':'false'); });
+        var s=b.getAttribute(attr);
+        video.poster='assets/poster_'+s+'.jpg'; video.src='assets/'+prefix+s+'.mp4'; video.load();
+        if(after) after();
+      });
+    });
+  }
+  tabs('data-scene', rack, 'rack_', function(){ stop(); });
+  var sv=document.getElementById('strVid'), sr=document.getElementById('strRing'), srd=document.getElementById('strRead');
+  scrubber(sv, sr, 15, function(i){ var v=i/20; srd.innerHTML='strength <b>'+v.toFixed(2)+'</b>'+(v>1?' &middot; beyond training':''); });
+  tabs('data-str', sv, 'strength_');
+  var sbs=document.getElementById('sbsVid');
+  tabs('data-sbs', sbs, 'sbs_', function(){ var p=sbs.play(); if(p&&p.catch) p.catch(function(){}); });
+
+  // cost chart: two panels, shared log axis 0.1..1000 s
+  var data=[
+    {m:'GenRefocus', first:370.65, next:217.32},
+    {m:'DiffCamera', first:136.35, next:136.35},
+    {m:'MagicBokeh†', first:null, next:6.13},
+    {m:'BokehDiff†', first:null, next:3.43},
+    {m:'FlashFocus', first:2.50, next:0.47, ours:true}
+  ];
+  var svg=document.getElementById('costSvg'), tip=document.getElementById('costTip'), box=document.getElementById('costChart');
+  var NS='http://www.w3.org/2000/svg', W=960, labW=120, gap=40, panelW=(W-labW-gap)/2, top=30, rowH=44, lo=-1, hi=3;
+  function el(n,a,t){ var e=document.createElementNS(NS,n); for(var k in a) e.setAttribute(k,a[k]); if(t!=null) e.textContent=t; svg.appendChild(e); return e; }
+  function x(v,p){ var x0=labW+p*(panelW+gap); return x0+(Math.log10(v)-lo)/(hi-lo)*(panelW-54); }
+  var H=top+rowH*data.length+26; svg.setAttribute('viewBox','0 0 '+W+' '+H);
+  ['First refocus','New focus'].forEach(function(t,p){
+    var x0=labW+p*(panelW+gap);
+    el('text',{x:x0,y:14,class:'lab'},t);
+    [0.1,1,10,100,1000].forEach(function(v){
+      var xx=x(v,p); el('line',{x1:xx,x2:xx,y1:top-6,y2:top+rowH*data.length,class:'grid'});
+      el('text',{x:xx,y:top+rowH*data.length+16,'text-anchor':'middle'},v>=1?String(v):'0.1');
+    });
+    el('line',{x1:x0,x2:x0,y1:top-6,y2:top+rowH*data.length,class:'axis'});
+  });
+  data.forEach(function(d,i){
+    var y=top+i*rowH+rowH/2;
+    el('text',{x:labW-12,y:y+4,'text-anchor':'end',class:'lab'},d.m);
+    ['first','next'].forEach(function(k,p){
+      var v=d[k], x0=labW+p*(panelW+gap);
+      if(v==null){ el('text',{x:x0+6,y:y+4},'no restoration'); return; }
+      var w=Math.max(x(v,p)-x0,2);
+      var r=el('rect',{x:x0,y:y-9,width:w,height:18,rx:3,fill:d.ours?'var(--ours)':'var(--base)'});
+      el('text',{x:x0+w+6,y:y+4,class:'val'+(d.ours?' ours':'')},v+' s');
+      var hit=el('rect',{x:x0,y:y-rowH/2+2,width:panelW,height:rowH-4,fill:'transparent'});
+      hit.addEventListener('pointermove',function(ev){
+        var b=box.getBoundingClientRect();
+        tip.hidden=false; tip.textContent=d.m+' · '+(p?'new focus':'first refocus')+': '+v+' s';
+        tip.style.left=(ev.clientX-b.left+12)+'px'; tip.style.top=(ev.clientY-b.top-30)+'px';
+      });
+      hit.addEventListener('pointerleave',function(){ tip.hidden=true; });
+    });
+  });
+
+  var dualNames={'21':['the trunk','the stump'],'rb42':['the left birch','the right birch'],'3c19':['the flower','the bench']};
+  document.querySelectorAll('[data-dual]').forEach(function(bt){
+    bt.addEventListener('click', function(){
+      document.querySelectorAll('[data-dual]').forEach(function(x){ x.setAttribute('aria-pressed', x===bt?'true':'false'); });
+      var k=bt.getAttribute('data-dual');
+      document.querySelectorAll('#dualGrid img').forEach(function(im){ im.src='assets/dual_'+k+'_'+im.getAttribute('data-k')+'.jpg'; });
+      document.getElementById('dualCapA').textContent='Focus on A ('+dualNames[k][0]+')';
+      document.getElementById('dualCapB').textContent='Focus on B ('+dualNames[k][1]+')';
+    });
+  });
+  document.getElementById('copyBib').addEventListener('click', function(){
+    var t=document.getElementById('bib').textContent, btn=this;
+    function done(){ btn.textContent='Copied'; setTimeout(function(){ btn.textContent='Copy BibTeX'; },1500); }
+    try{ navigator.clipboard.writeText(t).then(done, function(){ selectBib(); }); }catch(e){ selectBib(); }
+    function selectBib(){ var r=document.createRange(); r.selectNodeContents(document.getElementById('bib')); var s=getSelection(); s.removeAllRanges(); s.addRange(r); btn.textContent='Press Ctrl+C'; }
+  });
+})();
+</script>

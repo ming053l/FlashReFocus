@@ -1,0 +1,252 @@
+[
+{
+"index": 0,
+"source": "LFDOF/input/IMG_1567/IMG_1567_ap2_02.png",
+"target": "LFDOF/ground_truth/IMG_1567.png"
+},
+{
+"index": 1,
+"source": "LFDOF/input/IMG_2026/IMG_2026_ap2_02.png",
+"target": "LFDOF/ground_truth/IMG_2026.png"
+},
+{
+"index": 2,
+"source": "LFDOF/input/IMG_2097/IMG_2097_ap2_02.png",
+"target": "LFDOF/ground_truth/IMG_2097.png"
+},
+{
+"index": 3,
+"source": "LFDOF/input/IMG_2162/IMG_2162_ap2_02.png",
+"target": "LFDOF/ground_truth/IMG_2162.png"
+},
+{
+"index": 4,
+"source": "LFDOF/input/IMG_2228/IMG_2228_ap2_02.png",
+"target": "LFDOF/ground_truth/IMG_2228.png"
+},
+{
+"index": 5,
+"source": "LFDOF/input/IMG_2244/IMG_2244_ap2_02.png",
+"target": "LFDOF/ground_truth/IMG_2244.png"
+},
+{
+"index": 6,
+"source": "LFDOF/input/IMG_2284/IMG_2284_ap2_02.png",
+"target": "LFDOF/ground_truth/IMG_2284.png"
+},
+{
+"index": 7,
+"source": "LFDOF/input/IMG_2294/IMG_2294_ap2_02.png",
+"target": "LFDOF/ground_truth/IMG_2294.png"
+},
+{
+"index": 8,
+"source": "LFDOF/input/IMG_2385/IMG_2385_ap2_02.png",
+"target": "LFDOF/ground_truth/IMG_2385.png"
+},
+{
+"index": 9,
+"source": "LFDOF/input/IMG_2464/IMG_2464_ap2_02.png",
+"target": "LFDOF/ground_truth/IMG_2464.png"
+},
+{
+"index": 10,
+"source": "LFDOF/input/IMG_2542/IMG_2542_ap2_02.png",
+"target": "LFDOF/ground_truth/IMG_2542.png"
+},
+{
+"index": 11,
+"source": "LFDOF/input/IMG_2614/IMG_2614_ap2_02.png",
+"target": "LFDOF/ground_truth/IMG_2614.png"
+},
+{
+"index": 12,
+"source": "LFDOF/input/IMG_2631/IMG_2631_ap2_02.png",
+"target": "LFDOF/ground_truth/IMG_2631.png"
+},
+{
+"index": 13,
+"source": "LFDOF/input/IMG_2662/IMG_2662_ap2_03.png",
+"target": "LFDOF/ground_truth/IMG_2662.png"
+},
+{
+"index": 14,
+"source": "LFDOF/input/IMG_2741/IMG_2741_ap2_02.png",
+"target": "LFDOF/ground_truth/IMG_2741.png"
+},
+{
+"index": 15,
+"source": "LFDOF/input/IMG_2749/IMG_2749_ap2_02.png",
+"target": "LFDOF/ground_truth/IMG_2749.png"
+},
+{
+"index": 16,
+"source": "LFDOF/input/IMG_2764/IMG_2764_ap2_02.png",
+"target": "LFDOF/ground_truth/IMG_2764.png"
+},
+{
+"index": 17,
+"source": "LFDOF/input/IMG_2869/IMG_2869_ap2_02.png",
+"target": "LFDOF/ground_truth/IMG_2869.png"
+},
+{
+"index": 18,
+"source": "LFDOF/input/IMG_2958/IMG_2958_ap2_02.png",
+"target": "LFDOF/ground_truth/IMG_2958.png"
+},
+{
+"index": 19,
+"source": "LFDOF/input/IMG_3074/IMG_3074_ap2_01.png",
+"target": "LFDOF/ground_truth/IMG_3074.png"
+},
+{
+"index": 20,
+"source": "LFDOF/input/IMG_3274/IMG_3274_ap2_01.png",
+"target": "LFDOF/ground_truth/IMG_3274.png"
+},
+{
+"index": 21,
+"source": "LFDOF/input/IMG_3473/IMG_3473_ap2_02.png",
+"target": "LFDOF/ground_truth/IMG_3473.png"
+},
+{
+"index": 22,
+"source": "LFDOF/input/IMG_3735/IMG_3735_ap2_02.png",
+"target": "LFDOF/ground_truth/IMG_3735.png"
+},
+{
+"index": 23,
+"source": "LFDOF/input/IMG_3748/IMG_3748_ap2_02.png",
+"target": "LFDOF/ground_truth/IMG_3748.png"
+},
+{
+"index": 24,
+"source": "LFDOF/input/IMG_3778/IMG_3778_ap2_02.png",
+"target": "LFDOF/ground_truth/IMG_3778.png"
+},
+{
+"index": 25,
+"source": "LFDOF/input/IMG_4048/IMG_4048_ap2_02.png",
+"target": "LFDOF/ground_truth/IMG_4048.png"
+},
+{
+"index": 26,
+"source": "LFDOF/input/IMG_4095/IMG_4095_ap2_02.png",
+"target": "LFDOF/ground_truth/IMG_4095.png"
+},
+{
+"index": 27,
+"source": "LFDOF/input/IMG_4173/IMG_4173_ap2_02.png",
+"target": "LFDOF/ground_truth/IMG_4173.png"
+},
+{
+"index": 28,
+"source": "LFDOF/input/IMG_4521/IMG_4521_ap2_02.png",
+"target": "LFDOF/ground_truth/IMG_4521.png"
+},
+{
+"index": 29,
+"source": "LFDOF/input/IMG_5115/IMG_5115_ap2_02.png",
+"target": "LFDOF/ground_truth/IMG_5115.png"
+},
+{
+"index": 30,
+"source": "LFDOF/input/IMG_5289/IMG_5289_ap2_02.png",
+"target": "LFDOF/ground_truth/IMG_5289.png"
+},
+{
+"index": 31,
+"source": "LFDOF/input/IMG_5359/IMG_5359_ap2_02.png",
+"target": "LFDOF/ground_truth/IMG_5359.png"
+},
+{
+"index": 32,
+"source": "LFDOF/input/IMG_5434/IMG_5434_ap2_02.png",
+"target": "LFDOF/ground_truth/IMG_5434.png"
+},
+{
+"index": 33,
+"source": "LFDOF/input/IMG_5494/IMG_5494_ap2_02.png",
+"target": "LFDOF/ground_truth/IMG_5494.png"
+},
+{
+"index": 34,
+"source": "LFDOF/input/IMG_5594/IMG_5594_ap2_02.png",
+"target": "LFDOF/ground_truth/IMG_5594.png"
+},
+{
+"index": 35,
+"source": "LFDOF/input/IMG_5683/IMG_5683_ap2_02.png",
+"target": "LFDOF/ground_truth/IMG_5683.png"
+},
+{
+"index": 36,
+"source": "LFDOF/input/IMG_5696/IMG_5696_ap2_02.png",
+"target": "LFDOF/ground_truth/IMG_5696.png"
+},
+{
+"index": 37,
+"source": "LFDOF/input/IMG_5776/IMG_5776_ap2_02.png",
+"target": "LFDOF/ground_truth/IMG_5776.png"
+},
+{
+"index": 38,
+"source": "LFDOF/input/IMG_5832/IMG_5832_ap2_02.png",
+"target": "LFDOF/ground_truth/IMG_5832.png"
+},
+{
+"index": 39,
+"source": "LFDOF/input/IMG_5878/IMG_5878_ap2_02.png",
+"target": "LFDOF/ground_truth/IMG_5878.png"
+},
+{
+"index": 40,
+"source": "LFDOF/input/IMG_5891/IMG_5891_ap2_03.png",
+"target": "LFDOF/ground_truth/IMG_5891.png"
+},
+{
+"index": 41,
+"source": "LFDOF/input/IMG_5957/IMG_5957_ap2_03.png",
+"target": "LFDOF/ground_truth/IMG_5957.png"
+},
+{
+"index": 42,
+"source": "LFDOF/input/IMG_6018/IMG_6018_ap2_02.png",
+"target": "LFDOF/ground_truth/IMG_6018.png"
+},
+{
+"index": 43,
+"source": "LFDOF/input/IMG_6103/IMG_6103_ap2_03.png",
+"target": "LFDOF/ground_truth/IMG_6103.png"
+},
+{
+"index": 44,
+"source": "LFDOF/input/IMG_6172/IMG_6172_ap2_02.png",
+"target": "LFDOF/ground_truth/IMG_6172.png"
+},
+{
+"index": 45,
+"source": "LFDOF/input/IMG_6245/IMG_6245_ap2_02.png",
+"target": "LFDOF/ground_truth/IMG_6245.png"
+},
+{
+"index": 46,
+"source": "LFDOF/input/IMG_6251/IMG_6251_ap2_02.png",
+"target": "LFDOF/ground_truth/IMG_6251.png"
+},
+{
+"index": 47,
+"source": "LFDOF/input/IMG_6311/IMG_6311_ap2_02.png",
+"target": "LFDOF/ground_truth/IMG_6311.png"
+},
+{
+"index": 48,
+"source": "LFDOF/input/IMG_6316/IMG_6316_ap2_02.png",
+"target": "LFDOF/ground_truth/IMG_6316.png"
+},
+{
+"index": 49,
+"source": "LFDOF/input/IMG_6480/IMG_6480_ap2_02.png",
+"target": "LFDOF/ground_truth/IMG_6480.png"
+}
+]

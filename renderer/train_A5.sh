@@ -1,0 +1,33 @@
+CUDA_VISIBLE_DEVICES=1 python train_hypersim_dma_p.py \
+    --data-dir /ssddd/chingheng/Deblurring-Dataset/Hypersim_processed \
+    --size small \
+    --crop-size 512 \
+    --batch-size 4 \
+    --epochs 3 \
+    --lr 5e-4 \
+    --zero-aperture-batch-p 0.1 \
+    --amp \
+    --attn-version rel_then_defocus \
+    --depth-map-dropout-p 0.0 \
+    --inverse-depth \
+    --save-dir checkpoints/train_hypersim_inverse_final \
+    --focus-map-type gaussain
+
+CUDA_VISIBLE_DEVICES=1 python train_realbokeh_dma_p.py \
+    --size small \
+    --batch-size 4 \
+    --num-workers 4 \
+    --epochs 5 \
+    --depth-defocus-lr 1e-4 \
+    --backbone-lr 1e-5 \
+    --crop-size 512 \
+    --zero-aperture-batch-p 0.1 \
+    --save-dir checkpoints/train_realbokeh_da2_disparity_p \
+    --data-dir /ssddd/chingheng/Deblurring-Dataset/RealBokeh \
+    --depth-map-dir da2_depth \
+    --depth-mode disparity \
+    --amp \
+    --attn-version rel_then_defocus \
+    --depth-map-dropout-p 0.0 \
+    --focus-map-type gaussain \
+    --pretrained checkpoints/train_hypersim_inverse_final/best.pt

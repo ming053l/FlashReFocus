@@ -1,0 +1,121 @@
+# AutoRefocusV2 SD1 mixed-data specialist for early denoising.
+# Trains on high-noise timesteps used before a 0.8 denoising handoff.
+
+pretrained_model_name_or_path: /ssd1/chingheng/Defocus/stable-diffusion-v1-5
+controlnet_model_name_or_path:
+init_checkpoint: /ssd1/chingheng/Defocus/AutoRefocus/pretrained/sd1_mixed_best
+resume_from_checkpoint:
+train_data_dir: /ssd1/chingheng/Defocus/SOTA/Genfocus/manifests/deblur_train_realbokeh_top1000_laplacian.csv
+output_dir: runs/autorefocus_sd1_mixed_early
+
+dataset_name: mixed
+task_mode: defocus_deblurring
+mixed_dpdd_data_dir: /ssd1/chingheng/Deblurring-Dataset/dd_dp_dataset_png
+mixed_deblurring_data_dir: /ssd1/chingheng/Defocus/SOTA/Genfocus/manifests/deblur_train_realbokeh_top1000_laplacian.csv
+lfdof_data_dir: /ssd4/chingheng/LFDOF
+clear_data_dir: /ssd1/chingheng/Deblurring-Dataset/div2k/DIV2K_train_HR
+mixed_dpdd_prob: 0.3
+mixed_deblurring_prob: 0.2
+lfdof_prob: 0.3
+synthetic_prob: 0.2
+synthetic_blur_radius_min: 1.0
+synthetic_blur_radius_max: 10.0
+synthetic_spatially_varying: true
+synthetic_blur_type: mixed
+synthetic_blur_map_mode: gradient
+synthetic_gradient_direction: random
+
+resolution: 768
+train_batch_size: 4
+gradient_accumulation_steps: 1
+num_train_epochs: 1
+max_train_steps: 100000
+checkpointing_steps: 2000
+
+learning_rate: 2.0e-5
+controlnet_learning_rate:
+unet_learning_rate:
+lr_scheduler: constant_with_warmup
+lr_warmup_steps: 500
+adam_beta1: 0.9
+adam_beta2: 0.999
+adam_weight_decay: 0.01
+adam_epsilon: 1.0e-8
+max_grad_norm: 1.0
+
+mixed_precision: bf16
+allow_tf32: false
+gradient_checkpointing: false
+enable_xformers_memory_efficient_attention: false
+set_grads_to_none: false
+use_8bit_adam: false
+dataloader_num_workers: 8
+
+dpdd_split: train
+conditioning_source: source
+caption: "a sharp, clear image"
+proportion_empty_prompts: 0.0
+control_type: defocus
+control_rgb_loss_weight: 1.0
+
+enable_text_embedding_adapter: true
+text_embedding_adapter_hidden_dim: 3072
+text_embedding_adapter_dropout: 0.1
+text_embedding_adapter_residual_scale: 1.0
+text_embedding_adapter_checkpoint:
+text_embedding_adapter_learning_rate:
+
+defocus_prior_mode: raw
+defocus_band_thresholds: [0.33, 0.66]
+
+train_vae_refiner_only: false
+enable_vae_refiner: false
+# enable_vae_refiner: true
+# vae_refiner_checkpoint: /ssd1/chingheng/Defocus/AutoRefocusV2/runs/autorefocus_sd1_vae_refiner_final/best/vae_refiner.pt
+# vae_refiner_depth: 1
+# vae_refiner_map_hidden_channels: 32
+# vae_refiner_use_pixel_weighting: false
+
+
+use_mid_pixelwise_attention: false
+
+enable_ram_caption: true
+finetune_ram_plus: false
+ram_plus_checkpoint_path: /ssd1/chingheng/Defocus/SOTA/recognize-anything/pretrained/ram_plus_swin_large_14m.pth
+ram_plus_image_size: 384
+ram_plus_vit: swin_l
+ram_plus_fallback_prompt: a sharp, clear image
+ram_plus_prompt_threshold: 0.7
+ram_plus_max_tags: 50
+
+train_controlnet: true
+trainable_modules:
+  - pixel_attentions
+timestep_min: 200
+timestep_max: 999
+
+num_validation_images: 1
+validation_use_original_resolution: true
+validation_max_resolution: 3000
+validation_size_divisor: 8
+validation_seed_per_sample: false
+validation_split: val
+num_validation_samples: 10
+validation_metric: lpips
+compute_extended_metrics: true
+validation_steps: 2000
+num_inference_steps: 20
+guidance_scale: 1.0
+conditioning_scale: 1.0
+negative_prompt: "blur, low quality, artifact, noisy, unclear, shallow depth of field, low contrast"
+init_latent_with_noise: false
+added_noise_level: 0
+offset_noise_scale: 0.0
+use_noise_adjustment: false
+noise_adjustment_alpha: 0.0
+latent_tiled_size: 96
+latent_tiled_overlap: 16
+
+seed: 42
+push_to_hub: false
+report_to: none

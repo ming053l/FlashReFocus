@@ -1,0 +1,6 @@
+[submodule "third_party/PiSA-SR"]
+	path = third_party/PiSA-SR
+	url = https://github.com/csslc/PiSA-SR.git
+[submodule "third_party/Depth-Anything-V2"]
+	path = third_party/Depth-Anything-V2
+	url = https://github.com/DepthAnything/Depth-Anything-V2.git
