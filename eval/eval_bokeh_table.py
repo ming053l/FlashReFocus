@@ -47,8 +47,8 @@ PRED = {
 }
 for _m, _d in {"DeepLens": "deeplens_rbval/dof", "BokehMe": "bokehme_rbval/images", "Bokehlicious": "bokehlicious/images",
                "BokehDiff": "bokehdiff_rbval/validation/images", "GenRefocus": "genrefocus/images", "MagicBokeh": "magicbokeh/images",
-               "DeReFocus": "ours/images"}.items():
-    PRED[_m]["rbval"] = RB / _d
+               "DeReFocus": "ours/images", "DeReFocus-bf16": "ours_bf16/images"}.items():
+    PRED.setdefault(_m, {})["rbval"] = RB / _d
 SUFFIXES = {".png", ".jpg", ".jpeg"}
 
 

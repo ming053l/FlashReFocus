@@ -1,7 +1,7 @@
 #!/usr/bin/env python
-"""Blur-matched focus sweep: for each scene, find the FlashFocus strength whose out-of-focus blur matches GenRefocus'
+"""Blur-matched focus sweep: for each scene, find the FlashReFocus strength whose out-of-focus blur matches GenRefocus'
 (mean absolute Laplacian over pixels far from every focal depth, relative to the AiF input, averaged over the eight focal
-settings), re-render the eight FlashFocus frames at that strength into <scene>/ours_matched/, and record it.
+settings), re-render the eight FlashReFocus frames at that strength into <scene>/ours_matched/, and record it.
 Usage: RACK_OUT=... RACK_AIF=... rack_match_blur.py"""
 import json
 import os

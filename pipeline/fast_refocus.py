@@ -1,4 +1,4 @@
-"""Faster implementation of the same FlashFocus refocusing pipeline (same models, same outputs up to floating point).
+"""Faster implementation of the same FlashReFocus refocusing pipeline (same models, same outputs up to floating point).
 
 Only the code around the models changes; every call still reads its input image from disk and writes its output as
 PNG, as in the Table 6 protocol:

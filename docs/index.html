@@ -1,4 +1,4 @@
-<title>FlashFocus</title>
+<title>FlashReFocus</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@112,600;112,800&family=IBM+Plex+Mono:wght@400;500&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&display=swap">
@@ -126,7 +126,7 @@ pre{background:var(--surface);border:1px solid var(--line);border-radius:10px;pa
 <section aria-labelledby="try">
   <div class="eyebrow">Try it</div>
   <h2 id="try">Pull focus from far to near</h2>
-  <p class="col">Each frame below is one focal edit rendered by FlashFocus from the same restored all-in-focus image, 3CReal inputs at a long side of 1024. Drag the focus ring to move the focal plane, or play the sweep.</p>
+  <p class="col">Each frame below is one focal edit rendered by FlashReFocus from the same restored all-in-focus image, 3CReal inputs at a long side of 1024. Drag the focus ring to move the focal plane, or play the sweep.</p>
   <div class="viewer">
     <div class="stage"><video id="rackVid" muted playsinline preload="auto" poster="assets/poster_04.jpg" src="assets/rack_04.mp4"></video></div>
     <div class="controls">
@@ -154,7 +154,7 @@ pre{background:var(--surface);border:1px solid var(--line);border-radius:10px;pa
 <section aria-labelledby="abs">
   <div class="eyebrow">Abstract</div>
   <h2 id="abs">Diffusion only where information is lost</h2>
-  <p class="col">Single-image refocusing changes the focal plane and depth of field of a photograph after capture, which requires recovering detail lost to defocus and rendering new, depth-consistent blur. Recent generative methods run a large diffusion model for every focal edit, making exploration slow. FlashFocus applies diffusion only where information is lost: a latent diffusion model restores an all-in-focus image once, in a single step, using pixel and detail LoRAs, mixed real and synthetic defocus supervision, and a high-frequency decoder refiner. A 1.3M-parameter renderer then produces each focal setting from a depth-derived defocus map with defocus-bias attention, pre-trained on synthetic scenes and adapted to real lens pairs. We also introduce 3CReal, a benchmark of 89 deep-/shallow-depth-of-field pairs from three camera and lens systems. FlashFocus achieves the best perceptual fidelity for zero-shot bokeh rendering on EBB! Val176 and 3CReal and strong perceptual quality for deblurring on DPDD and RealDOF. A complete refocus takes 2.5&nbsp;s, 54.5&times; and 148.3&times; faster than DiffCamera and GenRefocus, each further edit takes about half a second, and the explicit defocus map further enables aperture control and tilt-shift effects.</p>
+  <p class="col">Single-image refocusing changes the focal plane and depth of field of a photograph after capture, which requires recovering detail lost to defocus and rendering new, depth-consistent blur. Recent generative methods run a large diffusion model for every focal edit, making exploration slow. FlashReFocus applies diffusion only where information is lost: a latent diffusion model restores an all-in-focus image once, in a single step, using pixel and detail LoRAs, mixed real and synthetic defocus supervision, and a high-frequency decoder refiner. A 1.3M-parameter renderer then produces each focal setting from a depth-derived defocus map with defocus-bias attention, pre-trained on synthetic scenes and adapted to real lens pairs. We also introduce 3CReal, a benchmark of 89 deep-/shallow-depth-of-field pairs from three camera and lens systems. FlashReFocus achieves the best perceptual fidelity for zero-shot bokeh rendering on EBB! Val176 and 3CReal and strong perceptual quality for deblurring on DPDD and RealDOF. A complete refocus takes 2.5&nbsp;s, 54.5&times; and 148.3&times; faster than DiffCamera and GenRefocus, each further edit takes about half a second, and the explicit defocus map further enables aperture control and tilt-shift effects.</p>
 </section>
 
 <section aria-labelledby="paradigm">
@@ -163,10 +163,10 @@ pre{background:var(--surface);border:1px solid var(--line);border-radius:10px;pa
     <div style="display:grid;gap:14px">
       <h2 id="paradigm">Restore once, render every edit</h2>
       <p>Single-stage diffusion (DiffCamera, MagicBokeh) regenerates the photo for every focal setting and keeps no reusable all-in-focus image. Two-stage generative refocusing (GenRefocus) reuses the restored image but renders bokeh with a second 12B diffusion transformer, so every edit still costs a full generative pass.</p>
-      <p>FlashFocus restores once with one-step diffusion. Rendering a new focal setting is determined by depth and the focal plane, so it needs no generation: a 1.3M-parameter network renders it in under half a second, and the depth of the restored image is computed once and reused by every later edit.</p>
+      <p>FlashReFocus restores once with one-step diffusion. Rendering a new focal setting is determined by depth and the focal plane, so it needs no generation: a 1.3M-parameter network renders it in under half a second, and the depth of the restored image is computed once and reused by every later edit.</p>
     </div>
     <figure>
-      <img src="assets/paradigm.jpg" alt="Three refocusing paradigms and a bar chart of inference seconds for GenRefocus, DiffCamera, MagicBokeh and FlashFocus" loading="lazy">
+      <img src="assets/paradigm.jpg" alt="Three refocusing paradigms and a bar chart of inference seconds for GenRefocus, DiffCamera, MagicBokeh and FlashReFocus" loading="lazy">
       <figcaption>Refocusing paradigms and inference seconds at 1536&times;1536 on one RTX PRO 6000 (log scale).</figcaption>
     </figure>
   </div>
@@ -176,7 +176,7 @@ pre{background:var(--surface);border:1px solid var(--line);border-radius:10px;pa
   <div class="eyebrow">Method</div>
   <h2 id="method">Two stages with different jobs</h2>
   <figure>
-    <img src="assets/overview.jpg" alt="Overview of FlashFocus: Stage I one-step diffusion deblurring with a decoder refiner, Stage II defocus-aware bokeh renderer" loading="lazy">
+    <img src="assets/overview.jpg" alt="Overview of FlashReFocus: Stage I one-step diffusion deblurring with a decoder refiner, Stage II defocus-aware bokeh renderer" loading="lazy">
     <figcaption>(A) Stage I restores an all-in-focus image in one step with a frozen latent diffusion U-Net and an optional decoder refiner; (B) &omega; mixes the pixel and detail LoRA passes to trade fidelity for detail. (C) Stage II computes a defocus map from monocular depth and the selected focal point, and (D) renders bokeh in a single feed-forward pass with defocus-biased attention.</figcaption>
   </figure>
   <ul class="points col">
@@ -190,7 +190,7 @@ pre{background:var(--surface);border:1px solid var(--line);border-radius:10px;pa
   <h2 id="speed">Seconds per refocus</h2>
   <p class="col">Wall-clock time at 1536&times;1536 on one NVIDIA RTX PRO 6000, including image read and write per call. <em>First</em> covers restoration and the first rendering; <em>new focus</em> is each further focal edit on the same image.</p>
   <div class="chart" id="costChart" aria-label="Bar chart of seconds per refocus, log scale">
-    <div class="legend"><span><i style="background:var(--ours)"></i>FlashFocus</span><span><i style="background:var(--base)"></i>Baselines</span><span>&dagger; no restoration, renders directly from the input</span></div>
+    <div class="legend"><span><i style="background:var(--ours)"></i>FlashReFocus</span><span><i style="background:var(--base)"></i>Baselines</span><span>&dagger; no restoration, renders directly from the input</span></div>
     <svg id="costSvg" viewBox="0 0 960 300" role="img"></svg>
     <div class="tip" id="costTip" hidden></div>
   </div>
@@ -201,38 +201,38 @@ pre{background:var(--surface);border:1px solid var(--line);border-radius:10px;pa
       <tr><td>GenRefocus</td><td>18.30</td><td>370.65</td><td>217.32</td><td>42,031</td><td>24,763</td><td>42.82</td></tr>
       <tr><td>BokehDiff&dagger;</td><td>3.83</td><td>&ndash;</td><td>3.43</td><td>&ndash;</td><td>73.4</td><td>11.82</td></tr>
       <tr><td>MagicBokeh&dagger;</td><td>1.73</td><td>&ndash;</td><td>6.13</td><td>&ndash;</td><td>113</td><td class="best">5.29</td></tr>
-      <tr class="ours"><td>FlashFocus</td><td class="best">1.70</td><td class="best">2.50</td><td class="best">0.47</td><td class="best">120</td><td class="best">0.85</td><td>16.94</td></tr>
+      <tr class="ours"><td>FlashReFocus</td><td class="best">1.70</td><td class="best">2.50</td><td class="best">0.47</td><td class="best">120</td><td class="best">0.85</td><td>16.94</td></tr>
     </tbody></table></div>
 </section>
 
 <section aria-labelledby="consistency">
   <div class="eyebrow">Consistency</div>
   <h2 id="consistency">Each edit changes the blur and nothing else</h2>
-  <p class="col">We sweep the focal point over eight depths on three scenes each from 3CReal and RealBokeh test, give GenRefocus the same inputs and focal points, and set our strength so both methods blur the background by the same amount for every focal setting. FlashFocus keeps in-focus regions close to the restored image and barely changes pixels whose blur should stay the same. GenRefocus regenerates the image at every edit.</p>
+  <p class="col">We sweep the focal point over eight depths on three scenes each from 3CReal and RealBokeh test, give GenRefocus the same inputs and focal points, and set our strength so both methods blur the background by the same amount for every focal setting. FlashReFocus keeps in-focus regions close to the restored image and barely changes pixels whose blur should stay the same. GenRefocus regenerates the image at every edit.</p>
   <div class="tbl"><table>
     <thead><tr><th>Method</th><th>In-focus PSNR &uarr;</th><th>In-focus LPIPS &darr;</th><th>Consistency PSNR &uarr;</th><th>Seconds per edit &darr;</th></tr></thead>
     <tbody>
       <tr class="group"><td colspan="5">3CReal</td></tr>
       <tr><td>GenRefocus</td><td>28.96</td><td>0.155</td><td>43.84</td><td>77</td></tr>
-      <tr class="ours"><td>FlashFocus</td><td class="best">44.44</td><td class="best">0.036</td><td class="best">49.91</td><td class="best">0.10</td></tr>
+      <tr class="ours"><td>FlashReFocus</td><td class="best">44.44</td><td class="best">0.036</td><td class="best">49.91</td><td class="best">0.10</td></tr>
       <tr class="group"><td colspan="5">RealBokeh test</td></tr>
       <tr><td>GenRefocus</td><td>25.38</td><td>0.186</td><td>40.19</td><td>&ndash;</td></tr>
-      <tr class="ours"><td>FlashFocus</td><td class="best">38.81</td><td class="best">0.048</td><td class="best">49.31</td><td>&ndash;</td></tr>
+      <tr class="ours"><td>FlashReFocus</td><td class="best">38.81</td><td class="best">0.048</td><td class="best">49.31</td><td>&ndash;</td></tr>
     </tbody></table></div>
-  <p class="note">Long side 1024. In-focus fidelity compares each result with the all-in-focus input near the focal depth; consistency compares consecutive edits where the expected blur does not change. Where GenRefocus blurs more than our trained range, FlashFocus extrapolates the strength or renders twice to match it. Seconds per edit are measured on 3CReal on an otherwise idle GPU.</p>
+  <p class="note">Long side 1024. In-focus fidelity compares each result with the all-in-focus input near the focal depth; consistency compares consecutive edits where the expected blur does not change. Where GenRefocus blurs more than our trained range, FlashReFocus extrapolates the strength or renders twice to match it. Seconds per edit are measured on 3CReal on an otherwise idle GPU.</p>
   <div class="tabs" role="group" aria-label="Comparison scene">
     <button type="button" data-sbs="04" aria-pressed="true">Stone gate</button>
     <button type="button" data-sbs="59" aria-pressed="false">Brick wall</button>
     <button type="button" data-sbs="02" aria-pressed="false">Garden lamp</button>
   </div>
   <div class="sbs"><video id="sbsVid" muted playsinline loop autoplay preload="metadata" src="assets/sbs_04.mp4"></video></div>
-  <p class="note">Same eight focal points, left FlashFocus, right GenRefocus; the label shows the measured seconds per edit at this resolution.</p>
+  <p class="note">Same eight focal points, left FlashReFocus, right GenRefocus; the label shows the measured seconds per edit at this resolution.</p>
 </section>
 
 <section aria-labelledby="strength">
   <div class="eyebrow">Control</div>
   <h2 id="strength">Aperture as a dial</h2>
-  <p class="col">With the focal point fixed, the strength behaves like an aperture: the background blur grows while the subject stays sharp. Strength controllability (LVCorr) is 0.858 on LFDOF and 0.840 on 3CReal, against 0.690 and 0.666 for GenRefocus. The renderer is trained for strengths 0 to 1; the range from 1 to 2 extrapolates past training and keeps opening the aperture for a stronger look.</p>
+  <p class="col">With the focal point fixed, the strength behaves like an aperture: the background blur grows while the subject stays sharp. Strength controllability (LVCorr) is 0.857 on LFDOF and 0.839 on 3CReal, against 0.690 and 0.666 for GenRefocus. The renderer is trained for strengths 0 to 1; the range from 1 to 2 extrapolates past training and keeps opening the aperture for a stronger look.</p>
   <div class="viewer">
     <div class="stage"><video id="strVid" muted playsinline preload="auto" poster="assets/poster_04.jpg" src="assets/strength_04.mp4"></video></div>
     <div class="controls">
@@ -257,7 +257,7 @@ pre{background:var(--surface);border:1px solid var(--line);border-radius:10px;pa
 <section aria-labelledby="dual">
   <div class="eyebrow">Beyond a real lens</div>
   <h2 id="dual">Two focal planes</h2>
-  <p class="col">A physical lens has one focal plane. Because the renderer reads an explicit depth map, FlashFocus can keep two subjects at different depths sharp while the space around them stays blurred: each pixel is blurred by its distance to the nearer of the two planes, with no retraining.</p>
+  <p class="col">A physical lens has one focal plane. Because the renderer reads an explicit depth map, FlashReFocus can keep two subjects at different depths sharp while the space around them stays blurred: each pixel is blurred by its distance to the nearer of the two planes, with no retraining.</p>
   <div class="tabs" role="group" aria-label="Two-focal-plane scene">
     <button type="button" data-dual="21" aria-pressed="true">Trunk and stump</button>
     <button type="button" data-dual="rb42" aria-pressed="false">Two birches</button>
@@ -281,23 +281,23 @@ pre{background:var(--surface);border:1px solid var(--line);border-radius:10px;pa
       <tr class="group"><td colspan="6">EBB! Val176</td></tr>
       <tr><td>GenRefocus</td><td>23.80</td><td>0.868</td><td>0.2025</td><td>0.964</td><td>0.690</td></tr>
       <tr><td>MagicBokeh</td><td>23.14</td><td>0.844</td><td>0.2398</td><td>0.933</td><td>0.799</td></tr>
-      <tr class="ours"><td>FlashFocus</td><td class="best">24.52</td><td class="best">0.892</td><td class="best">0.1805</td><td class="best">0.973</td><td class="best">0.858</td></tr>
+      <tr class="ours"><td>FlashReFocus</td><td class="best">24.52</td><td class="best">0.892</td><td class="best">0.1805</td><td class="best">0.973</td><td class="best">0.857</td></tr>
       <tr class="group"><td colspan="6">3CReal</td></tr>
       <tr><td>GenRefocus</td><td>26.38</td><td>0.853</td><td>0.2426</td><td>0.972</td><td>0.666</td></tr>
       <tr><td>MagicBokeh</td><td>25.64</td><td>0.833</td><td>0.2543</td><td>0.943</td><td>0.759</td></tr>
-      <tr class="ours"><td>FlashFocus</td><td class="best">27.98</td><td class="best">0.886</td><td class="best">0.2178</td><td class="best">0.981</td><td class="best">0.840</td></tr>
-      <tr class="group"><td colspan="6">RealBokeh validation (219 pairs, 2000&times;1500; not zero-shot for Bokehlicious and FlashFocus)</td></tr>
+      <tr class="ours"><td>FlashReFocus</td><td class="best">27.98</td><td class="best">0.886</td><td class="best">0.2178</td><td class="best">0.981</td><td class="best">0.839</td></tr>
+      <tr class="group"><td colspan="6">RealBokeh validation (219 pairs, 2000&times;1500; not zero-shot for Bokehlicious and FlashReFocus)</td></tr>
       <tr><td>Bokehlicious</td><td class="best">29.81</td><td class="best">0.932</td><td class="best">0.1086</td><td class="best">0.987</td><td>&ndash;</td></tr>
       <tr><td>MagicBokeh</td><td>22.25</td><td>0.827</td><td>0.2730</td><td>0.934</td><td>&ndash;</td></tr>
-      <tr class="ours"><td>FlashFocus</td><td>26.37</td><td>0.898</td><td>0.1956</td><td>0.970</td><td>&ndash;</td></tr>
+      <tr class="ours"><td>FlashReFocus</td><td>26.38</td><td>0.897</td><td>0.1932</td><td>0.970</td><td>&ndash;</td></tr>
     </tbody></table></div>
-  <p class="note">LVCorr is measured on LFDOF for the EBB! block and on 3CReal for the 3CReal block. Excerpt of the paper's Table 3; the full table compares nine methods. RealBokeh validation (Appendix Table G.1) shares the cameras and lenses of the RealBokeh training pairs, which Bokehlicious and FlashFocus were trained on; GenRefocus, run on the first 10 pairs only (about an hour per image), scores 23.38 dB PSNR and 0.264 LPIPS there against 25.44 dB and 0.250 for FlashFocus.</p>
+  <p class="note">LVCorr is measured on LFDOF for the EBB! block and on 3CReal for the 3CReal block. Excerpt of the paper's Table 3; the full table compares nine methods. RealBokeh validation (Appendix Table G.1) shares the cameras and lenses of the RealBokeh training pairs, which Bokehlicious and FlashReFocus were trained on; GenRefocus, run on the first 10 pairs only (about an hour per image), scores 23.38 dB PSNR and 0.264 LPIPS there against 25.46 dB and 0.246 for FlashReFocus.</p>
   <div class="tbl"><table>
     <thead><tr><th>Deblurring (LPIPS &darr;)</th><th>DPDD</th><th>RealDOF</th></tr></thead>
     <tbody>
       <tr><td>GenRefocus</td><td>0.1686</td><td>0.2447</td></tr>
       <tr><td>Restormer</td><td>0.1762</td><td>0.2863</td></tr>
-      <tr class="ours"><td>FlashFocus + refiner</td><td class="best">0.1557</td><td class="best">0.2437</td></tr>
+      <tr class="ours"><td>FlashReFocus + refiner</td><td class="best">0.1557</td><td class="best">0.2437</td></tr>
     </tbody></table></div>
 </section>
 
@@ -305,7 +305,7 @@ pre{background:var(--surface);border:1px solid var(--line);border-radius:10px;pa
   <div class="eyebrow">Citation</div>
   <h2 id="cite">BibTeX</h2>
 <pre id="bib">@misc{cheng2026flashfocus,
-  title  = {FlashFocus: Interactive Image Refocusing in Seconds},
+  title  = {FlashReFocus: Interactive Image Refocusing in Seconds},
   author = {Cheng, Ching-Heng and Lee, Chia-Ming and Chang, Ming-Ching and
             Li, Xin and Liu, Yu-Lun and Hsu, Chih-Chung},
   year   = {2026}
@@ -360,7 +360,7 @@ pre{background:var(--surface);border:1px solid var(--line);border-radius:10px;pa
     {m:'DiffCamera', first:136.35, next:136.35},
     {m:'MagicBokeh†', first:null, next:6.13},
     {m:'BokehDiff†', first:null, next:3.43},
-    {m:'FlashFocus', first:2.50, next:0.47, ours:true}
+    {m:'FlashReFocus', first:2.50, next:0.47, ours:true}
   ];
   var svg=document.getElementById('costSvg'), tip=document.getElementById('costTip'), box=document.getElementById('costChart');
   var NS='http://www.w3.org/2000/svg', W=960, labW=120, gap=40, panelW=(W-labW-gap)/2, top=30, rowH=44, lo=-1, hi=3;

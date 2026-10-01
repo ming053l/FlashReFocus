@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Blur matching with an extended strength range: FlashFocus strength is searched in [0, 2] (above 1 extrapolates beyond
+"""Blur matching with an extended strength range: FlashReFocus strength is searched in [0, 2] (above 1 extrapolates beyond
 the trained range, and blur is not always monotonic there, so it is searched only up to the blurriest of 1.25..2); if that
 is still sharper than GenRefocus, the renderer is applied twice (strength in [0, 1], then up to that value). Matching per focal setting -> <scene>/ours_matched_pf_ext/ (figures, in-focus fidelity); one setting per scene
 matching the blur averaged over the eight settings -> <scene>/ours_matched_ext/ (edit consistency).

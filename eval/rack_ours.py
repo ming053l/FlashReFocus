@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Rack-focus material with FlashFocus Stage II on 3CReal AiF inputs (long side 1024, the LVCorr inputs given to every
+"""Rack-focus material with FlashReFocus Stage II on 3CReal AiF inputs (long side 1024, the LVCorr inputs given to every
 method). Picks the --n_scenes scenes with the widest depth spread, and per scene
   * 8 focus points at depth quantiles 95%..5% of the renderer depth (1 = far), i.e. far -> near, shared with GenRefocus;
   * the 8 comparison frames at strength --strength;

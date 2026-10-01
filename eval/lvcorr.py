@@ -42,7 +42,8 @@ def derefocus_backend():
     sys.path.insert(0, str(DEF / "SOTA" / "Bokehlicious"))
     os.chdir(DEF / "SOTA" / "Bokehlicious")
     from infer_single_focus import BokehliciousFocusEngine, parse_args
-    b = parse_args(["--input", "x.png", "--output", "y.png", "--focus-x", "0", "--focus-y", "0", "--bokeh-strength", "0.5"])
+    b = parse_args(["--input", "x.png", "--output", "y.png", "--focus-x", "0", "--focus-y", "0", "--bokeh-strength", "0.5"]
+                   + (["--amp"] if os.environ.get("RENDER_BF16", "1") == "1" else []))   # bf16 autocast, as the bokeh tables
     eng = BokehliciousFocusEngine(checkpoint=b.checkpoint, size=b.size, attn_version=b.attn_version, da2_root=b.da2_root,
                                   da2_checkpoint=b.da2_checkpoint, da2_encoder=b.da2_encoder, da2_input_size=b.da2_input_size,
                                   no_da2_amp=b.no_da2_amp, da2_amp_dtype=b.da2_amp_dtype, device=b.device, amp=b.amp)

@@ -1,9 +1,9 @@
 #!/usr/bin/env python
-"""Rack-focus comparison of FlashFocus and GenRefocus (outputs of rack_ours.py / rack_genrefocus.py) and material:
+"""Rack-focus comparison of FlashReFocus and GenRefocus (outputs of rack_ours.py / rack_genrefocus.py) and material:
   metrics  - in-focus fidelity: PSNR and LPIPS against the AiF over pixels near the focal depth;
              edit consistency: between consecutive focal settings, pixels whose expected blur is unchanged
              (| |d - f_i| - |d - f_i+1| | < tau) should stay the same -> PSNR / mean abs difference between the frames there.
-             Masks use FlashFocus' DA2 depth for both methods (GenRefocus uses Depth Pro internally, so this is slightly
+             Masks use FlashReFocus' DA2 depth for both methods (GenRefocus uses Depth Pro internally, so this is slightly
              in its disfavour; tau is loose).
   figures  - comparison strips (far -> near) and consecutive-frame difference maps;
   videos   - rack-focus and strength sweeps (mp4 + gif) and a side-by-side comparison, for the project page."""
@@ -80,7 +80,7 @@ def main():
     table = {}
     for s, info in meta["scenes"].items():
         o = R / s; pts = info["points"]; d = np.load(o / "depth.npy"); aif = load(AIF / f"{s}.png")
-        methods = {"FlashFocus": o / "ours", "GenRefocus": o / "genrefocus"}
+        methods = {"FlashReFocus": o / "ours", "GenRefocus": o / "genrefocus"}
         res = {}
         for name, fdir in methods.items():
             frames = [load(fdir / f"{i:02d}.png", (aif.shape[1], aif.shape[0])) for i in range(len(pts))]
@@ -100,11 +100,11 @@ def main():
             diff = np.abs(frames[k] - frames[k + 1]).mean(-1)
             save(np.repeat(np.clip(diff * 4, 0, 1)[..., None], 3, -1), o / f"diffmap_{name}.png")
         table[s] = res
-        # comparison strip: AiF | 4 focal settings from far to near, rows FlashFocus / GenRefocus
+        # comparison strip: AiF | 4 focal settings from far to near, rows FlashReFocus / GenRefocus
         sel = [0, 2, 5, 7]
         rows = []
         for name, fdir in methods.items():
-            tiles = [label(aif, "AiF input") if name == "FlashFocus" else np.ones_like(aif)]
+            tiles = [label(aif, "AiF input") if name == "FlashReFocus" else np.ones_like(aif)]
             for j, i in enumerate(sel):
                 t = mark(load(fdir / f"{i:02d}.png", (aif.shape[1], aif.shape[0])), pts[i]["x"], pts[i]["y"])
                 tiles.append(label(t, f"{name}  focus {j + 1}") if j == 0 else t)
@@ -117,14 +117,14 @@ def main():
         t_ours = info["render_s_mean"]          # seconds per focal edit measured at this resolution
         t_gen = float(np.mean(gmeta["seconds_per_frame"][s]))
         for i, p in enumerate(pts):
-            a = label(mark(load(o / "ours" / f"{i:02d}.png"), p["x"], p["y"]), f"FlashFocus ({t_ours:.2f} s / edit)")
+            a = label(mark(load(o / "ours" / f"{i:02d}.png"), p["x"], p["y"]), f"FlashReFocus ({t_ours:.2f} s / edit)")
             b = label(mark(load(o / "genrefocus" / f"{i:02d}.png", (aif.shape[1], aif.shape[0])), p["x"], p["y"]),
                       f"GenRefocus ({t_gen:.0f} s / edit)")
             save(np.concatenate([a, np.ones((a.shape[0], 12, 3)), b], 1), sbs / f"{i:02d}.png")
         video(sbs, "%02d.png", page / f"{s}_side_by_side", 2)
     (R / "rack_metrics.json").write_text(json.dumps(table, indent=1))
     avg = {m: {k: float(np.nanmean([table[s][m][k] for s in table])) for k in table[next(iter(table))][m]}
-           for m in ("FlashFocus", "GenRefocus")}
+           for m in ("FlashReFocus", "GenRefocus")}
     (R / "rack_metrics_mean.json").write_text(json.dumps(avg, indent=1))
     print(json.dumps(avg, indent=1))
 

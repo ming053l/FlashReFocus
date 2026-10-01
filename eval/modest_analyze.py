@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """MODEST aperture ladder: strength controllability of each method. For every method the per-image best strength (its own
-unit: FlashFocus strength, BokehMe / MagicBokeh K, DeepLens aperture) found against the f/16, 9, 5, 2.8 targets is compared
+unit: FlashReFocus strength, BokehMe / MagicBokeh K, DeepLens aperture) found against the f/16, 9, 5, 2.8 targets is compared
 with 1/N: ladders whose best strength never decreases as the aperture opens (monotonic), mean Spearman rank correlation per
 ladder, and the Pearson correlation of the mean strength with 1/N; plus mean SSIM per aperture from the searches.
 Output: rbval_out/modest_summary.json"""
@@ -14,7 +14,7 @@ from scipy.stats import pearsonr, spearmanr
 O = Path(__file__).resolve().parent / "rbval_out"
 APS = ["F16.0", "F9.0", "F5.0", "F2.8"]
 INV = np.array([1 / float(a[1:]) for a in APS])
-SRC = {"FlashFocus": ("modest_ours_{}/results.csv", "key", "strength", "ssim"),
+SRC = {"FlashReFocus": ("modest_ours_bf16_{}/results.csv", "key", "strength", "ssim"),
        "BokehMe": ("modest_bokehme_{}/results.csv", "scene_id", "best_k", "ssim"),
        "MagicBokeh": ("modest_magicbokeh_{}/metrics_per_image_shard0.csv", "key", "k", "ssim"),
        "DeepLens": ("modest_deeplens_{}/metrics.csv", "image", "aperture", "ssim")}

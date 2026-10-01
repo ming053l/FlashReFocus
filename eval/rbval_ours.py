@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""FlashFocus Stage II under the bokeh-table protocol: each all-in-focus input is rendered at the annotated focal point with
+"""FlashReFocus Stage II under the bokeh-table protocol: each all-in-focus input is rendered at the annotated focal point with
 strengths k/100, k = 1..100, and the output with the highest SSIM to the target is kept (integer binary search on the
 unimodal SSIM, as the baselines' K searches). Inputs, targets and focus points in the 3CReal layout
 (original/, bokeh/, focus_point.json). Outputs: <out>/images/<key>.png and <out>/results.csv."""

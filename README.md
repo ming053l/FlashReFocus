@@ -1,6 +1,6 @@
-# FlashFocus: Interactive Image Refocusing in Seconds
+# FlashReFocus: Interactive Image Refocusing in Seconds
 
-FlashFocus changes the focal plane and depth of field of a single photograph after capture. Diffusion is applied only where information is lost: a one-step latent diffusion model restores an all-in-focus (AiF) image **once**, and a 1.3M-parameter renderer then produces **every** focal setting from a depth-derived defocus map. A complete refocus takes about 2.5 s at 1536×1536, and each further edit about half a second.
+FlashReFocus changes the focal plane and depth of field of a single photograph after capture. Diffusion is applied only where information is lost: a one-step latent diffusion model restores an all-in-focus (AiF) image **once**, and a 1.3M-parameter renderer then produces **every** focal setting from a depth-derived defocus map. A complete refocus takes about 2.5 s at 1536×1536, and each further edit about half a second.
 
 - **Stage I – one-step deblurring.** PiSA-SR on Stable Diffusion 2.1 with a pixel LoRA (fidelity) and a detail LoRA (weighted by ω at inference), trained on mixed real and synthetic defocus pairs, plus an optional input-guided decoder refiner that restores text and thin edges lost in VAE decoding.
 - **Stage II – controllable rendering.** A NAF-style encoder–decoder with defocus-bias attention, conditioned on Depth Anything V2 depth, a focal point, and a blur strength; pre-trained on synthetic multi-focal Hypersim scenes and adapted to RealBokeh pairs.
@@ -38,7 +38,7 @@ Model weights required:
 - Stable Diffusion 2.1 base (Stage I) and 1.5 VAE (refiner), from Hugging Face.
 - PiSA-SR released LoRAs (initialization), see `third_party/PiSA-SR`.
 - Depth Anything V2 ViT-L, see `third_party/Depth-Anything-V2`.
-- FlashFocus checkpoints (Stage I, refiner, renderer): *to be released*.
+- FlashReFocus checkpoints (Stage I, refiner, renderer): *to be released*.
 
 > **Note.** The scripts still contain absolute paths of our training machines (e.g. `/ssd1/...`) as defaults. Pass the corresponding command-line arguments or edit the defaults before running.
 
@@ -82,7 +82,7 @@ This code builds on [PiSA-SR](https://github.com/csslc/PiSA-SR), [Bokehlicious](
 
 ```bibtex
 @article{flashfocus2026,
-  title  = {FlashFocus: Interactive Image Refocusing in Seconds},
+  title  = {FlashReFocus: Interactive Image Refocusing in Seconds},
   author = {TBD},
   year   = {2026}
 }
