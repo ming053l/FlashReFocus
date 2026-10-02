@@ -27,8 +27,8 @@ third_party/ PiSA-SR and Depth-Anything-V2 (git submodules)
 ## Setup
 
 ```bash
-git clone --recursive git@github.com:ming053l/FlashFocus.git
-conda create -n flashfocus python=3.10 && conda activate flashfocus
+git clone --recursive git@github.com:ming053l/FlashReFocus.git
+conda create -n flashrefocus python=3.10 && conda activate flashrefocus
 pip install torch torchvision --index-url https://download.pytorch.org/whl/cu128
 pip install diffusers==0.25.0 transformers==4.46.0 accelerate==1.13.0 peft==0.9.0 lpips torchmetrics pyiqa opencv-python scipy tensorboard
 pip install -r renderer/requirements.txt
@@ -81,7 +81,7 @@ This code builds on [PiSA-SR](https://github.com/csslc/PiSA-SR), [Bokehlicious](
 ## Citation
 
 ```bibtex
-@article{flashfocus2026,
+@article{flashrefocus2026,
   title  = {FlashReFocus: Interactive Image Refocusing in Seconds},
   author = {TBD},
   year   = {2026}
