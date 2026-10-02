@@ -123,7 +123,7 @@ footer{text-align:center;font-size:14px;color:var(--soft);padding-top:8px}
   <div class="links" aria-label="Resources">
     <span class="pill">Paper <small>under review</small></span>
     <a class="pill" href="https://github.com/ming053l/FlashReFocus" target="_blank" rel="noopener">Code <small>GitHub</small></a>
-    <span class="pill">Model <small>coming soon</small></span>
+    <a class="pill" href="https://huggingface.co/ming0531/FlashReFocus" target="_blank" rel="noopener">Model <small>Hugging Face</small></a>
   </div>
 </header>
 
@@ -173,11 +173,11 @@ footer{text-align:center;font-size:14px;color:var(--soft);padding-top:8px}
 
 <section aria-labelledby="sweep">
   <h2 id="sweep">Pull focus from far to near</h2>
-  <p class="lead">Each frame is one focal edit rendered from the same restored image (3CReal inputs, long side 1024). Drag the focus ring to move the focal plane.</p>
+  <p class="lead">Each frame is one focal edit rendered from the same restored image (3CReal and RealBokeh inputs, long side 1024). Drag the focus ring to move the focal plane.</p>
   <div class="tabs" role="group" aria-label="Scene">
     <button type="button" data-scene="04" aria-pressed="true">Stone gate</button>
     <button type="button" data-scene="59" aria-pressed="false">Brick wall</button>
-    <button type="button" data-scene="02" aria-pressed="false">Garden lamp</button>
+    <button type="button" data-scene="rb133" aria-pressed="false">Rooftops</button>
   </div>
   <div class="viewer">
     <div class="frame"><video id="rackVid" muted playsinline preload="auto" poster="assets/poster_04.jpg" src="assets/rack_04.mp4"></video></div>
@@ -196,7 +196,7 @@ footer{text-align:center;font-size:14px;color:var(--soft);padding-top:8px}
   <div class="tabs" role="group" aria-label="Strength scene">
     <button type="button" data-str="04" aria-pressed="true">Stone gate</button>
     <button type="button" data-str="59" aria-pressed="false">Brick wall</button>
-    <button type="button" data-str="02" aria-pressed="false">Garden lamp</button>
+    <button type="button" data-str="rb133" aria-pressed="false">Rooftops</button>
   </div>
   <div class="viewer">
     <div class="frame"><video id="strVid" muted playsinline preload="auto" poster="assets/poster_04.jpg" src="assets/strength_04.mp4"></video></div>
@@ -215,7 +215,7 @@ footer{text-align:center;font-size:14px;color:var(--soft);padding-top:8px}
   <div class="stack">
     <div class="frame"><video class="lazy" muted loop playsinline preload="none" data-src="assets/sbs_04.mp4"></video></div>
     <div class="frame"><video class="lazy" muted loop playsinline preload="none" data-src="assets/sbs_59.mp4"></video></div>
-    <div class="frame"><video class="lazy" muted loop playsinline preload="none" data-src="assets/sbs_02.mp4"></video></div>
+    <div class="frame"><video class="lazy" muted loop playsinline preload="none" style="aspect-ratio:2060/768" data-src="assets/sbs_rb133.mp4"></video></div>
   </div>
   <div class="tbl"><table>
     <thead><tr><th>Method</th><th>In-focus PSNR &uarr;</th><th>In-focus LPIPS &darr;</th><th>Consistency PSNR &uarr;</th><th>Seconds per edit &darr;</th></tr></thead>
@@ -227,7 +227,7 @@ footer{text-align:center;font-size:14px;color:var(--soft);padding-top:8px}
       <tr><td>GenRefocus</td><td>25.38</td><td>0.186</td><td>40.19</td><td>&ndash;</td></tr>
       <tr class="ours"><td>FlashReFocus</td><td class="best">38.81</td><td class="best">0.048</td><td class="best">49.31</td><td>&ndash;</td></tr>
     </tbody></table></div>
-  <p class="note">Left FlashReFocus, right GenRefocus; the label shows the measured seconds per edit at a long side of 1024. In-focus fidelity compares each result with the all-in-focus input near the focal depth; consistency compares consecutive edits where the expected blur does not change.</p>
+  <p class="note">Left FlashReFocus, right GenRefocus, on two 3CReal scenes and one RealBokeh scene; the 3CReal labels show the measured seconds per edit at a long side of 1024. In-focus fidelity compares each result with the all-in-focus input near the focal depth; consistency compares consecutive edits where the expected blur does not change.</p>
 </section>
 
 <section aria-labelledby="dual">
