@@ -45,6 +45,8 @@ header{display:grid;gap:16px;justify-items:center;text-align:center;padding-bloc
 .affil{display:flex;flex-wrap:wrap;justify-content:center;gap:4px 20px;font-size:17px;color:var(--warm)}
 .links{display:flex;flex-wrap:wrap;justify-content:center;gap:10px;margin-top:6px}
 .pill{font:500 15px/1 var(--display);padding:11px 18px;border-radius:999px;background:#363C52;color:var(--fg);display:inline-flex;gap:8px;align-items:center}
+.pill .ic{width:18px;height:18px;flex:none}
+a.pill:hover{background:#474E69;text-decoration:none}
 .pill small{font:400 12px/1 var(--body);color:var(--soft)}
 
 /* media */
@@ -121,9 +123,9 @@ footer{text-align:center;font-size:14px;color:var(--soft);padding-top:8px}
   <div class="affil"><span><sup>1</sup>National Cheng Kung University</span><span><sup>2</sup>State University of New York at Albany</span><span><sup>3</sup>National Yang Ming Chiao Tung University</span></div>
   <p class="note">* Equal contribution &nbsp;&middot;&nbsp; &dagger; Corresponding author</p>
   <div class="links" aria-label="Resources">
-    <span class="pill">Paper <small>under review</small></span>
-    <a class="pill" href="https://github.com/ming053l/FlashReFocus" target="_blank" rel="noopener">Code <small>GitHub</small></a>
-    <a class="pill" href="https://huggingface.co/ming0531/FlashReFocus" target="_blank" rel="noopener">Model <small>Hugging Face</small></a>
+    <span class="pill"><svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M3.5 0A1.5 1.5 0 0 0 2 1.5v13A1.5 1.5 0 0 0 3.5 16h9a1.5 1.5 0 0 0 1.5-1.5V5.2a1.5 1.5 0 0 0-.44-1.06L10.36.44A1.5 1.5 0 0 0 9.3 0H3.5Zm5.5 1.6 3.4 3.4H9.5a.5.5 0 0 1-.5-.5V1.6ZM4.5 8h7v1.2h-7V8Zm0 2.8h7V12h-7v-1.2Z"/></svg>Paper <small>under review</small></span>
+    <a class="pill" href="https://github.com/ming053l/FlashReFocus" target="_blank" rel="noopener"><svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>Code <small>GitHub</small></a>
+    <a class="pill" href="https://huggingface.co/ming0531/FlashReFocus" target="_blank" rel="noopener"><svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="7.4" r="6.4" fill="#FFD21E" stroke="#FF9D0B" stroke-width=".9"/><circle cx="5.6" cy="6" r=".95" fill="#3A3B45"/><circle cx="10.4" cy="6" r=".95" fill="#3A3B45"/><path d="M5.1 8.6c.6 1.5 1.7 2.2 2.9 2.2s2.3-.7 2.9-2.2" fill="none" stroke="#3A3B45" stroke-width="1" stroke-linecap="round"/><ellipse cx="2.9" cy="12.4" rx="2" ry="1.5" fill="#FFD21E" stroke="#FF9D0B" stroke-width=".8" transform="rotate(-28 2.9 12.4)"/><ellipse cx="13.1" cy="12.4" rx="2" ry="1.5" fill="#FFD21E" stroke="#FF9D0B" stroke-width=".8" transform="rotate(28 13.1 12.4)"/></svg>Model <small>Hugging Face</small></a>
   </div>
 </header>
 
