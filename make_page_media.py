@@ -3,8 +3,9 @@
 
   restore pairs : assets/restore_<name>_{in,out}.jpg, input and restored all-in-focus image (drag-to-compare sliders)
   comparisons   : assets/sbs_<scene>.mp4, FlashReFocus against GenRefocus on the same eight focal points
-  demo video    : assets/demo.mp4, a scripted session per scene: restore once, click focal points, turn the blur
-                  strength, set two focal planes. Every frame on the right is an actual output of the pipeline.
+  demo video    : assets/demo.mp4, a scripted session per scene played in real time against GenRefocus: first refocus,
+                  further focal points, blur strength, two focal planes. Every frame on the right is an output of the
+                  pipeline; each result appears after the time measured at 1536x1536 (cost table of the paper).
 
 Run:  CUDA_VISIBLE_DEVICES=<gpu> ~/miniconda3/envs/pisa/bin/python make_page_media.py [--only restore|demo|sbs]
 """
@@ -41,8 +42,7 @@ RESTORE = [("dpdd_bench", DATA / "dd_dp_dataset_png/test_c/source/1P0A0917.png")
            ("real_flower", DATA / "Refocus_samples/real_19.jpg"),
            ("real_sculpture", DATA / "Refocus_samples/real_23.jpg")]
 DEMO = [("sculpture", DATA / "Refocus_samples/real_23.jpg"),
-        ("flower", DATA / "Refocus_samples/real_19.jpg"),
-        ("dock", DATA / "Refocus_samples/10.jpg")]
+        ("flower", DATA / "Refocus_samples/real_19.jpg")]
 
 BG, FG, DIM, ACC = (16, 21, 41), (255, 255, 255), (150, 160, 190), (255, 228, 196)
 FPS, PW, PH, M, TOP = 24, 936, 614, 16, 64
@@ -94,51 +94,102 @@ def pick_points(depth, aif, quantiles):
     return pts
 
 
+# Timeline of the demo video, in seconds: the paper's measurements at 1536x1536 on one RTX PRO 6000 (cost table).
+T_FIRST, T_EDIT, G_FIRST = 2.50, 0.47, 370.65
+
+
+def clock_text(t):
+    return f"{int(t // 60)}:{t % 60:04.1f}"
+
+
 class Canvas:
+    """Two panels played in real time: GenRefocus still working on its first refocus (left) and a FlashReFocus session
+    (right). `t` is the time since the first click; it advances by one frame per emitted frame while `running`."""
+
     def __init__(self, pipe):
         self.pipe = pipe
         self.f_lab = font(27, 700); self.f_sub = font(21, 500); self.f_mk = font(28, 700)
+        self.f_clock = font(30, 700); self.f_big = font(24, 600)
         self.left = None
+        self.t, self.running, self.edits, self.busy = 0.0, False, 0, None    # busy: (start, duration) of the current job
 
     def panel(self, im):
         return im.resize((PW, PH), Image.LANCZOS)
 
-    def emit(self, right, label, sub="", cursor=None, ripple=0.0, marks=(), slider=None, n=1):
-        c = Image.new("RGB", (CW, CH), BG)
-        c.paste(self.left, (M, TOP)); c.paste(right, (2 * M + PW, TOP))
-        d = ImageDraw.Draw(c, "RGBA")
-        d.text((M + 2, 32), "Input photograph", font=self.f_lab, fill=DIM, anchor="lm")
-        d.text((2 * M + PW + 2, 32), label, font=self.f_lab, fill=FG, anchor="lm")
-        if sub:                                                          # secondary label as a chip
-            x0 = 2 * M + PW + 2 + d.textlength(label, font=self.f_lab) + 16
-            w = d.textlength(sub, font=self.f_sub)
-            d.rounded_rectangle([x0, 16, x0 + w + 28, 48], 16, fill=(255, 228, 196, 36))
-            d.text((x0 + 14, 32), sub, font=self.f_sub, fill=ACC, anchor="lm")
+    def chip(self, d, x0, text, fill=ACC):
+        w = d.textlength(text, font=self.f_sub)
+        d.rounded_rectangle([x0, 16, x0 + w + 28, 48], 16, fill=fill[:3] + (36,))
+        d.text((x0 + 14, 32), text, font=self.f_sub, fill=fill, anchor="lm")
+        return x0 + w + 28
+
+    def mono(self, d, x_right, y, text, f, fill, adv=18):
+        """Right-aligned text with a fixed advance per character, so the running clock does not jitter."""
+        x = x_right
+        for ch in reversed(text):
+            w = adv if ch.isdigit() else adv * 0.55
+            d.text((x - w / 2, y), ch, font=f, fill=fill, anchor="mm"); x -= w
+
+    def bar(self, d, ox, frac, left, right, color):
+        x0, x1, y = ox + 20, ox + PW - 20, TOP + PH - 40
+        d.rounded_rectangle([x0, y - 24, x1, y + 24], 14, fill=(16, 21, 41, 215))
+        d.text((x0 + 18, y - 1), left, font=self.f_sub, fill=FG, anchor="lm")
+        tw = d.textlength(right, font=self.f_sub)
+        d.text((x1 - 18, y - 1), right, font=self.f_sub, fill=color, anchor="rm")
+        bx0, bx1 = x0 + 18 + d.textlength(left, font=self.f_sub) + 18, x1 - 18 - tw - 18
+        d.line([bx0, y, bx1, y], fill=(255, 255, 255, 70), width=6)
+        if frac > 0:
+            d.line([bx0, y, bx0 + (bx1 - bx0) * min(1.0, frac), y], fill=color + (255,), width=6)
+
+    def emit(self, right, action="", cursor=None, ripple=0.0, marks=(), slider=None, n=1, card=False):
+        base = Image.new("RGB", (CW, CH), BG)
+        base.paste(self.left, (M, TOP)); base.paste(right, (2 * M + PW, TOP))
         ox, oy = 2 * M + PW, TOP
-        for (x, y, t) in marks:
-            r = 15
-            d.ellipse([ox + x - r - 2, oy + y - r - 2, ox + x + r + 2, oy + y + r + 2], outline=(0, 0, 0, 170), width=7)
-            d.ellipse([ox + x - r, oy + y - r, ox + x + r, oy + y + r], outline=(255, 255, 255, 255), width=3)
-            d.ellipse([ox + x - 4, oy + y - 4, ox + x + 4, oy + y + 4], fill=(255, 255, 255, 255))
-            if t:
-                d.text((ox + x + r + 8, oy + y - r - 16), t, font=self.f_mk, fill=FG, stroke_width=3, stroke_fill=(0, 0, 0, 200))
-        if slider is not None:
-            x0, x1, y = ox + 28, ox + PW - 28, oy + PH - 34
-            d.rounded_rectangle([x0 - 16, y - 22, x1 + 16, y + 22], 12, fill=(16, 21, 41, 200))
-            d.line([x0, y, x1, y], fill=(255, 255, 255, 110), width=4)
-            xs = x0 + (x1 - x0) * slider
-            d.line([x0, y, xs, y], fill=ACC + (255,), width=4)
-            d.ellipse([xs - 10, y - 10, xs + 10, y + 10], fill=(255, 255, 255, 255))
-        if cursor is not None:
-            x, y = ox + cursor[0], oy + cursor[1]
-            if ripple > 0:
-                r = 12 + 34 * ripple
-                d.ellipse([x - r, y - r, x + r, y + r], outline=(255, 255, 255, int(230 * (1 - ripple))), width=3)
-            d.polygon([(x, y), (x, y + 24), (x + 6, y + 18), (x + 11, y + 28), (x + 15, y + 26), (x + 10, y + 16), (x + 18, y + 16)],
-                      fill=(255, 255, 255, 255), outline=(0, 0, 0, 255))
-        buf = np.asarray(c).tobytes()
         for _ in range(n):
-            self.pipe.stdin.write(buf)
+            c = base.copy(); d = ImageDraw.Draw(c, "RGBA"); t = self.t
+            d.text((M + 2, 32), "GenRefocus", font=self.f_lab, fill=FG, anchor="lm")
+            self.chip(d, M + 2 + d.textlength("GenRefocus", font=self.f_lab) + 16, "same photo, same start", DIM)
+            d.text((ox + 2, 32), "FlashReFocus", font=self.f_lab, fill=FG, anchor="lm")
+            if action:
+                self.chip(d, ox + 2 + d.textlength("FlashReFocus", font=self.f_lab) + 16, action)
+            self.mono(d, CW - M - 4, 32, clock_text(t), self.f_clock, FG)
+            self.bar(d, M, t / G_FIRST, "First refocus", f"{clock_text(t)} / {clock_text(G_FIRST)}", DIM)
+            for (x, y, tx) in marks:
+                r = 15
+                d.ellipse([ox + x - r - 2, oy + y - r - 2, ox + x + r + 2, oy + y + r + 2], outline=(0, 0, 0, 170), width=7)
+                d.ellipse([ox + x - r, oy + y - r, ox + x + r, oy + y + r], outline=(255, 255, 255, 255), width=3)
+                d.ellipse([ox + x - 4, oy + y - 4, ox + x + 4, oy + y + 4], fill=(255, 255, 255, 255))
+                if tx:
+                    d.text((ox + x + r + 8, oy + y - r - 16), tx, font=self.f_mk, fill=FG, stroke_width=3, stroke_fill=(0, 0, 0, 200))
+            if slider is not None:                                       # blur-strength control, above the status bar
+                x0, x1, y = ox + 40, ox + PW - 40, oy + PH - 100
+                d.rounded_rectangle([x0 - 20, y - 20, x1 + 20, y + 20], 12, fill=(16, 21, 41, 200))
+                d.line([x0, y, x1, y], fill=(255, 255, 255, 110), width=4)
+                xs = x0 + (x1 - x0) * slider
+                d.line([x0, y, xs, y], fill=ACC + (255,), width=4)
+                d.ellipse([xs - 10, y - 10, xs + 10, y + 10], fill=(255, 255, 255, 255))
+            if self.busy is not None:
+                frac = (t - self.busy[0]) / self.busy[1]
+                name = "First refocus" if self.edits == 0 else f"Edit {self.edits + 1}"
+                self.bar(d, ox, frac, name, f"{max(0.0, t - self.busy[0]):.2f} s", ACC)
+            else:
+                done = "Click a focal point" if self.edits == 0 else f"{self.edits} edit{'s' if self.edits > 1 else ''} done"
+                self.bar(d, ox, 0, done, f"{T_EDIT:.2f} s per edit" if self.edits else "", ACC)
+            if cursor is not None:
+                x, y = ox + cursor[0], oy + cursor[1]
+                if ripple > 0:
+                    r = 12 + 34 * ripple
+                    d.ellipse([x - r, y - r, x + r, y + r], outline=(255, 255, 255, int(230 * (1 - ripple))), width=3)
+                d.polygon([(x, y), (x, y + 24), (x + 6, y + 18), (x + 11, y + 28), (x + 15, y + 26), (x + 10, y + 16), (x + 18, y + 16)],
+                          fill=(255, 255, 255, 255), outline=(0, 0, 0, 255))
+            if card:                                                     # summary across both panels
+                txt = f"After {t:.0f} s:  FlashReFocus {self.edits} edits   ·   GenRefocus {100 * t / G_FIRST:.0f}% of its first"
+                w = d.textlength(txt, font=self.f_big); cx, cy = CW / 2, TOP + PH * 0.5
+                d.rounded_rectangle([cx - w / 2 - 30, cy - 34, cx + w / 2 + 30, cy + 34], 20, fill=(16, 21, 41, 235), outline=ACC + (255,), width=2)
+                d.text((cx, cy), txt, font=self.f_big, fill=FG, anchor="mm")
+            self.last = c
+            self.pipe.stdin.write(np.asarray(c).tobytes())
+            if self.running:
+                self.t += 1.0 / FPS
 
 
 def ease(t):
@@ -162,42 +213,48 @@ def demo(s1, rd):
         rd.set_image(aif)
         W, H = Image.open(aif).size
         sx, sy = PW / W, PH / H
-        p_in, p_aif = cv.panel(Image.open(src)), cv.panel(Image.open(aif))
-        cv.left = p_in
-        pts = pick_points(rd.depth[0], rd.src, [0.93, 0.08, 0.5, 0.75])
+        p_in = cv.panel(Image.open(src))
+        cv.left, cv.t, cv.running, cv.edits, cv.busy = p_in, 0.0, False, 0, None
+        pts = pick_points(rd.depth[0], rd.src, [0.93, 0.08, 0.5, 0.75, 0.3])
         print("demo", name, (W, H), pts, [round(float(rd.depth[0, y, x]), 3) for x, y in pts], flush=True)
         scr = [(x * sx, y * sy) for x, y in pts]
+        st = {"cur": (PW * 0.5, PH * 0.6), "shown": p_in, "marks": [], "slider": None}
 
-        cv.emit(p_in, "FlashReFocus", "input", n=int(FPS * 0.9))
-        for i in range(int(FPS * 0.8)):                                  # wipe to the restored image
-            t = ease((i + 1) / (FPS * 0.8)); cut = int(PW * t)
-            fr = p_in.copy(); fr.paste(p_aif.crop((0, 0, cut, PH)), (0, 0))
-            ImageDraw.Draw(fr).line([cut, 0, cut, PH], fill=FG, width=2)
-            cv.emit(fr, "Restore once", "one-step diffusion")
-        cv.emit(p_aif, "Restore once", "all-in-focus image", n=int(FPS * 0.9))
+        def move(to, action, dur=0.6):
+            n = int(FPS * dur)
+            for i in range(n):
+                t = ease((i + 1) / n)
+                cv.emit(st["shown"], action, cursor=(st["cur"][0] + (to[0] - st["cur"][0]) * t, st["cur"][1] + (to[1] - st["cur"][1]) * t),
+                        marks=st["marks"], slider=st["slider"])
+            st["cur"] = to
 
-        cur, shown, strength = (PW * 0.5, PH * 0.55), p_aif, 0.8
-        for k, (p, s) in enumerate(zip(pts, scr)):
-            mv = int(FPS * 0.55)
-            for i in range(mv):
-                t = ease((i + 1) / mv)
-                cv.emit(shown, "Click to refocus", "renderer only", cursor=(cur[0] + (s[0] - cur[0]) * t, cur[1] + (s[1] - cur[1]) * t),
-                        marks=() if k == 0 else [(scr[k - 1][0], scr[k - 1][1], "")])
-            cur = s
-            new = cv.panel(to_pil(rd.render(p[0], p[1], strength, None)))
-            for i in range(5):
-                t = (i + 1) / 5
-                cv.emit(Image.blend(shown, new, t), "Click to refocus", "renderer only", cursor=cur, ripple=t, marks=[(s[0], s[1], "")])
-            shown = new
-            cv.emit(shown, "Click to refocus", "renderer only", cursor=cur, marks=[(s[0], s[1], "")], n=int(FPS * 0.75))
+        def job(new, action, dur, marks, hold):
+            """The request starts now; `new` appears `dur` seconds later, as measured, and counts as one edit."""
+            cv.running = True
+            cv.busy = (cv.t, dur); st["marks"] = marks
+            n = round(dur * FPS)
+            for i in range(n):
+                cv.emit(st["shown"], action, cursor=st["cur"], ripple=min(1.0, (i + 1) / 6) if i < 6 else 0.0, marks=marks, slider=st["slider"])
+            cv.busy = None; cv.edits += 1; st["shown"] = new
+            cv.emit(new, action, cursor=st["cur"], marks=marks, slider=st["slider"], n=int(FPS * hold))
 
-        p, s = pts[-1], scr[-1]                                           # blur strength at the last focal point
-        seq = [0.8 + (0.1 - 0.8) * ease(i / 23) for i in range(24)] + [0.1 + (1.0 - 0.1) * ease(i / 35) for i in range(36)] \
-            + [1.0 + (0.6 - 1.0) * ease(i / 17) for i in range(18)]
-        for v in seq:
-            fr = cv.panel(to_pil(rd.render(p[0], p[1], v, None)))
-            cv.emit(fr, "Blur strength", f"{v:.2f}", marks=[(s[0], s[1], "")], slider=v)
-        cv.emit(fr, "Blur strength", f"{seq[-1]:.2f}", marks=[(s[0], s[1], "")], slider=seq[-1], n=int(FPS * 0.4))
+        cv.emit(p_in, "click to refocus", cursor=st["cur"], n=int(FPS * 0.5))
+        move(scr[0], "click to refocus")
+        strength = 0.8                                                    # first refocus: restoration and the first rendering
+        job(cv.panel(to_pil(rd.render(pts[0][0], pts[0][1], strength, None))), "restore once, render", T_FIRST, [(scr[0][0], scr[0][1], "")], 0.7)
+        for p, s in zip(pts[1:], scr[1:]):                                # further focal points: renderer only
+            move(s, "click to refocus")
+            job(cv.panel(to_pil(rd.render(p[0], p[1], strength, None))), "click to refocus", T_EDIT, [(s[0], s[1], "")], 0.55)
+
+        p, s = pts[-1], scr[-1]                                           # blur strength at the last focal point, in steps
+        for v in (0.3, 0.55, 1.0):
+            v0 = strength; n = int(FPS * 0.35)
+            for i in range(n):
+                st["slider"] = v0 + (v - v0) * ease((i + 1) / n)
+                cv.emit(st["shown"], f"blur strength {st['slider']:.2f}", marks=st["marks"], slider=st["slider"])
+            strength = v
+            job(cv.panel(to_pil(rd.render(p[0], p[1], v, None))), f"blur strength {v:.2f}", T_EDIT, st["marks"], 0.45)
+        st["slider"] = None
 
         a, b = pts[1], pts[2]                                             # two focal planes: near and middle pick
         d0 = rd.depth
@@ -209,18 +266,14 @@ def demo(s1, rd):
             rd.depth = d0
         only_a = cv.panel(to_pil(rd.render(a[0], a[1], 0.8, None)))
         ma, mb = (scr[1][0], scr[1][1], "A"), (scr[2][0], scr[2][1], "B")
-        for i in range(6):
-            cv.emit(Image.blend(fr, only_a, (i + 1) / 6), "Two focal planes", "plane A", marks=[ma])
-        cv.emit(only_a, "Two focal planes", "plane A", marks=[ma], n=int(FPS * 0.7))
-        for i in range(6):
-            cv.emit(Image.blend(only_a, dual, (i + 1) / 6), "Two focal planes", "A and B both sharp", marks=[ma, mb])
-        cv.emit(dual, "Two focal planes", "A and B both sharp", marks=[ma, mb], n=int(FPS * 1.6))
-        dual.save(WORK / f"demo_{name}_dual.jpg"); shown.save(WORK / f"demo_{name}_last.jpg")
+        move(scr[1], "two focal planes")
+        job(only_a, "two focal planes", T_EDIT, [ma], 0.5)
+        move(scr[2], "two focal planes")
+        job(dual, "two focal planes", T_EDIT, [ma, mb], 1.0)
+        cv.emit(dual, "two focal planes", marks=[ma, mb], n=int(FPS * 2.2), card=True)
+        print("  session", round(cv.t, 1), "s,", cv.edits, "edits", flush=True)
         if si == 0:
-            c = Image.new("RGB", (CW, CH), BG); c.paste(p_in, (M, TOP)); c.paste(shown, (2 * M + PW, TOP))
-            d = ImageDraw.Draw(c); d.text((M + 2, 32), "Input photograph", font=cv.f_lab, fill=DIM, anchor="lm")
-            d.text((2 * M + PW + 2, 32), "FlashReFocus", font=cv.f_lab, fill=FG, anchor="lm")
-            c.save(ASSETS / "demo_poster.jpg", quality=86)
+            cv.last.save(ASSETS / "demo_poster.jpg", quality=86)
     pipe.stdin.close(); pipe.wait()
     print("wrote", out, out.stat().st_size, flush=True)
 
