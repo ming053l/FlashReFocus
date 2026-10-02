@@ -2,10 +2,11 @@
 """Media for the project page, produced with the paper model (Stage I v3_s1 40K + refiner, omega 1.25; bf16 renderer).
 
   restore pairs : assets/restore_<name>_{in,out}.jpg, input and restored all-in-focus image (drag-to-compare sliders)
+  comparisons   : assets/sbs_<scene>.mp4, FlashReFocus against GenRefocus on the same eight focal points
   demo video    : assets/demo.mp4, a scripted session per scene: restore once, click focal points, turn the blur
                   strength, set two focal planes. Every frame on the right is an actual output of the pipeline.
 
-Run:  CUDA_VISIBLE_DEVICES=<gpu> ~/miniconda3/envs/pisa/bin/python make_page_media.py [--only restore|demo]
+Run:  CUDA_VISIBLE_DEVICES=<gpu> ~/miniconda3/envs/pisa/bin/python make_page_media.py [--only restore|demo|sbs]
 """
 import argparse
 import subprocess
@@ -28,8 +29,7 @@ STAGE1 = DEFOCUS / "Stage1_PiSA/runs/v3_s1/checkpoints/model_40000.pkl"
 REFINER = DEFOCUS / "demo/weights/refiner.pt"
 ASSETS, WORK = HERE / "assets", HERE / "work"
 FFMPEG = "/ssd1/chingheng/Defocus/refocus_bench/pylibs_video/imageio_ffmpeg/binaries/ffmpeg-linux-x86_64-v7.0.2"  # static build with libx264
-FONT = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
-FONT_R = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
+FONT = HERE / "fonts/Figtree.ttf"                 # variable font (OFL), the page's heading face
 
 RESTORE = [("dpdd_bench", DATA / "dd_dp_dataset_png/test_c/source/1P0A0917.png"),
            ("dpdd_ivy", DATA / "dd_dp_dataset_png/test_c/source/1P0A0984.png"),
@@ -45,7 +45,13 @@ DEMO = [("sculpture", DATA / "Refocus_samples/real_23.jpg"),
         ("dock", DATA / "Refocus_samples/10.jpg")]
 
 BG, FG, DIM, ACC = (16, 21, 41), (255, 255, 255), (150, 160, 190), (255, 228, 196)
-FPS, PW, PH, M, TOP = 24, 936, 614, 16, 56
+FPS, PW, PH, M, TOP = 24, 936, 614, 16, 64
+
+
+def font(size, weight=600):
+    f = ImageFont.truetype(str(FONT), size)
+    f.set_variation_by_axes([weight])
+    return f
 CW, CH = 2 * PW + 3 * M, TOP + PH + M
 
 
@@ -91,7 +97,7 @@ def pick_points(depth, aif, quantiles):
 class Canvas:
     def __init__(self, pipe):
         self.pipe = pipe
-        self.f_lab = ImageFont.truetype(FONT, 22); self.f_sub = ImageFont.truetype(FONT_R, 20); self.f_mk = ImageFont.truetype(FONT, 26)
+        self.f_lab = font(27, 700); self.f_sub = font(21, 500); self.f_mk = font(28, 700)
         self.left = None
 
     def panel(self, im):
@@ -101,10 +107,13 @@ class Canvas:
         c = Image.new("RGB", (CW, CH), BG)
         c.paste(self.left, (M, TOP)); c.paste(right, (2 * M + PW, TOP))
         d = ImageDraw.Draw(c, "RGBA")
-        d.text((M, 16), "Input photograph", font=self.f_lab, fill=DIM)
-        d.text((2 * M + PW, 16), label, font=self.f_lab, fill=FG)
-        if sub:
-            d.text((2 * M + PW + d.textlength(label, font=self.f_lab) + 18, 18), sub, font=self.f_sub, fill=ACC)
+        d.text((M + 2, 32), "Input photograph", font=self.f_lab, fill=DIM, anchor="lm")
+        d.text((2 * M + PW + 2, 32), label, font=self.f_lab, fill=FG, anchor="lm")
+        if sub:                                                          # secondary label as a chip
+            x0 = 2 * M + PW + 2 + d.textlength(label, font=self.f_lab) + 16
+            w = d.textlength(sub, font=self.f_sub)
+            d.rounded_rectangle([x0, 16, x0 + w + 28, 48], 16, fill=(255, 228, 196, 36))
+            d.text((x0 + 14, 32), sub, font=self.f_sub, fill=ACC, anchor="lm")
         ox, oy = 2 * M + PW, TOP
         for (x, y, t) in marks:
             r = 15
@@ -209,21 +218,62 @@ def demo(s1, rd):
         dual.save(WORK / f"demo_{name}_dual.jpg"); shown.save(WORK / f"demo_{name}_last.jpg")
         if si == 0:
             c = Image.new("RGB", (CW, CH), BG); c.paste(p_in, (M, TOP)); c.paste(shown, (2 * M + PW, TOP))
-            d = ImageDraw.Draw(c); d.text((M, 16), "Input photograph", font=cv.f_lab, fill=DIM)
-            d.text((2 * M + PW, 16), "FlashReFocus", font=cv.f_lab, fill=FG)
+            d = ImageDraw.Draw(c); d.text((M + 2, 32), "Input photograph", font=cv.f_lab, fill=DIM, anchor="lm")
+            d.text((2 * M + PW + 2, 32), "FlashReFocus", font=cv.f_lab, fill=FG, anchor="lm")
             c.save(ASSETS / "demo_poster.jpg", quality=86)
     pipe.stdin.close(); pipe.wait()
     print("wrote", out, out.stat().st_size, flush=True)
 
 
+def chip(im, name, extra=""):
+    """Method name (and seconds per edit) on a translucent rounded chip, top left."""
+    d = ImageDraw.Draw(im, "RGBA"); f1, f2 = font(25, 700), font(21, 500)
+    w1 = d.textlength(name, font=f1); w2 = d.textlength(extra, font=f2) if extra else 0
+    d.rounded_rectangle([14, 14, 14 + 18 + w1 + (14 + w2 if extra else 0) + 18, 58], 22, fill=(16, 21, 41, 205))
+    d.text((32, 36), name, font=f1, fill=FG, anchor="lm")
+    if extra:
+        d.text((32 + w1 + 14, 37), extra, font=f2, fill=ACC, anchor="lm")
+
+
+def ring(im, x, y, r=13):
+    d = ImageDraw.Draw(im, "RGBA")
+    d.ellipse([x - r - 2, y - r - 2, x + r + 2, y + r + 2], outline=(0, 0, 0, 170), width=7)
+    d.ellipse([x - r, y - r, x + r, y + r], outline=(255, 255, 255, 255), width=3)
+    d.ellipse([x - 3, y - 3, x + 3, y + 3], fill=(255, 255, 255, 255))
+
+
+def sbs():
+    """FlashReFocus against GenRefocus on the eight focal points of a scene (blur-matched frames of the focus-sweep study)."""
+    import json
+    bench = DEFOCUS / "refocus_bench"
+    for root, s, out, timed in ((bench / "rack_focus", "04", "04", True), (bench / "rack_focus", "59", "59", True),
+                                (bench / "rack_focus_realbokeh", "133", "rb133", False)):
+        info = json.loads((root / "meta_ours.json").read_text())["scenes"][s]
+        tg = float(np.mean(json.loads((root / "meta_genrefocus.json").read_text())["seconds_per_frame"][s]))
+        o = root / s; d = WORK / f"sbs_{out}"; d.mkdir(exist_ok=True)
+        for i, p in enumerate(info["points"]):
+            a = Image.open(o / "ours_matched" / f"{i:02d}.png").convert("RGB")
+            b = Image.open(o / "genrefocus" / f"{i:02d}.png").convert("RGB").resize(a.size, Image.LANCZOS)
+            for im, name, t in ((a, "FlashReFocus", f"{info['render_s_mean']:.2f} s / edit"), (b, "GenRefocus", f"{tg:.0f} s / edit")):
+                ring(im, p["x"], p["y"]); chip(im, name, t if timed else "")
+            c = Image.new("RGB", (a.width * 2 + 12, a.height), BG); c.paste(a, (0, 0)); c.paste(b, (a.width + 12, 0))
+            c.save(d / f"{i:02d}.png")
+        subprocess.run([FFMPEG, "-y", "-loglevel", "error", "-framerate", "2", "-i", str(d / "%02d.png"), "-vf", "scale=trunc(iw/2)*2:trunc(ih/2)*2",
+                        "-c:v", "libx264", "-pix_fmt", "yuv420p", "-crf", "18", "-movflags", "+faststart", str(ASSETS / f"sbs_{out}.mp4")], check=True)
+        print("sbs", out, c.size, flush=True)
+
+
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
-    ap.add_argument("--only", choices=["restore", "demo"])
+    ap.add_argument("--only", choices=["restore", "demo", "sbs"])
     a = ap.parse_args()
     ASSETS.mkdir(exist_ok=True); WORK.mkdir(exist_ok=True)
-    FR.setup_backend(False)
-    s1 = FR.FastStageI(str(STAGE1), str(REFINER), lambda_sem=1.25)
-    if a.only != "demo":
-        restore_pairs(s1)
-    if a.only != "restore":
-        demo(s1, FR.FastRenderer())
+    if a.only in (None, "sbs"):
+        sbs()
+    if a.only != "sbs":
+        FR.setup_backend(False)
+        s1 = FR.FastStageI(str(STAGE1), str(REFINER), lambda_sem=1.25)
+        if a.only != "demo":
+            restore_pairs(s1)
+        if a.only != "restore":
+            demo(s1, FR.FastRenderer())
