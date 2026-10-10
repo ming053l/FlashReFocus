@@ -1,0 +1,2007 @@
+{
+ "dataset": "EBB",
+ "split": "validation",
+ "coordinate_system": "bokeh image pixels, x right, y down, origin top-left",
+ "annotations": {
+  "0": {
+   "x": 1267.0,
+   "y": 406.0,
+   "width": 1586,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/0.jpg",
+   "original_path": "validation/original/0.jpg",
+   "annotation_path": "validation/bokeh/0.jpg",
+   "annotation_aperture": 2.0
+  },
+  "1": {
+   "x": 974.0,
+   "y": 554.0,
+   "width": 1579,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/1.jpg",
+   "original_path": "validation/original/1.jpg",
+   "annotation_path": "validation/bokeh/1.jpg",
+   "annotation_aperture": 2.0
+  },
+  "2": {
+   "x": 865.0,
+   "y": 435.0,
+   "width": 1540,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/2.jpg",
+   "original_path": "validation/original/2.jpg",
+   "annotation_path": "validation/bokeh/2.jpg",
+   "annotation_aperture": 2.0
+  },
+  "3": {
+   "x": 672.0,
+   "y": 520.0,
+   "width": 1558,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/3.jpg",
+   "original_path": "validation/original/3.jpg",
+   "annotation_path": "validation/bokeh/3.jpg",
+   "annotation_aperture": 2.0
+  },
+  "4": {
+   "x": 822.0,
+   "y": 693.0,
+   "width": 1643,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/4.jpg",
+   "original_path": "validation/original/4.jpg",
+   "annotation_path": "validation/bokeh/4.jpg",
+   "annotation_aperture": 2.0
+  },
+  "5": {
+   "x": 960.0,
+   "y": 634.0,
+   "width": 1591,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/5.jpg",
+   "original_path": "validation/original/5.jpg",
+   "annotation_path": "validation/bokeh/5.jpg",
+   "annotation_aperture": 2.0
+  },
+  "6": {
+   "x": 866.0,
+   "y": 198.0,
+   "width": 1528,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/6.jpg",
+   "original_path": "validation/original/6.jpg",
+   "annotation_path": "validation/bokeh/6.jpg",
+   "annotation_aperture": 2.0
+  },
+  "7": {
+   "x": 763.0,
+   "y": 636.0,
+   "width": 1574,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/7.jpg",
+   "original_path": "validation/original/7.jpg",
+   "annotation_path": "validation/bokeh/7.jpg",
+   "annotation_aperture": 2.0
+  },
+  "8": {
+   "x": 1021.0,
+   "y": 963.0,
+   "width": 1543,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/8.jpg",
+   "original_path": "validation/original/8.jpg",
+   "annotation_path": "validation/bokeh/8.jpg",
+   "annotation_aperture": 2.0
+  },
+  "9": {
+   "x": 924.0,
+   "y": 481.0,
+   "width": 1566,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/9.jpg",
+   "original_path": "validation/original/9.jpg",
+   "annotation_path": "validation/bokeh/9.jpg",
+   "annotation_aperture": 2.0
+  },
+  "10": {
+   "x": 1152.0,
+   "y": 517.0,
+   "width": 1614,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/10.jpg",
+   "original_path": "validation/original/10.jpg",
+   "annotation_path": "validation/bokeh/10.jpg",
+   "annotation_aperture": 2.0
+  },
+  "11": {
+   "x": 1138.0,
+   "y": 595.0,
+   "width": 1547,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/11.jpg",
+   "original_path": "validation/original/11.jpg",
+   "annotation_path": "validation/bokeh/11.jpg",
+   "annotation_aperture": 2.0
+  },
+  "12": {
+   "x": 843.0,
+   "y": 551.0,
+   "width": 1652,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/12.jpg",
+   "original_path": "validation/original/12.jpg",
+   "annotation_path": "validation/bokeh/12.jpg",
+   "annotation_aperture": 2.0
+  },
+  "13": {
+   "x": 917.0,
+   "y": 354.0,
+   "width": 1553,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/13.jpg",
+   "original_path": "validation/original/13.jpg",
+   "annotation_path": "validation/bokeh/13.jpg",
+   "annotation_aperture": 2.0
+  },
+  "14": {
+   "x": 761.0,
+   "y": 468.0,
+   "width": 1558,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/14.jpg",
+   "original_path": "validation/original/14.jpg",
+   "annotation_path": "validation/bokeh/14.jpg",
+   "annotation_aperture": 2.0
+  },
+  "15": {
+   "x": 591.0,
+   "y": 712.0,
+   "width": 1477,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/15.jpg",
+   "original_path": "validation/original/15.jpg",
+   "annotation_path": "validation/bokeh/15.jpg",
+   "annotation_aperture": 2.0
+  },
+  "16": {
+   "x": 742.0,
+   "y": 548.0,
+   "width": 1557,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/16.jpg",
+   "original_path": "validation/original/16.jpg",
+   "annotation_path": "validation/bokeh/16.jpg",
+   "annotation_aperture": 2.0
+  },
+  "17": {
+   "x": 1073.0,
+   "y": 546.0,
+   "width": 1585,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/17.jpg",
+   "original_path": "validation/original/17.jpg",
+   "annotation_path": "validation/bokeh/17.jpg",
+   "annotation_aperture": 2.0
+  },
+  "18": {
+   "x": 306.0,
+   "y": 590.0,
+   "width": 1560,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/18.jpg",
+   "original_path": "validation/original/18.jpg",
+   "annotation_path": "validation/bokeh/18.jpg",
+   "annotation_aperture": 2.0
+  },
+  "19": {
+   "x": 737.0,
+   "y": 574.0,
+   "width": 1540,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/19.jpg",
+   "original_path": "validation/original/19.jpg",
+   "annotation_path": "validation/bokeh/19.jpg",
+   "annotation_aperture": 2.0
+  },
+  "20": {
+   "x": 841.0,
+   "y": 460.0,
+   "width": 1567,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/20.jpg",
+   "original_path": "validation/original/20.jpg",
+   "annotation_path": "validation/bokeh/20.jpg",
+   "annotation_aperture": 2.0
+  },
+  "21": {
+   "x": 825.0,
+   "y": 531.0,
+   "width": 1601,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/21.jpg",
+   "original_path": "validation/original/21.jpg",
+   "annotation_path": "validation/bokeh/21.jpg",
+   "annotation_aperture": 2.0
+  },
+  "22": {
+   "x": 532.0,
+   "y": 463.0,
+   "width": 1543,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/22.jpg",
+   "original_path": "validation/original/22.jpg",
+   "annotation_path": "validation/bokeh/22.jpg",
+   "annotation_aperture": 2.0
+  },
+  "23": {
+   "x": 851.0,
+   "y": 531.0,
+   "width": 1605,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/23.jpg",
+   "original_path": "validation/original/23.jpg",
+   "annotation_path": "validation/bokeh/23.jpg",
+   "annotation_aperture": 2.0
+  },
+  "24": {
+   "x": 755.0,
+   "y": 702.0,
+   "width": 1563,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/24.jpg",
+   "original_path": "validation/original/24.jpg",
+   "annotation_path": "validation/bokeh/24.jpg",
+   "annotation_aperture": 2.0
+  },
+  "25": {
+   "x": 764.0,
+   "y": 628.0,
+   "width": 1544,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/25.jpg",
+   "original_path": "validation/original/25.jpg",
+   "annotation_path": "validation/bokeh/25.jpg",
+   "annotation_aperture": 2.0
+  },
+  "26": {
+   "x": 811.0,
+   "y": 320.0,
+   "width": 1575,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/26.jpg",
+   "original_path": "validation/original/26.jpg",
+   "annotation_path": "validation/bokeh/26.jpg",
+   "annotation_aperture": 2.0
+  },
+  "27": {
+   "x": 287.0,
+   "y": 461.0,
+   "width": 1541,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/27.jpg",
+   "original_path": "validation/original/27.jpg",
+   "annotation_path": "validation/bokeh/27.jpg",
+   "annotation_aperture": 2.0
+  },
+  "28": {
+   "x": 1069.0,
+   "y": 541.0,
+   "width": 1571,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/28.jpg",
+   "original_path": "validation/original/28.jpg",
+   "annotation_path": "validation/bokeh/28.jpg",
+   "annotation_aperture": 2.0
+  },
+  "29": {
+   "x": 741.0,
+   "y": 535.0,
+   "width": 1543,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/29.jpg",
+   "original_path": "validation/original/29.jpg",
+   "annotation_path": "validation/bokeh/29.jpg",
+   "annotation_aperture": 2.0
+  },
+  "30": {
+   "x": 826.0,
+   "y": 504.0,
+   "width": 1553,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/30.jpg",
+   "original_path": "validation/original/30.jpg",
+   "annotation_path": "validation/bokeh/30.jpg",
+   "annotation_aperture": 2.0
+  },
+  "31": {
+   "x": 795.0,
+   "y": 424.0,
+   "width": 1558,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/31.jpg",
+   "original_path": "validation/original/31.jpg",
+   "annotation_path": "validation/bokeh/31.jpg",
+   "annotation_aperture": 2.0
+  },
+  "32": {
+   "x": 637.0,
+   "y": 558.0,
+   "width": 1634,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/32.jpg",
+   "original_path": "validation/original/32.jpg",
+   "annotation_path": "validation/bokeh/32.jpg",
+   "annotation_aperture": 2.0
+  },
+  "33": {
+   "x": 830.0,
+   "y": 161.0,
+   "width": 1547,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/33.jpg",
+   "original_path": "validation/original/33.jpg",
+   "annotation_path": "validation/bokeh/33.jpg",
+   "annotation_aperture": 2.0
+  },
+  "34": {
+   "x": 906.0,
+   "y": 569.0,
+   "width": 1612,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/34.jpg",
+   "original_path": "validation/original/34.jpg",
+   "annotation_path": "validation/bokeh/34.jpg",
+   "annotation_aperture": 2.0
+  },
+  "35": {
+   "x": 856.0,
+   "y": 560.0,
+   "width": 1605,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/35.jpg",
+   "original_path": "validation/original/35.jpg",
+   "annotation_path": "validation/bokeh/35.jpg",
+   "annotation_aperture": 2.0
+  },
+  "36": {
+   "x": 700.0,
+   "y": 549.0,
+   "width": 1716,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/36.jpg",
+   "original_path": "validation/original/36.jpg",
+   "annotation_path": "validation/bokeh/36.jpg",
+   "annotation_aperture": 2.0
+  },
+  "37": {
+   "x": 1053.0,
+   "y": 482.0,
+   "width": 1640,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/37.jpg",
+   "original_path": "validation/original/37.jpg",
+   "annotation_path": "validation/bokeh/37.jpg",
+   "annotation_aperture": 2.0
+  },
+  "38": {
+   "x": 747.0,
+   "y": 354.0,
+   "width": 1530,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/38.jpg",
+   "original_path": "validation/original/38.jpg",
+   "annotation_path": "validation/bokeh/38.jpg",
+   "annotation_aperture": 2.0
+  },
+  "39": {
+   "x": 837.0,
+   "y": 370.0,
+   "width": 1549,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/39.jpg",
+   "original_path": "validation/original/39.jpg",
+   "annotation_path": "validation/bokeh/39.jpg",
+   "annotation_aperture": 2.0
+  },
+  "40": {
+   "x": 781.0,
+   "y": 499.0,
+   "width": 1556,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/40.jpg",
+   "original_path": "validation/original/40.jpg",
+   "annotation_path": "validation/bokeh/40.jpg",
+   "annotation_aperture": 2.0
+  },
+  "41": {
+   "x": 742.0,
+   "y": 627.0,
+   "width": 1607,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/41.jpg",
+   "original_path": "validation/original/41.jpg",
+   "annotation_path": "validation/bokeh/41.jpg",
+   "annotation_aperture": 2.0
+  },
+  "42": {
+   "x": 906.0,
+   "y": 353.0,
+   "width": 1566,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/42.jpg",
+   "original_path": "validation/original/42.jpg",
+   "annotation_path": "validation/bokeh/42.jpg",
+   "annotation_aperture": 2.0
+  },
+  "43": {
+   "x": 859.0,
+   "y": 772.0,
+   "width": 1625,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/43.jpg",
+   "original_path": "validation/original/43.jpg",
+   "annotation_path": "validation/bokeh/43.jpg",
+   "annotation_aperture": 2.0
+  },
+  "44": {
+   "x": 763.0,
+   "y": 614.0,
+   "width": 1612,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/44.jpg",
+   "original_path": "validation/original/44.jpg",
+   "annotation_path": "validation/bokeh/44.jpg",
+   "annotation_aperture": 2.0
+  },
+  "45": {
+   "x": 317.0,
+   "y": 533.0,
+   "width": 1537,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/45.jpg",
+   "original_path": "validation/original/45.jpg",
+   "annotation_path": "validation/bokeh/45.jpg",
+   "annotation_aperture": 2.0
+  },
+  "46": {
+   "x": 779.0,
+   "y": 580.0,
+   "width": 1563,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/46.jpg",
+   "original_path": "validation/original/46.jpg",
+   "annotation_path": "validation/bokeh/46.jpg",
+   "annotation_aperture": 2.0
+  },
+  "47": {
+   "x": 779.0,
+   "y": 463.0,
+   "width": 1547,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/47.jpg",
+   "original_path": "validation/original/47.jpg",
+   "annotation_path": "validation/bokeh/47.jpg",
+   "annotation_aperture": 2.0
+  },
+  "48": {
+   "x": 782.0,
+   "y": 483.0,
+   "width": 1575,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/48.jpg",
+   "original_path": "validation/original/48.jpg",
+   "annotation_path": "validation/bokeh/48.jpg",
+   "annotation_aperture": 2.0
+  },
+  "49": {
+   "x": 821.0,
+   "y": 715.0,
+   "width": 1692,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/49.jpg",
+   "original_path": "validation/original/49.jpg",
+   "annotation_path": "validation/bokeh/49.jpg",
+   "annotation_aperture": 2.0
+  },
+  "50": {
+   "x": 770.0,
+   "y": 584.0,
+   "width": 1530,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/50.jpg",
+   "original_path": "validation/original/50.jpg",
+   "annotation_path": "validation/bokeh/50.jpg",
+   "annotation_aperture": 2.0
+  },
+  "51": {
+   "x": 900.0,
+   "y": 578.0,
+   "width": 1709,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/51.jpg",
+   "original_path": "validation/original/51.jpg",
+   "annotation_path": "validation/bokeh/51.jpg",
+   "annotation_aperture": 2.0
+  },
+  "52": {
+   "x": 867.0,
+   "y": 506.0,
+   "width": 1667,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/52.jpg",
+   "original_path": "validation/original/52.jpg",
+   "annotation_path": "validation/bokeh/52.jpg",
+   "annotation_aperture": 2.0
+  },
+  "53": {
+   "x": 1014.0,
+   "y": 303.0,
+   "width": 1544,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/53.jpg",
+   "original_path": "validation/original/53.jpg",
+   "annotation_path": "validation/bokeh/53.jpg",
+   "annotation_aperture": 2.0
+  },
+  "54": {
+   "x": 834.0,
+   "y": 443.0,
+   "width": 1598,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/54.jpg",
+   "original_path": "validation/original/54.jpg",
+   "annotation_path": "validation/bokeh/54.jpg",
+   "annotation_aperture": 2.0
+  },
+  "55": {
+   "x": 726.0,
+   "y": 579.0,
+   "width": 1535,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/55.jpg",
+   "original_path": "validation/original/55.jpg",
+   "annotation_path": "validation/bokeh/55.jpg",
+   "annotation_aperture": 2.0
+  },
+  "56": {
+   "x": 793.0,
+   "y": 601.0,
+   "width": 1560,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/56.jpg",
+   "original_path": "validation/original/56.jpg",
+   "annotation_path": "validation/bokeh/56.jpg",
+   "annotation_aperture": 2.0
+  },
+  "57": {
+   "x": 705.0,
+   "y": 507.0,
+   "width": 1521,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/57.jpg",
+   "original_path": "validation/original/57.jpg",
+   "annotation_path": "validation/bokeh/57.jpg",
+   "annotation_aperture": 2.0
+  },
+  "58": {
+   "x": 884.0,
+   "y": 302.0,
+   "width": 1533,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/58.jpg",
+   "original_path": "validation/original/58.jpg",
+   "annotation_path": "validation/bokeh/58.jpg",
+   "annotation_aperture": 2.0
+  },
+  "59": {
+   "x": 897.0,
+   "y": 512.0,
+   "width": 1588,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/59.jpg",
+   "original_path": "validation/original/59.jpg",
+   "annotation_path": "validation/bokeh/59.jpg",
+   "annotation_aperture": 2.0
+  },
+  "60": {
+   "x": 849.0,
+   "y": 432.0,
+   "width": 1548,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/60.jpg",
+   "original_path": "validation/original/60.jpg",
+   "annotation_path": "validation/bokeh/60.jpg",
+   "annotation_aperture": 2.0
+  },
+  "61": {
+   "x": 704.0,
+   "y": 260.0,
+   "width": 1541,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/61.jpg",
+   "original_path": "validation/original/61.jpg",
+   "annotation_path": "validation/bokeh/61.jpg",
+   "annotation_aperture": 2.0
+  },
+  "62": {
+   "x": 827.0,
+   "y": 958.0,
+   "width": 1508,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/62.jpg",
+   "original_path": "validation/original/62.jpg",
+   "annotation_path": "validation/bokeh/62.jpg",
+   "annotation_aperture": 2.0
+  },
+  "63": {
+   "x": 755.0,
+   "y": 631.0,
+   "width": 1546,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/63.jpg",
+   "original_path": "validation/original/63.jpg",
+   "annotation_path": "validation/bokeh/63.jpg",
+   "annotation_aperture": 2.0
+  },
+  "64": {
+   "x": 800.0,
+   "y": 502.0,
+   "width": 1563,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/64.jpg",
+   "original_path": "validation/original/64.jpg",
+   "annotation_path": "validation/bokeh/64.jpg",
+   "annotation_aperture": 2.0
+  },
+  "65": {
+   "x": 665.0,
+   "y": 668.0,
+   "width": 1554,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/65.jpg",
+   "original_path": "validation/original/65.jpg",
+   "annotation_path": "validation/bokeh/65.jpg",
+   "annotation_aperture": 2.0
+  },
+  "66": {
+   "x": 851.0,
+   "y": 491.0,
+   "width": 1571,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/66.jpg",
+   "original_path": "validation/original/66.jpg",
+   "annotation_path": "validation/bokeh/66.jpg",
+   "annotation_aperture": 2.0
+  },
+  "67": {
+   "x": 733.0,
+   "y": 694.0,
+   "width": 1560,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/67.jpg",
+   "original_path": "validation/original/67.jpg",
+   "annotation_path": "validation/bokeh/67.jpg",
+   "annotation_aperture": 2.0
+  },
+  "68": {
+   "x": 618.0,
+   "y": 621.0,
+   "width": 1552,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/68.jpg",
+   "original_path": "validation/original/68.jpg",
+   "annotation_path": "validation/bokeh/68.jpg",
+   "annotation_aperture": 2.0
+  },
+  "69": {
+   "x": 795.0,
+   "y": 650.0,
+   "width": 1595,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/69.jpg",
+   "original_path": "validation/original/69.jpg",
+   "annotation_path": "validation/bokeh/69.jpg",
+   "annotation_aperture": 2.0
+  },
+  "70": {
+   "x": 696.0,
+   "y": 678.0,
+   "width": 1553,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/70.jpg",
+   "original_path": "validation/original/70.jpg",
+   "annotation_path": "validation/bokeh/70.jpg",
+   "annotation_aperture": 2.0
+  },
+  "71": {
+   "x": 727.0,
+   "y": 676.0,
+   "width": 1531,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/71.jpg",
+   "original_path": "validation/original/71.jpg",
+   "annotation_path": "validation/bokeh/71.jpg",
+   "annotation_aperture": 2.0
+  },
+  "72": {
+   "x": 765.0,
+   "y": 652.0,
+   "width": 1582,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/72.jpg",
+   "original_path": "validation/original/72.jpg",
+   "annotation_path": "validation/bokeh/72.jpg",
+   "annotation_aperture": 2.0
+  },
+  "73": {
+   "x": 781.0,
+   "y": 625.0,
+   "width": 1611,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/73.jpg",
+   "original_path": "validation/original/73.jpg",
+   "annotation_path": "validation/bokeh/73.jpg",
+   "annotation_aperture": 2.0
+  },
+  "74": {
+   "x": 766.0,
+   "y": 669.0,
+   "width": 1596,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/74.jpg",
+   "original_path": "validation/original/74.jpg",
+   "annotation_path": "validation/bokeh/74.jpg",
+   "annotation_aperture": 2.0
+  },
+  "75": {
+   "x": 680.0,
+   "y": 634.0,
+   "width": 1518,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/75.jpg",
+   "original_path": "validation/original/75.jpg",
+   "annotation_path": "validation/bokeh/75.jpg",
+   "annotation_aperture": 2.0
+  },
+  "76": {
+   "x": 771.0,
+   "y": 534.0,
+   "width": 1497,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/76.jpg",
+   "original_path": "validation/original/76.jpg",
+   "annotation_path": "validation/bokeh/76.jpg",
+   "annotation_aperture": 2.0
+  },
+  "77": {
+   "x": 802.0,
+   "y": 475.0,
+   "width": 1589,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/77.jpg",
+   "original_path": "validation/original/77.jpg",
+   "annotation_path": "validation/bokeh/77.jpg",
+   "annotation_aperture": 2.0
+  },
+  "78": {
+   "x": 753.0,
+   "y": 645.0,
+   "width": 1559,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/78.jpg",
+   "original_path": "validation/original/78.jpg",
+   "annotation_path": "validation/bokeh/78.jpg",
+   "annotation_aperture": 2.0
+  },
+  "79": {
+   "x": 835.0,
+   "y": 649.0,
+   "width": 1575,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/79.jpg",
+   "original_path": "validation/original/79.jpg",
+   "annotation_path": "validation/bokeh/79.jpg",
+   "annotation_aperture": 2.0
+  },
+  "80": {
+   "x": 739.0,
+   "y": 533.0,
+   "width": 1573,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/80.jpg",
+   "original_path": "validation/original/80.jpg",
+   "annotation_path": "validation/bokeh/80.jpg",
+   "annotation_aperture": 2.0
+  },
+  "81": {
+   "x": 814.0,
+   "y": 430.0,
+   "width": 1590,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/81.jpg",
+   "original_path": "validation/original/81.jpg",
+   "annotation_path": "validation/bokeh/81.jpg",
+   "annotation_aperture": 2.0
+  },
+  "82": {
+   "x": 810.0,
+   "y": 563.0,
+   "width": 1519,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/82.jpg",
+   "original_path": "validation/original/82.jpg",
+   "annotation_path": "validation/bokeh/82.jpg",
+   "annotation_aperture": 2.0
+  },
+  "83": {
+   "x": 875.0,
+   "y": 512.0,
+   "width": 1656,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/83.jpg",
+   "original_path": "validation/original/83.jpg",
+   "annotation_path": "validation/bokeh/83.jpg",
+   "annotation_aperture": 2.0
+  },
+  "84": {
+   "x": 836.0,
+   "y": 871.0,
+   "width": 1538,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/84.jpg",
+   "original_path": "validation/original/84.jpg",
+   "annotation_path": "validation/bokeh/84.jpg",
+   "annotation_aperture": 2.0
+  },
+  "85": {
+   "x": 840.0,
+   "y": 476.0,
+   "width": 1551,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/85.jpg",
+   "original_path": "validation/original/85.jpg",
+   "annotation_path": "validation/bokeh/85.jpg",
+   "annotation_aperture": 2.0
+  },
+  "86": {
+   "x": 796.0,
+   "y": 390.0,
+   "width": 1586,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/86.jpg",
+   "original_path": "validation/original/86.jpg",
+   "annotation_path": "validation/bokeh/86.jpg",
+   "annotation_aperture": 2.0
+  },
+  "87": {
+   "x": 845.0,
+   "y": 482.0,
+   "width": 1630,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/87.jpg",
+   "original_path": "validation/original/87.jpg",
+   "annotation_path": "validation/bokeh/87.jpg",
+   "annotation_aperture": 2.0
+  },
+  "88": {
+   "x": 828.0,
+   "y": 352.0,
+   "width": 1523,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/88.jpg",
+   "original_path": "validation/original/88.jpg",
+   "annotation_path": "validation/bokeh/88.jpg",
+   "annotation_aperture": 2.0
+  },
+  "89": {
+   "x": 704.0,
+   "y": 615.0,
+   "width": 1548,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/89.jpg",
+   "original_path": "validation/original/89.jpg",
+   "annotation_path": "validation/bokeh/89.jpg",
+   "annotation_aperture": 2.0
+  },
+  "90": {
+   "x": 539.0,
+   "y": 336.0,
+   "width": 1571,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/90.jpg",
+   "original_path": "validation/original/90.jpg",
+   "annotation_path": "validation/bokeh/90.jpg",
+   "annotation_aperture": 2.0
+  },
+  "91": {
+   "x": 887.0,
+   "y": 409.0,
+   "width": 1768,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/91.jpg",
+   "original_path": "validation/original/91.jpg",
+   "annotation_path": "validation/bokeh/91.jpg",
+   "annotation_aperture": 2.0
+  },
+  "92": {
+   "x": 491.0,
+   "y": 216.0,
+   "width": 1529,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/92.jpg",
+   "original_path": "validation/original/92.jpg",
+   "annotation_path": "validation/bokeh/92.jpg",
+   "annotation_aperture": 2.0
+  },
+  "93": {
+   "x": 780.0,
+   "y": 520.0,
+   "width": 1565,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/93.jpg",
+   "original_path": "validation/original/93.jpg",
+   "annotation_path": "validation/bokeh/93.jpg",
+   "annotation_aperture": 2.0
+  },
+  "94": {
+   "x": 599.0,
+   "y": 963.0,
+   "width": 1536,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/94.jpg",
+   "original_path": "validation/original/94.jpg",
+   "annotation_path": "validation/bokeh/94.jpg",
+   "annotation_aperture": 2.0
+  },
+  "95": {
+   "x": 817.0,
+   "y": 340.0,
+   "width": 1476,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/95.jpg",
+   "original_path": "validation/original/95.jpg",
+   "annotation_path": "validation/bokeh/95.jpg",
+   "annotation_aperture": 2.0
+  },
+  "96": {
+   "x": 598.0,
+   "y": 497.0,
+   "width": 1528,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/96.jpg",
+   "original_path": "validation/original/96.jpg",
+   "annotation_path": "validation/bokeh/96.jpg",
+   "annotation_aperture": 2.0
+  },
+  "97": {
+   "x": 707.0,
+   "y": 630.0,
+   "width": 1538,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/97.jpg",
+   "original_path": "validation/original/97.jpg",
+   "annotation_path": "validation/bokeh/97.jpg",
+   "annotation_aperture": 2.0
+  },
+  "98": {
+   "x": 982.0,
+   "y": 443.0,
+   "width": 1483,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/98.jpg",
+   "original_path": "validation/original/98.jpg",
+   "annotation_path": "validation/bokeh/98.jpg",
+   "annotation_aperture": 2.0
+  },
+  "99": {
+   "x": 734.0,
+   "y": 799.0,
+   "width": 1562,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/99.jpg",
+   "original_path": "validation/original/99.jpg",
+   "annotation_path": "validation/bokeh/99.jpg",
+   "annotation_aperture": 2.0
+  },
+  "100": {
+   "x": 747.0,
+   "y": 663.0,
+   "width": 1557,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/100.jpg",
+   "original_path": "validation/original/100.jpg",
+   "annotation_path": "validation/bokeh/100.jpg",
+   "annotation_aperture": 2.0
+  },
+  "101": {
+   "x": 776.0,
+   "y": 717.0,
+   "width": 1578,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/101.jpg",
+   "original_path": "validation/original/101.jpg",
+   "annotation_path": "validation/bokeh/101.jpg",
+   "annotation_aperture": 2.0
+  },
+  "102": {
+   "x": 907.0,
+   "y": 629.0,
+   "width": 1554,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/102.jpg",
+   "original_path": "validation/original/102.jpg",
+   "annotation_path": "validation/bokeh/102.jpg",
+   "annotation_aperture": 2.0
+  },
+  "103": {
+   "x": 902.0,
+   "y": 507.0,
+   "width": 1550,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/103.jpg",
+   "original_path": "validation/original/103.jpg",
+   "annotation_path": "validation/bokeh/103.jpg",
+   "annotation_aperture": 2.0
+  },
+  "104": {
+   "x": 763.0,
+   "y": 716.0,
+   "width": 1584,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/104.jpg",
+   "original_path": "validation/original/104.jpg",
+   "annotation_path": "validation/bokeh/104.jpg",
+   "annotation_aperture": 2.0
+  },
+  "105": {
+   "x": 766.0,
+   "y": 523.0,
+   "width": 1590,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/105.jpg",
+   "original_path": "validation/original/105.jpg",
+   "annotation_path": "validation/bokeh/105.jpg",
+   "annotation_aperture": 2.0
+  },
+  "106": {
+   "x": 796.0,
+   "y": 616.0,
+   "width": 1597,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/106.jpg",
+   "original_path": "validation/original/106.jpg",
+   "annotation_path": "validation/bokeh/106.jpg",
+   "annotation_aperture": 2.0
+  },
+  "107": {
+   "x": 742.0,
+   "y": 512.0,
+   "width": 1545,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/107.jpg",
+   "original_path": "validation/original/107.jpg",
+   "annotation_path": "validation/bokeh/107.jpg",
+   "annotation_aperture": 2.0
+  },
+  "108": {
+   "x": 635.0,
+   "y": 606.0,
+   "width": 1563,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/108.jpg",
+   "original_path": "validation/original/108.jpg",
+   "annotation_path": "validation/bokeh/108.jpg",
+   "annotation_aperture": 2.0
+  },
+  "109": {
+   "x": 839.0,
+   "y": 470.0,
+   "width": 1564,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/109.jpg",
+   "original_path": "validation/original/109.jpg",
+   "annotation_path": "validation/bokeh/109.jpg",
+   "annotation_aperture": 2.0
+  },
+  "110": {
+   "x": 771.0,
+   "y": 419.0,
+   "width": 1548,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/110.jpg",
+   "original_path": "validation/original/110.jpg",
+   "annotation_path": "validation/bokeh/110.jpg",
+   "annotation_aperture": 2.0
+  },
+  "111": {
+   "x": 766.0,
+   "y": 550.0,
+   "width": 1537,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/111.jpg",
+   "original_path": "validation/original/111.jpg",
+   "annotation_path": "validation/bokeh/111.jpg",
+   "annotation_aperture": 2.0
+  },
+  "112": {
+   "x": 758.0,
+   "y": 528.0,
+   "width": 1569,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/112.jpg",
+   "original_path": "validation/original/112.jpg",
+   "annotation_path": "validation/bokeh/112.jpg",
+   "annotation_aperture": 2.0
+  },
+  "113": {
+   "x": 671.0,
+   "y": 634.0,
+   "width": 1549,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/113.jpg",
+   "original_path": "validation/original/113.jpg",
+   "annotation_path": "validation/bokeh/113.jpg",
+   "annotation_aperture": 2.0
+  },
+  "114": {
+   "x": 942.0,
+   "y": 605.0,
+   "width": 1591,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/114.jpg",
+   "original_path": "validation/original/114.jpg",
+   "annotation_path": "validation/bokeh/114.jpg",
+   "annotation_aperture": 2.0
+  },
+  "115": {
+   "x": 755.0,
+   "y": 491.0,
+   "width": 1535,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/115.jpg",
+   "original_path": "validation/original/115.jpg",
+   "annotation_path": "validation/bokeh/115.jpg",
+   "annotation_aperture": 2.0
+  },
+  "116": {
+   "x": 738.0,
+   "y": 221.0,
+   "width": 1554,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/116.jpg",
+   "original_path": "validation/original/116.jpg",
+   "annotation_path": "validation/bokeh/116.jpg",
+   "annotation_aperture": 2.0
+  },
+  "117": {
+   "x": 724.0,
+   "y": 464.0,
+   "width": 1685,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/117.jpg",
+   "original_path": "validation/original/117.jpg",
+   "annotation_path": "validation/bokeh/117.jpg",
+   "annotation_aperture": 2.0
+  },
+  "118": {
+   "x": 793.0,
+   "y": 186.0,
+   "width": 1613,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/118.jpg",
+   "original_path": "validation/original/118.jpg",
+   "annotation_path": "validation/bokeh/118.jpg",
+   "annotation_aperture": 2.0
+  },
+  "119": {
+   "x": 757.0,
+   "y": 501.0,
+   "width": 1589,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/119.jpg",
+   "original_path": "validation/original/119.jpg",
+   "annotation_path": "validation/bokeh/119.jpg",
+   "annotation_aperture": 2.0
+  },
+  "120": {
+   "x": 915.0,
+   "y": 575.0,
+   "width": 1560,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/120.jpg",
+   "original_path": "validation/original/120.jpg",
+   "annotation_path": "validation/bokeh/120.jpg",
+   "annotation_aperture": 2.0
+  },
+  "121": {
+   "x": 790.0,
+   "y": 481.0,
+   "width": 1533,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/121.jpg",
+   "original_path": "validation/original/121.jpg",
+   "annotation_path": "validation/bokeh/121.jpg",
+   "annotation_aperture": 2.0
+  },
+  "122": {
+   "x": 761.0,
+   "y": 522.0,
+   "width": 1548,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/122.jpg",
+   "original_path": "validation/original/122.jpg",
+   "annotation_path": "validation/bokeh/122.jpg",
+   "annotation_aperture": 2.0
+  },
+  "123": {
+   "x": 631.0,
+   "y": 582.0,
+   "width": 1558,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/123.jpg",
+   "original_path": "validation/original/123.jpg",
+   "annotation_path": "validation/bokeh/123.jpg",
+   "annotation_aperture": 2.0
+  },
+  "124": {
+   "x": 1018.0,
+   "y": 587.0,
+   "width": 1602,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/124.jpg",
+   "original_path": "validation/original/124.jpg",
+   "annotation_path": "validation/bokeh/124.jpg",
+   "annotation_aperture": 2.0
+  },
+  "125": {
+   "x": 790.0,
+   "y": 723.0,
+   "width": 1580,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/125.jpg",
+   "original_path": "validation/original/125.jpg",
+   "annotation_path": "validation/bokeh/125.jpg",
+   "annotation_aperture": 2.0
+  },
+  "126": {
+   "x": 688.0,
+   "y": 616.0,
+   "width": 1553,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/126.jpg",
+   "original_path": "validation/original/126.jpg",
+   "annotation_path": "validation/bokeh/126.jpg",
+   "annotation_aperture": 2.0
+  },
+  "127": {
+   "x": 740.0,
+   "y": 577.0,
+   "width": 1563,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/127.jpg",
+   "original_path": "validation/original/127.jpg",
+   "annotation_path": "validation/bokeh/127.jpg",
+   "annotation_aperture": 2.0
+  },
+  "128": {
+   "x": 770.0,
+   "y": 545.0,
+   "width": 1505,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/128.jpg",
+   "original_path": "validation/original/128.jpg",
+   "annotation_path": "validation/bokeh/128.jpg",
+   "annotation_aperture": 2.0
+  },
+  "129": {
+   "x": 751.0,
+   "y": 608.0,
+   "width": 1645,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/129.jpg",
+   "original_path": "validation/original/129.jpg",
+   "annotation_path": "validation/bokeh/129.jpg",
+   "annotation_aperture": 2.0
+  },
+  "130": {
+   "x": 731.0,
+   "y": 561.0,
+   "width": 1545,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/130.jpg",
+   "original_path": "validation/original/130.jpg",
+   "annotation_path": "validation/bokeh/130.jpg",
+   "annotation_aperture": 2.0
+  },
+  "131": {
+   "x": 785.0,
+   "y": 545.0,
+   "width": 1646,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/131.jpg",
+   "original_path": "validation/original/131.jpg",
+   "annotation_path": "validation/bokeh/131.jpg",
+   "annotation_aperture": 2.0
+  },
+  "132": {
+   "x": 810.0,
+   "y": 428.0,
+   "width": 1626,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/132.jpg",
+   "original_path": "validation/original/132.jpg",
+   "annotation_path": "validation/bokeh/132.jpg",
+   "annotation_aperture": 2.0
+  },
+  "133": {
+   "x": 696.0,
+   "y": 669.0,
+   "width": 1571,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/133.jpg",
+   "original_path": "validation/original/133.jpg",
+   "annotation_path": "validation/bokeh/133.jpg",
+   "annotation_aperture": 2.0
+  },
+  "134": {
+   "x": 792.0,
+   "y": 681.0,
+   "width": 1558,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/134.jpg",
+   "original_path": "validation/original/134.jpg",
+   "annotation_path": "validation/bokeh/134.jpg",
+   "annotation_aperture": 2.0
+  },
+  "135": {
+   "x": 698.0,
+   "y": 551.0,
+   "width": 1562,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/135.jpg",
+   "original_path": "validation/original/135.jpg",
+   "annotation_path": "validation/bokeh/135.jpg",
+   "annotation_aperture": 2.0
+  },
+  "136": {
+   "x": 953.0,
+   "y": 389.0,
+   "width": 1562,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/136.jpg",
+   "original_path": "validation/original/136.jpg",
+   "annotation_path": "validation/bokeh/136.jpg",
+   "annotation_aperture": 2.0
+  },
+  "137": {
+   "x": 651.0,
+   "y": 550.0,
+   "width": 1532,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/137.jpg",
+   "original_path": "validation/original/137.jpg",
+   "annotation_path": "validation/bokeh/137.jpg",
+   "annotation_aperture": 2.0
+  },
+  "138": {
+   "x": 777.0,
+   "y": 487.0,
+   "width": 1514,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/138.jpg",
+   "original_path": "validation/original/138.jpg",
+   "annotation_path": "validation/bokeh/138.jpg",
+   "annotation_aperture": 2.0
+  },
+  "139": {
+   "x": 773.0,
+   "y": 463.0,
+   "width": 1545,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/139.jpg",
+   "original_path": "validation/original/139.jpg",
+   "annotation_path": "validation/bokeh/139.jpg",
+   "annotation_aperture": 2.0
+  },
+  "140": {
+   "x": 325.0,
+   "y": 722.0,
+   "width": 1513,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/140.jpg",
+   "original_path": "validation/original/140.jpg",
+   "annotation_path": "validation/bokeh/140.jpg",
+   "annotation_aperture": 2.0
+  },
+  "141": {
+   "x": 600.0,
+   "y": 591.0,
+   "width": 1587,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/141.jpg",
+   "original_path": "validation/original/141.jpg",
+   "annotation_path": "validation/bokeh/141.jpg",
+   "annotation_aperture": 2.0
+  },
+  "142": {
+   "x": 704.0,
+   "y": 619.0,
+   "width": 1559,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/142.jpg",
+   "original_path": "validation/original/142.jpg",
+   "annotation_path": "validation/bokeh/142.jpg",
+   "annotation_aperture": 2.0
+  },
+  "143": {
+   "x": 667.0,
+   "y": 617.0,
+   "width": 1534,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/143.jpg",
+   "original_path": "validation/original/143.jpg",
+   "annotation_path": "validation/bokeh/143.jpg",
+   "annotation_aperture": 2.0
+  },
+  "144": {
+   "x": 532.0,
+   "y": 705.0,
+   "width": 1485,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/144.jpg",
+   "original_path": "validation/original/144.jpg",
+   "annotation_path": "validation/bokeh/144.jpg",
+   "annotation_aperture": 2.0
+  },
+  "145": {
+   "x": 458.0,
+   "y": 627.0,
+   "width": 1638,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/145.jpg",
+   "original_path": "validation/original/145.jpg",
+   "annotation_path": "validation/bokeh/145.jpg",
+   "annotation_aperture": 2.0
+  },
+  "146": {
+   "x": 678.0,
+   "y": 593.0,
+   "width": 1564,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/146.jpg",
+   "original_path": "validation/original/146.jpg",
+   "annotation_path": "validation/bokeh/146.jpg",
+   "annotation_aperture": 2.0
+  },
+  "147": {
+   "x": 726.0,
+   "y": 771.0,
+   "width": 1551,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/147.jpg",
+   "original_path": "validation/original/147.jpg",
+   "annotation_path": "validation/bokeh/147.jpg",
+   "annotation_aperture": 2.0
+  },
+  "148": {
+   "x": 783.0,
+   "y": 543.0,
+   "width": 1572,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/148.jpg",
+   "original_path": "validation/original/148.jpg",
+   "annotation_path": "validation/bokeh/148.jpg",
+   "annotation_aperture": 2.0
+  },
+  "149": {
+   "x": 962.0,
+   "y": 300.0,
+   "width": 1510,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/149.jpg",
+   "original_path": "validation/original/149.jpg",
+   "annotation_path": "validation/bokeh/149.jpg",
+   "annotation_aperture": 2.0
+  },
+  "150": {
+   "x": 814.0,
+   "y": 751.0,
+   "width": 1611,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/150.jpg",
+   "original_path": "validation/original/150.jpg",
+   "annotation_path": "validation/bokeh/150.jpg",
+   "annotation_aperture": 2.0
+  },
+  "151": {
+   "x": 803.0,
+   "y": 598.0,
+   "width": 1611,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/151.jpg",
+   "original_path": "validation/original/151.jpg",
+   "annotation_path": "validation/bokeh/151.jpg",
+   "annotation_aperture": 2.0
+  },
+  "152": {
+   "x": 714.0,
+   "y": 455.0,
+   "width": 1564,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/152.jpg",
+   "original_path": "validation/original/152.jpg",
+   "annotation_path": "validation/bokeh/152.jpg",
+   "annotation_aperture": 2.0
+  },
+  "153": {
+   "x": 732.0,
+   "y": 574.0,
+   "width": 1558,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/153.jpg",
+   "original_path": "validation/original/153.jpg",
+   "annotation_path": "validation/bokeh/153.jpg",
+   "annotation_aperture": 2.0
+  },
+  "154": {
+   "x": 733.0,
+   "y": 818.0,
+   "width": 1555,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/154.jpg",
+   "original_path": "validation/original/154.jpg",
+   "annotation_path": "validation/bokeh/154.jpg",
+   "annotation_aperture": 2.0
+  },
+  "155": {
+   "x": 613.0,
+   "y": 655.0,
+   "width": 1558,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/155.jpg",
+   "original_path": "validation/original/155.jpg",
+   "annotation_path": "validation/bokeh/155.jpg",
+   "annotation_aperture": 2.0
+  },
+  "156": {
+   "x": 702.0,
+   "y": 532.0,
+   "width": 1489,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/156.jpg",
+   "original_path": "validation/original/156.jpg",
+   "annotation_path": "validation/bokeh/156.jpg",
+   "annotation_aperture": 2.0
+  },
+  "157": {
+   "x": 741.0,
+   "y": 628.0,
+   "width": 1543,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/157.jpg",
+   "original_path": "validation/original/157.jpg",
+   "annotation_path": "validation/bokeh/157.jpg",
+   "annotation_aperture": 2.0
+  },
+  "158": {
+   "x": 732.0,
+   "y": 685.0,
+   "width": 1620,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/158.jpg",
+   "original_path": "validation/original/158.jpg",
+   "annotation_path": "validation/bokeh/158.jpg",
+   "annotation_aperture": 2.0
+  },
+  "159": {
+   "x": 770.0,
+   "y": 651.0,
+   "width": 1576,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/159.jpg",
+   "original_path": "validation/original/159.jpg",
+   "annotation_path": "validation/bokeh/159.jpg",
+   "annotation_aperture": 2.0
+  },
+  "160": {
+   "x": 711.0,
+   "y": 502.0,
+   "width": 1552,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/160.jpg",
+   "original_path": "validation/original/160.jpg",
+   "annotation_path": "validation/bokeh/160.jpg",
+   "annotation_aperture": 2.0
+  },
+  "161": {
+   "x": 796.0,
+   "y": 262.0,
+   "width": 1530,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/161.jpg",
+   "original_path": "validation/original/161.jpg",
+   "annotation_path": "validation/bokeh/161.jpg",
+   "annotation_aperture": 2.0
+  },
+  "162": {
+   "x": 401.0,
+   "y": 816.0,
+   "width": 1555,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/162.jpg",
+   "original_path": "validation/original/162.jpg",
+   "annotation_path": "validation/bokeh/162.jpg",
+   "annotation_aperture": 2.0
+  },
+  "163": {
+   "x": 836.0,
+   "y": 577.0,
+   "width": 1562,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/163.jpg",
+   "original_path": "validation/original/163.jpg",
+   "annotation_path": "validation/bokeh/163.jpg",
+   "annotation_aperture": 2.0
+  },
+  "164": {
+   "x": 734.0,
+   "y": 481.0,
+   "width": 1545,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/164.jpg",
+   "original_path": "validation/original/164.jpg",
+   "annotation_path": "validation/bokeh/164.jpg",
+   "annotation_aperture": 2.0
+  },
+  "165": {
+   "x": 813.0,
+   "y": 620.0,
+   "width": 1664,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/165.jpg",
+   "original_path": "validation/original/165.jpg",
+   "annotation_path": "validation/bokeh/165.jpg",
+   "annotation_aperture": 2.0
+  },
+  "166": {
+   "x": 727.0,
+   "y": 540.0,
+   "width": 1536,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/166.jpg",
+   "original_path": "validation/original/166.jpg",
+   "annotation_path": "validation/bokeh/166.jpg",
+   "annotation_aperture": 2.0
+  },
+  "167": {
+   "x": 699.0,
+   "y": 673.0,
+   "width": 1584,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/167.jpg",
+   "original_path": "validation/original/167.jpg",
+   "annotation_path": "validation/bokeh/167.jpg",
+   "annotation_aperture": 2.0
+  },
+  "168": {
+   "x": 743.0,
+   "y": 468.0,
+   "width": 1558,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/168.jpg",
+   "original_path": "validation/original/168.jpg",
+   "annotation_path": "validation/bokeh/168.jpg",
+   "annotation_aperture": 2.0
+  },
+  "169": {
+   "x": 817.0,
+   "y": 328.0,
+   "width": 1556,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/169.jpg",
+   "original_path": "validation/original/169.jpg",
+   "annotation_path": "validation/bokeh/169.jpg",
+   "annotation_aperture": 2.0
+  },
+  "170": {
+   "x": 722.0,
+   "y": 502.0,
+   "width": 1537,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/170.jpg",
+   "original_path": "validation/original/170.jpg",
+   "annotation_path": "validation/bokeh/170.jpg",
+   "annotation_aperture": 2.0
+  },
+  "171": {
+   "x": 830.0,
+   "y": 387.0,
+   "width": 1565,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/171.jpg",
+   "original_path": "validation/original/171.jpg",
+   "annotation_path": "validation/bokeh/171.jpg",
+   "annotation_aperture": 2.0
+  },
+  "172": {
+   "x": 942.0,
+   "y": 488.0,
+   "width": 1596,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/172.jpg",
+   "original_path": "validation/original/172.jpg",
+   "annotation_path": "validation/bokeh/172.jpg",
+   "annotation_aperture": 2.0
+  },
+  "173": {
+   "x": 765.0,
+   "y": 481.0,
+   "width": 1545,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/173.jpg",
+   "original_path": "validation/original/173.jpg",
+   "annotation_path": "validation/bokeh/173.jpg",
+   "annotation_aperture": 2.0
+  },
+  "174": {
+   "x": 584.0,
+   "y": 544.0,
+   "width": 1349,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/174.jpg",
+   "original_path": "validation/original/174.jpg",
+   "annotation_path": "validation/bokeh/174.jpg",
+   "annotation_aperture": 2.0
+  },
+  "175": {
+   "x": 771.0,
+   "y": 514.0,
+   "width": 1488,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/175.jpg",
+   "original_path": "validation/original/175.jpg",
+   "annotation_path": "validation/bokeh/175.jpg",
+   "annotation_aperture": 2.0
+  },
+  "176": {
+   "x": 740.0,
+   "y": 569.0,
+   "width": 1557,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/176.jpg",
+   "original_path": "validation/original/176.jpg",
+   "annotation_path": "validation/bokeh/176.jpg",
+   "annotation_aperture": 2.0
+  },
+  "177": {
+   "x": 653.0,
+   "y": 681.0,
+   "width": 1580,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/177.jpg",
+   "original_path": "validation/original/177.jpg",
+   "annotation_path": "validation/bokeh/177.jpg",
+   "annotation_aperture": 2.0
+  },
+  "178": {
+   "x": 703.0,
+   "y": 664.0,
+   "width": 1569,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/178.jpg",
+   "original_path": "validation/original/178.jpg",
+   "annotation_path": "validation/bokeh/178.jpg",
+   "annotation_aperture": 2.0
+  },
+  "179": {
+   "x": 908.0,
+   "y": 566.0,
+   "width": 1630,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/179.jpg",
+   "original_path": "validation/original/179.jpg",
+   "annotation_path": "validation/bokeh/179.jpg",
+   "annotation_aperture": 2.0
+  },
+  "180": {
+   "x": 725.0,
+   "y": 523.0,
+   "width": 1577,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/180.jpg",
+   "original_path": "validation/original/180.jpg",
+   "annotation_path": "validation/bokeh/180.jpg",
+   "annotation_aperture": 2.0
+  },
+  "181": {
+   "x": 749.0,
+   "y": 478.0,
+   "width": 1576,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/181.jpg",
+   "original_path": "validation/original/181.jpg",
+   "annotation_path": "validation/bokeh/181.jpg",
+   "annotation_aperture": 2.0
+  },
+  "182": {
+   "x": 762.0,
+   "y": 486.0,
+   "width": 1560,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/182.jpg",
+   "original_path": "validation/original/182.jpg",
+   "annotation_path": "validation/bokeh/182.jpg",
+   "annotation_aperture": 2.0
+  },
+  "183": {
+   "x": 724.0,
+   "y": 651.0,
+   "width": 1698,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/183.jpg",
+   "original_path": "validation/original/183.jpg",
+   "annotation_path": "validation/bokeh/183.jpg",
+   "annotation_aperture": 2.0
+  },
+  "184": {
+   "x": 610.0,
+   "y": 404.0,
+   "width": 1656,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/184.jpg",
+   "original_path": "validation/original/184.jpg",
+   "annotation_path": "validation/bokeh/184.jpg",
+   "annotation_aperture": 2.0
+  },
+  "185": {
+   "x": 628.0,
+   "y": 569.0,
+   "width": 1624,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/185.jpg",
+   "original_path": "validation/original/185.jpg",
+   "annotation_path": "validation/bokeh/185.jpg",
+   "annotation_aperture": 2.0
+  },
+  "186": {
+   "x": 813.0,
+   "y": 517.0,
+   "width": 1620,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/186.jpg",
+   "original_path": "validation/original/186.jpg",
+   "annotation_path": "validation/bokeh/186.jpg",
+   "annotation_aperture": 2.0
+  },
+  "187": {
+   "x": 765.0,
+   "y": 437.0,
+   "width": 1551,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/187.jpg",
+   "original_path": "validation/original/187.jpg",
+   "annotation_path": "validation/bokeh/187.jpg",
+   "annotation_aperture": 2.0
+  },
+  "188": {
+   "x": 764.0,
+   "y": 431.0,
+   "width": 1570,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/188.jpg",
+   "original_path": "validation/original/188.jpg",
+   "annotation_path": "validation/bokeh/188.jpg",
+   "annotation_aperture": 2.0
+  },
+  "189": {
+   "x": 726.0,
+   "y": 530.0,
+   "width": 1529,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/189.jpg",
+   "original_path": "validation/original/189.jpg",
+   "annotation_path": "validation/bokeh/189.jpg",
+   "annotation_aperture": 2.0
+  },
+  "190": {
+   "x": 594.0,
+   "y": 733.0,
+   "width": 1557,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/190.jpg",
+   "original_path": "validation/original/190.jpg",
+   "annotation_path": "validation/bokeh/190.jpg",
+   "annotation_aperture": 2.0
+  },
+  "191": {
+   "x": 757.0,
+   "y": 603.0,
+   "width": 1600,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/191.jpg",
+   "original_path": "validation/original/191.jpg",
+   "annotation_path": "validation/bokeh/191.jpg",
+   "annotation_aperture": 2.0
+  },
+  "192": {
+   "x": 703.0,
+   "y": 492.0,
+   "width": 1496,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/192.jpg",
+   "original_path": "validation/original/192.jpg",
+   "annotation_path": "validation/bokeh/192.jpg",
+   "annotation_aperture": 2.0
+  },
+  "193": {
+   "x": 718.0,
+   "y": 543.0,
+   "width": 1561,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/193.jpg",
+   "original_path": "validation/original/193.jpg",
+   "annotation_path": "validation/bokeh/193.jpg",
+   "annotation_aperture": 2.0
+  },
+  "194": {
+   "x": 757.0,
+   "y": 507.0,
+   "width": 1578,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/194.jpg",
+   "original_path": "validation/original/194.jpg",
+   "annotation_path": "validation/bokeh/194.jpg",
+   "annotation_aperture": 2.0
+  },
+  "195": {
+   "x": 529.0,
+   "y": 393.0,
+   "width": 1581,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/195.jpg",
+   "original_path": "validation/original/195.jpg",
+   "annotation_path": "validation/bokeh/195.jpg",
+   "annotation_aperture": 2.0
+  },
+  "196": {
+   "x": 768.0,
+   "y": 593.0,
+   "width": 1556,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/196.jpg",
+   "original_path": "validation/original/196.jpg",
+   "annotation_path": "validation/bokeh/196.jpg",
+   "annotation_aperture": 2.0
+  },
+  "197": {
+   "x": 627.0,
+   "y": 509.0,
+   "width": 1561,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/197.jpg",
+   "original_path": "validation/original/197.jpg",
+   "annotation_path": "validation/bokeh/197.jpg",
+   "annotation_aperture": 2.0
+  },
+  "198": {
+   "x": 607.0,
+   "y": 602.0,
+   "width": 1543,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/198.jpg",
+   "original_path": "validation/original/198.jpg",
+   "annotation_path": "validation/bokeh/198.jpg",
+   "annotation_aperture": 2.0
+  },
+  "199": {
+   "x": 750.0,
+   "y": 400.0,
+   "width": 1558,
+   "height": 1024,
+   "bokeh_path": "validation/bokeh/199.jpg",
+   "original_path": "validation/original/199.jpg",
+   "annotation_path": "validation/bokeh/199.jpg",
+   "annotation_aperture": 2.0
+  }
+ }
+}
