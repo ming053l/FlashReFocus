@@ -1,14 +1,7 @@
 #!/usr/bin/env python
-"""Stage I inference without the refiner (decoding with the SD2.1 VAE decoder) on DPDD / RealDOF.
-
-Stage1Model wraps the evaluation model of the base code (third_party/PiSA-SR) with three changes for deblurring:
-  * VAE encoding uses latent_dist.mode() instead of .sample(), so the output is deterministic (the restored
-    all-in-focus image is reused by every focal edit);
-  * no latent or VAE tiling: the whole image is processed at once;
-  * no upscaling; inputs are only cropped to a multiple of 8.
-It also loads the Stage I extras (trained conv_in, VAE-encoder LoRA). Pairs come from pairs/<set>_test.json (paths
-relative to the data root); outputs are written as {index:04d}.png.
-"""
+"""Stage I inference without the refiner (SD2.1 VAE decoder) on the DPDD / RealDOF test pairs, with options for latent
+tiling, input rescaling, RAM++ prompts and AdaIN colour alignment. Pairs come from pairs/<set>_test.json (paths
+relative to the data root); outputs are written as {index:04d}.png. The model itself is in model.py."""
 import argparse
 import json
 import time
@@ -23,34 +16,10 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent))  # repository root
 import paths  # noqa: E402
 paths.add_to_path()
-from pisasr import PiSASR_eval  # noqa: E402
+from model import Stage1Model, load_stage1  # noqa: E402,F401  (Stage1Model: kept importable from here)
 from src.my_utils.wavelet_color_fix import adain_color_fix  # noqa: E402
 
 PAIRS = {"dpdd": HERE / "pairs/dpdd_test.json", "realdof": HERE / "pairs/realdof_test.json"}   # paths relative to paths.DATA
-
-
-class Stage1Model(PiSASR_eval):
-    def _load_pretrained_weights(self, pretrained_path):
-        """Base loader, plus the Stage I extras (trained conv_in, VAE-encoder LoRA merged into the VAE)."""
-        sd = torch.load(pretrained_path, map_location="cpu")
-        if "conv_in" in sd:  # base weights, before the pixel LoRA is merged on top
-            self.unet.load_state_dict(sd["conv_in"], strict=False)
-        self._load_and_save_ckpt_from_state_dict(sd)
-        if "state_dict_vae" in sd:
-            from peft import LoraConfig
-            self.vae.add_adapter(LoraConfig(r=sd["vae_lora_rank"], init_lora_weights="gaussian",
-                                            target_modules=sd["vae_lora_encoder_modules"]), adapter_name="vae_enc")
-            for n, p in self.vae.named_parameters():
-                if n in sd["state_dict_vae"]:
-                    p.data.copy_(sd["state_dict_vae"][n])
-
-    @torch.no_grad()
-    def forward(self, default, c_t, prompt=None):
-        c_t = c_t.to(dtype=self.weight_dtype)
-        prompt_embeds = self.encode_prompt([prompt]).to(dtype=self.weight_dtype)
-        z = self.vae.encode(c_t).latent_dist.mode() * self.vae.config.scaling_factor
-        model_pred = self._process_latents(z, prompt_embeds, default)
-        return self.vae.decode((z - model_pred) / self.vae.config.scaling_factor).sample.clamp(-1, 1)
 
 
 def main():
@@ -58,7 +27,6 @@ def main():
     ap.add_argument("--dataset", choices=list(PAIRS), required=True)
     ap.add_argument("--out", type=Path, required=True)
     ap.add_argument("--align", choices=["nofix", "adain"], default="nofix")
-    ap.add_argument("--default", action="store_true", help="single UNet pass (lambda_pix = lambda_sem = 1)")
     ap.add_argument("--lambda_pix", type=float, default=1.0)
     ap.add_argument("--lambda_sem", type=float, default=1.0)
     ap.add_argument("--limit", type=int, default=None)
@@ -68,14 +36,8 @@ def main():
     ap.add_argument("--ram", action="store_true", help="prompt = RAM++ tags of the blurred input")
     ap.add_argument("--ckpt", default=str(paths.STAGE1), help="Stage I checkpoint (.pkl)")
     a = ap.parse_args()
-    args = argparse.Namespace(
-        pretrained_model_path=str(paths.SD21),
-        pretrained_path=a.ckpt,
-        lambda_pix=a.lambda_pix, lambda_sem=a.lambda_sem, mixed_precision="fp16", default=a.default,
-        vae_decoder_tiled_size=100000, vae_encoder_tiled_size=100000,   # effectively no VAE tiling
-        latent_tiled_size=a.latent_tile, latent_tiled_overlap=a.latent_overlap, seed=42)  # default: no latent tiling
-    model = Stage1Model(args)
-    model.set_eval()
+    model = load_stage1(a.ckpt, omega=a.lambda_sem, lambda_pix=a.lambda_pix, latent_tile=a.latent_tile,
+                        latent_overlap=a.latent_overlap)
     tagger = None
     if a.ram:
         from ram_plus_tagger import RamPlusTagger
@@ -95,7 +57,7 @@ def main():
         c_t = TF.to_tensor(img).unsqueeze(0).cuda() * 2 - 1
         torch.cuda.synchronize(); t0 = time.perf_counter()
         prompt = tagger.predict_batch(c_t.float() * 0.5 + 0.5).prompt_texts[0] if tagger else ""
-        out = model(a.default, c_t, prompt=prompt)
+        out = model(model.single_pass, c_t, prompt=prompt)
         torch.cuda.synchronize(); times.append(time.perf_counter() - t0)
         pil = TF.to_pil_image((out[0].float() * 0.5 + 0.5).clamp(0, 1).cpu())
         if pil.size != full:
@@ -103,7 +65,8 @@ def main():
         if a.align == "adain":
             pil = adain_color_fix(target=pil, source=img)
         pil.save(a.out / f"{s['index']:04d}.png")
-    print(f"{a.dataset} {len(samples)} images, mean time {sum(times[3:]) / max(1, len(times) - 3):.3f}s (excluding first 3)")
+    warm = times[3:] or times
+    print(f"{a.dataset} {len(samples)} images, mean time {sum(warm) / len(warm):.3f}s")
 
 
 if __name__ == "__main__":

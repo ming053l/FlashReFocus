@@ -9,7 +9,6 @@ import sys
 from pathlib import Path
 
 import numpy as np
-import torch
 from scipy import ndimage
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # repository root
@@ -22,27 +21,23 @@ aif_p = Path(sys.argv[1]); xa, ya, xb, yb = map(float, sys.argv[2:6]); st = floa
 FR.setup_backend(True)
 rd = FR.FastRenderer()
 rd.set_image(aif_p)
-d0 = rd.depth.clone()
-da = float(d0[0, int(ya), int(xa)]); db = float(d0[0, int(yb), int(xb)])
+da, db = rd.depth_at(xa, ya), rd.depth_at(xb, yb)
 aif = rd.src[0].permute(1, 2, 0).cpu().numpy()
-dn = d0[0].cpu().numpy()
+dn = rd.depth[0].cpu().numpy()
 
 
-def render(depth, x, y):
-    rd.depth = depth
-    img = rd.render(x, y, st, None)[0].float().clamp(0, 1).permute(1, 2, 0).cpu().numpy()
-    rd.depth = d0.clone()
-    return img
+def render(x, y, depth=None):
+    return rd.render(x, y, st, depth=depth)[0].float().clamp(0, 1).permute(1, 2, 0).cpu().numpy()
 
 
 def sharp(img, m):
     return float(np.abs(ndimage.laplace(img.mean(-1)))[m].mean())
 
 
-A = render(d0.clone(), xa, ya)
-B = render(d0.clone(), xb, yb)
-dual_depth = (da + torch.minimum((d0 - da).abs(), (d0 - db).abs())).clamp(0, 1)
-D = render(dual_depth, xa, ya)
+A = render(xa, ya)
+B = render(xb, yb)
+dual_depth = rd.two_plane_depth((xa, ya), (xb, yb))
+D = render(xa, ya, dual_depth)
 ma, mb = np.abs(dn - da) < 0.03, np.abs(dn - db) < 0.03
 far = (np.abs(dn - da) > 0.2) & (np.abs(dn - db) > 0.2)
 rows = {}

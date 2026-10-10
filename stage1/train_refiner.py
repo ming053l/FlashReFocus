@@ -39,7 +39,7 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent))  # repository root
 import paths  # noqa: E402
 paths.add_to_path()
-from deblur import tiled_refine  # noqa: E402
+from model import tiled_refine  # noqa: E402
 
 
 def parse_args():
@@ -104,31 +104,21 @@ def lapvar(x):
 
 
 class Stage1Latents:
-    """Frozen Stage I: blurred image in [-1, 1] -> restored (unscaled) latent, exactly as deblur_no_refiner.py."""
+    """Frozen Stage I: blurred image in [-1, 1] -> restored (unscaled) latent, as model.Deblurrer.latent."""
 
     def __init__(self, ckpt, sd21, device, lambda_sem=1.0):
-        from deblur_no_refiner import Stage1Model
-        a = argparse.Namespace(pretrained_model_path=sd21, pretrained_path=ckpt, lambda_pix=1.0, lambda_sem=lambda_sem,
-                               mixed_precision="fp16", default=lambda_sem == 1.0, vae_decoder_tiled_size=100000,
-                               vae_encoder_tiled_size=100000, latent_tiled_size=100000, latent_tiled_overlap=0, seed=42)
+        from model import Deblurrer, load_stage1
         if device.index is not None:  # several processes: build Stage I on this process's GPU
             torch.cuda.set_device(device)
-        self.m = Stage1Model(a)
-        self.m.set_eval()
-        self.emb = self.m.encode_prompt([""]).to(dtype=self.m.weight_dtype)
-        self.sf = self.m.vae.config.scaling_factor
-        self.default = lambda_sem == 1.0
-        del self.m.text_encoder, self.m.vae.decoder     # only the empty-prompt embedding and the encoder are used
+        self.d = Deblurrer(load_stage1(ckpt, sd21, omega=lambda_sem))
+        del self.d.m.text_encoder, self.d.m.vae.decoder     # only the empty-prompt embedding and the encoder are used
         torch.cuda.empty_cache()
 
     @torch.no_grad()
     def __call__(self, x, omega=None):
         if omega is not None:                        # built in two-pass mode; omega = 1 is the single merged pass
-            self.m.lambda_sem, self.default = omega, omega == 1.0
-        c = x.to(self.m.weight_dtype)
-        z = self.m.vae.encode(c).latent_dist.mode() * self.sf
-        emb = self.emb.expand(z.shape[0], -1, -1)
-        return ((z - self.m._predict_no_tiling(z, emb, self.default)) / self.sf).float()
+            self.d.omega = omega
+        return self.d.latent(x).float()
 
 
 def main():

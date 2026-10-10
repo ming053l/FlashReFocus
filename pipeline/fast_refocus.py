@@ -1,6 +1,7 @@
 """Refocusing pipeline for interactive use: restore once, then render any number of focal edits.
 
-  s1 = FastStageI()                     # Stage I: one-step diffusion + decoder refiner (weights from paths.py)
+  s1 = FastStageI()                     # Stage I: one-step diffusion + decoder refiner (weights from paths.py);
+                                        # s1.omega = ... changes the detail weight
   s1("input.png", "aif.png")            # once per photograph
   rd = FastRenderer()                   # Stage II: Depth Anything V2 + renderer
   rd.set_image("aif.png")               # depth is estimated once and cached
@@ -27,9 +28,9 @@ PNG_LEVEL = 1
 
 
 def read_rgb(path, device):
-    """uint8 PNG -> float [0, 1] tensor 1x3xHxW on device (decode on CPU, convert on GPU)."""
-    arr = np.asarray(Image.open(path).convert("RGB"))
-    return torch.from_numpy(arr).to(device, non_blocking=True).permute(2, 0, 1)[None].float() / 255.0
+    """RGB image -> float [0, 1] tensor 1x3xHxW on device, converted as torchvision's to_tensor (model.to_unit)."""
+    from model import to_unit
+    return to_unit(Image.open(path).convert("RGB")).to(device)
 
 
 def write_rgb(x01, path):
@@ -43,24 +44,21 @@ def setup_backend(cudnn_benchmark=True):
 
 
 class FastStageI:
-    def __init__(self, ckpt=paths.STAGE1, refiner=paths.REFINER, lambda_sem=1.25, refiner_fp16=False, compile_=False, channels_last=False,
-                 compile_mode=None):
-        import argparse
-        import cost_stage1
-        ns = argparse.Namespace(sd21=str(paths.SD21), sd15=str(paths.SD15), ckpt=str(ckpt),
-                                refiner=None if refiner is None else str(refiner))
-        self.m, self.ref, self.default = cost_stage1.build(ns, lambda_sem, refiner is not None, "cuda", torch.float16)
-        self.params = cost_stage1.params(self.m, self.ref)
-        self.wd = self.m.weight_dtype
-        with torch.no_grad():
-            self.emb = self.m.encode_prompt([""]).to(dtype=self.wd)
+    """Stage I for the pipeline: restore an image file into an all-in-focus PNG (stage1/model.py does the work)."""
+
+    def __init__(self, ckpt=paths.STAGE1, refiner=paths.REFINER, lambda_sem=1.25, refiner_fp16=False, compile_=False,
+                 channels_last=False, compile_mode=None, merge_vae_lora=False):
+        """merge_vae_lora: faster VAE encoder, outputs ~60 dB from the exact ones (see model.load_stage1)."""
+        from model import Deblurrer, load_refiner, load_stage1, stage1_params
+        self.deblur = Deblurrer(load_stage1(ckpt, omega=lambda_sem, merge_vae_lora=merge_vae_lora),
+                                load_refiner(refiner) if refiner is not None else None)
+        self.m, self.ref = self.deblur.m, self.deblur.ref
+        self.params = stage1_params(self.m, self.ref)
         if self.ref is not None and refiner_fp16:
-            self.ref = self.ref.to(torch.float16)
+            self.ref = self.deblur.ref = self.ref.to(torch.float16)
         if channels_last:
-            self.m.vae.to(memory_format=torch.channels_last)
-            self.m.unet.to(memory_format=torch.channels_last)
-            if self.ref is not None:
-                self.ref.to(memory_format=torch.channels_last)
+            for mod in (self.m.vae, self.m.unet) + ((self.ref,) if self.ref is not None else ()):
+                mod.to(memory_format=torch.channels_last)
         self.channels_last = channels_last
         if compile_:
             # compile forward functions, not the modules: the omega path swaps U-Net weights by parameter name,
@@ -68,23 +66,23 @@ class FastStageI:
             for mod in (self.m.unet, self.m.vae.encoder, self.ref if self.ref is not None else self.m.vae.decoder):
                 mod.forward = torch.compile(mod.forward, mode=compile_mode)
 
-    @torch.no_grad()
+    @property
+    def omega(self):
+        return self.deblur.omega
+
+    @omega.setter
+    def omega(self, value):
+        self.deblur.omega = value
+
     def run_tensor(self, x):
-        m = self.m
-        sf = m.vae.config.scaling_factor
-        z = m.vae.encode(x.to(self.wd)).latent_dist.mode() * sf
-        z_out = z - m._process_latents(z, self.emb, self.default)
-        if self.ref is None:
-            return m.vae.decode(z_out / sf).sample
-        rd = next(self.ref.parameters()).dtype
-        return self.ref(x.to(rd), latent=(z_out / sf).to(rd), sample_posterior=False)
+        """[-1, 1] image tensor -> restored image tensor (not clamped)."""
+        return self.deblur(x)
 
     def __call__(self, src, dst):
         x = read_rgb(src, "cuda") * 2 - 1
         if self.channels_last:
             x = x.contiguous(memory_format=torch.channels_last)
-        y = self.run_tensor(x)
-        write_rgb(y.float() * 0.5 + 0.5, dst)
+        write_rgb(self.run_tensor(x).float() * 0.5 + 0.5, dst)
 
 
 class FastRenderer:
@@ -134,15 +132,36 @@ class FastRenderer:
         self.src, self.depth = src, (1.0 - d).clamp(0, 1)            # 1 x H x W, as process_da2_depth_like_dataset
 
     @torch.no_grad()
-    def render(self, focus_x, focus_y, strength, dst):
-        _, h, w = self.depth.shape
+    def render(self, focus_x, focus_y, strength, dst=None, depth=None):
+        """Bokeh at focal point (x, y) and blur strength; depth (1 x H x W, 1 = far) replaces the estimated depth, as
+        for two focal planes or tilt-shift. Returns 1x3xHxW in [0, 1]; writes a PNG when dst is given."""
+        depth = self.depth if depth is None else depth
+        _, h, w = depth.shape
         x = max(0, min(w - 1, int(round(focus_x)))); y = max(0, min(h - 1, int(round(focus_y))))
-        disp = self.depth[0, y, x].reshape(1, 1)
+        disp = depth[0, y, x].reshape(1, 1)
         fm = self.make_point_focus_map(w, h, x, y, radius=max(h, w), map_type=self.bc.focus_map_type, device="cuda")[None].float()
         src = self.src.contiguous(memory_format=torch.channels_last) if self.channels_last else self.src
         with torch.autocast("cuda", dtype=self.amp_dtype or torch.float32, enabled=self.amp_dtype is not None):
             pred = self.model(source=src, bokeh_strength=torch.tensor([[strength]], device="cuda"), focus_map=fm,
-                              depth_map=self.depth[None], disp_focus=disp)
+                              depth_map=depth[None], disp_focus=disp)
         if dst is not None:
             write_rgb(pred.float(), dst)
         return pred
+
+    def depth_at(self, x, y):
+        _, h, w = self.depth.shape
+        return float(self.depth[0, max(0, min(h - 1, int(y))), max(0, min(w - 1, int(x)))])
+
+    def two_plane_depth(self, a, b):
+        """Edited depth for two focal planes through points a and b: every pixel is blurred by its distance to the
+        nearer plane. Render it at point a."""
+        da, db = self.depth_at(*a), self.depth_at(*b)
+        return (da + torch.minimum((self.depth - da).abs(), (self.depth - db).abs())).clamp(0, 1)
+
+    def tilt_shift_depth(self, row, slope=3.0, band=0.06):
+        """Edited depth for tilt-shift: a vertical ramp with a flat band of half-height `band` centred at `row`
+        (fractions of the height). Render it at (W / 2, row * H)."""
+        _, h, w = self.depth.shape
+        yy = torch.linspace(0, 1, h, device=self.depth.device).view(h, 1).expand(h, w)
+        dy = (yy - row).abs().sub(band).clamp(min=0) * torch.sign(yy - row)
+        return (0.5 + slope * dy / 2).clamp(0, 1)[None]

@@ -18,7 +18,7 @@ explicit 1.3M-parameter network that leaves in-focus content untouched.
 ```
 paths.py      locations of weights, data and outputs (environment variables, see below)
 pipeline/     refocusing pipeline (fast_refocus.py), two focal planes, tilt-shift, cost benchmark
-stage1/       Stage I training and inference, decoder-refiner training, data configuration and test pairs
+stage1/       Stage I model (model.py), inference, training, decoder-refiner training, data configuration, test pairs
 refiner/      decoder refiner (VAEMultiScaleFusionDecoder)
 renderer/     Stage II renderer: model, data loaders, training, inference, evaluation
 eval/         evaluation: bokeh-rendering tables, LVCorr, focus-sweep consistency, MODEST aperture ladders
@@ -56,19 +56,27 @@ evaluation outputs into `work/` (`FLASHREFOCUS_WORK`); `paths.py` lists the expe
 import sys; sys.path.insert(0, "pipeline")
 import fast_refocus as FR
 
-s1 = FR.FastStageI()                       # Stage I with the refiner, omega = 1.25
+s1 = FR.FastStageI()                       # Stage I with the refiner, omega = 1.25 (s1.omega = ... to change)
 s1("photo.png", "aif.png")                 # restore the all-in-focus image once
 rd = FR.FastRenderer()                     # Stage II
 rd.set_image("aif.png")                    # depth is estimated once and reused
 rd.render(x, y, 0.5, "refocused.png")      # every edit: focal point (x, y), strength in [0, 1]
 ```
 
-Image sides should be multiples of 16. Two focal planes and tilt-shift edit the depth map given to the renderer:
+Image sides should be multiples of 16. Two focal planes and tilt-shift edit the depth map given to the renderer
+(`rd.render(x, y, s, depth=rd.two_plane_depth(a, b))`, `rd.tilt_shift_depth(row)`), also as scripts:
 
 ```bash
 python pipeline/dual_focus.py aif.png xA yA xB yB 0.8 out/dual
 python pipeline/tiltshift.py photo.png out/tilt --row 0.3 --strength 0.6
 ```
+
+For scripts and notebooks, `stage1/model.py` exposes the restoration directly:
+`Deblurrer(load_stage1(omega=1.25), load_refiner())(read_image("photo.png"))`.
+
+Outputs are bit-reproducible with `FR.setup_backend(False)`; `setup_backend(True)` (cuDNN autotuning) is faster for a
+fixed input size, but may pick different convolution algorithms between runs, changing outputs by a few 1/255.
+`FastStageI(merge_vae_lora=True)` merges the VAE-encoder LoRA for a ~20% faster encoder (outputs ~60 dB from the exact ones).
 
 ## Training
 

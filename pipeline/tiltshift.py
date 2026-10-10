@@ -13,7 +13,6 @@ import sys
 from pathlib import Path
 
 import numpy as np
-import torch
 from PIL import Image
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # repository root
@@ -50,12 +49,9 @@ def main():
     rd.set_image(aif)
     _, H, W = rd.depth.shape
     rd.render(W / 2, a.row * H, a.strength, Path(f"{out}_depthbokeh.png"))
-    y = torch.linspace(0, 1, H, device=rd.depth.device).view(H, 1).expand(H, W)
-    dy = (y - a.row).abs().sub(a.band).clamp(min=0) * torch.sign(y - a.row)
-    est, rd.depth = rd.depth, (0.5 + a.slope * dy / 2).clamp(0, 1)[None]   # focal row -> depth 0.5
-    rd.render(W / 2, a.row * H, a.strength, Path(f"{out}_tiltshift.png"))
-    Image.fromarray((rd.depth[0].cpu().numpy() * 255).astype(np.uint8)).save(f"{out}_tiltdepth.png")
-    rd.depth = est
+    tilt = rd.tilt_shift_depth(a.row, a.slope, a.band)
+    rd.render(W / 2, a.row * H, a.strength, Path(f"{out}_tiltshift.png"), depth=tilt)
+    Image.fromarray((tilt[0].cpu().numpy() * 255).astype(np.uint8)).save(f"{out}_tiltdepth.png")
 
 
 if __name__ == "__main__":

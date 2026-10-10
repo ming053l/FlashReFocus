@@ -72,7 +72,7 @@ def main():
         s1(img, a.work / f"{tag}_aif_fast.png")
         with torch.no_grad():
             x = TF.to_tensor(Image.open(img).convert("RGB")).unsqueeze(0).cuda() * 2 - 1
-            y = cost_stage1.run(s1.m, s1.ref, s1.default, x)
+            y = cost_stage1.run(s1.deblur, x)
         TF.to_pil_image((y[0].float().clamp(-1, 1) * 0.5 + 0.5).cpu()).save(a.work / f"{tag}_aif_orig.png")
         res[f"stage1_{tag}_psnr_maxdiff"] = psnr(a.work / f"{tag}_aif_fast.png", a.work / f"{tag}_aif_orig.png")
         orig_aif = a.work / f"{tag}_aif_orig.png"
