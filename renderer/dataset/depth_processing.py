@@ -47,7 +47,7 @@ def infer_depth_mode(
     - raw: percentile-clipped raw tensor, no scale or min-max normalization.
     - auto: choose from depth_map_dir.
 
-    normalize_depth_map/inverse_depth are legacy switches kept for old callers.
+    normalize_depth_map and inverse_depth are kept for callers that pass them explicitly.
     """
     depth_mode = str(depth_mode).lower()
     if depth_mode not in DEPTH_MODES:

@@ -1,15 +1,11 @@
 #!/usr/bin/env python
-"""LVCorr: how well a renderer's blur-strength control tracks the rendered blur.
+"""LVCorr: how well the blur-strength control tracks the rendered blur.
 
-Following GenRefocus (arXiv:2512.16923, Sec. 4.1 (ii), Table 3): for each all-in-focus
-image and a fixed focus point, render at several strengths K spanning the method's
-own range, measure the Laplacian variance (sharpness) of every output, and compute
-the Pearson correlation between K and the blur level (negative Laplacian variance),
-so 1 means blur grows exactly with K. Reported per method as the mean over images.
-
-Inputs: LFDOF-Refocus all-in-focus images and focus points (50 scenes).
-Backends: derefocus (our renderer), bokehme (BokehMe with Depth Anything V2 disparity).
-"""
+Following GenRefocus (arXiv:2512.16923, Sec. 4.1): for each all-in-focus image and a fixed focal point, render at ten
+strengths spanning the method's range, measure the Laplacian variance of every output, and take the Pearson correlation
+between the strength and the blur level (negative Laplacian variance); 1 means blur grows exactly with the strength.
+Reported as the mean over images. Inputs: <bench>/aif/<key>.png and <bench>/focus_points.json (LFDOF-Refocus, 50
+scenes, or 3CReal). Other methods are rendered with their own code on the same inputs and strength grid."""
 
 import argparse
 import json
@@ -21,9 +17,12 @@ import cv2
 import numpy as np
 import torch
 
-DEF = Path("/ssd1/chingheng/Defocus")
-BENCH = DEF / "refocus_bench" / "lfdof_refocus"
-OUT = DEF / "refocus_bench" / "lvcorr"
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # repository root
+import paths  # noqa: E402
+paths.add_to_path()
+
+BENCH = paths.WORK / "lfdof_refocus"
+OUT = paths.WORK / "lvcorr"
 
 
 def lapvar(img_rgb_uint8):
@@ -38,16 +37,14 @@ def pearson(x, y):
     return float(np.corrcoef(x, y)[0, 1])
 
 
-def derefocus_backend():
-    sys.path.insert(0, str(DEF / "SOTA" / "Bokehlicious"))
-    os.chdir(DEF / "SOTA" / "Bokehlicious")
+def flashrefocus_backend():
     from infer_single_focus import BokehliciousFocusEngine, parse_args
     b = parse_args(["--input", "x.png", "--output", "y.png", "--focus-x", "0", "--focus-y", "0", "--bokeh-strength", "0.5"]
-                   + (["--amp"] if os.environ.get("RENDER_BF16", "1") == "1" else []))   # bf16 autocast, as the bokeh tables
+                   + (["--amp"] if os.environ.get("RENDER_BF16", "1") == "1" else []))   # bf16 autocast by default
     eng = BokehliciousFocusEngine(checkpoint=b.checkpoint, size=b.size, attn_version=b.attn_version, da2_root=b.da2_root,
                                   da2_checkpoint=b.da2_checkpoint, da2_encoder=b.da2_encoder, da2_input_size=b.da2_input_size,
                                   no_da2_amp=b.no_da2_amp, da2_amp_dtype=b.da2_amp_dtype, device=b.device, amp=b.amp)
-    tmp = OUT / f"tmp_derefocus_{os.getpid()}.png"
+    tmp = OUT / f"tmp_flashrefocus_{os.getpid()}.png"
 
     def render(path, fx, fy, k):
         eng.infer_image(path, tmp, focus_x=fx, focus_y=fy, bokeh_embedding=k / 100.0, marked_output=None,
@@ -57,48 +54,15 @@ def derefocus_backend():
     return render, list(np.linspace(10, 100, 10))
 
 
-def bokehme_backend():
-    sys.path.insert(0, str(DEF / "SOTA" / "BokehMe"))
-    sys.path.insert(0, str(DEF / "SOTA" / "Depth-Anything-V2"))
-    os.chdir(DEF / "SOTA" / "BokehMe")
-    import test_ebb_midas_k_search as T
-    from depth_anything_v2.dpt import DepthAnythingV2
-    dev = torch.device("cuda")
-    argv, sys.argv = sys.argv, sys.argv[:1]
-    args = T.parse_args()
-    sys.argv = argv
-    args.arnet_checkpoint_path = str(DEF / "SOTA/BokehMe/checkpoints/arnet.pth")
-    args.iunet_checkpoint_path = str(DEF / "SOTA/BokehMe/checkpoints/iunet.pth")
-    renderer, arnet, iunet = T.load_bokehme(args, dev)
-    da = DepthAnythingV2(encoder="vitl", features=256, out_channels=[256, 512, 1024, 1024])
-    da.load_state_dict(torch.load(DEF / "SOTA/Depth-Anything-V2/checkpoints/depth_anything_v2_vitl.pth", map_location="cpu"))
-    da = da.to(dev).eval()
-    cache = {}
-
-    def render(path, fx, fy, k):
-        if path not in cache:
-            bgr = cv2.imread(str(path))
-            disp = da.infer_image(bgr)
-            disp = (disp - disp.min()) / (disp.max() - disp.min() + 1e-8)
-            img = torch.from_numpy(cv2.cvtColor(bgr, cv2.COLOR_BGR2RGB).astype(np.float32) / 255.0).permute(2, 0, 1)[None].to(dev)
-            cache[path] = (img, torch.from_numpy(disp.astype(np.float32))[None, None].to(dev), disp)
-        img, disp_t, disp = cache[path]
-        focus = float(disp[int(fy), int(fx)])
-        with torch.no_grad():
-            out = T.render_pipeline(renderer, arnet, iunet, img, k * (disp_t - focus), args.gamma, args)
-        return (out[0].permute(1, 2, 0).cpu().numpy() * 255).clip(0, 255).astype(np.uint8)
-    return render, list(np.linspace(10, 100, 10))
-
-
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--method", required=True, choices=["derefocus", "bokehme"])
+    ap.add_argument("--method", choices=["flashrefocus"], default="flashrefocus")
     ap.add_argument("--bench", type=Path, default=BENCH, help="folder with aif/NN.png and focus_points.json")
     ap.add_argument("--tag", default="", help="suffix of the output file, e.g. _3creal")
     a = ap.parse_args()
     OUT.mkdir(parents=True, exist_ok=True)
     ann = json.loads((a.bench / "focus_points.json").read_text())["annotations"]
-    render, ks = {"derefocus": derefocus_backend, "bokehme": bokehme_backend}[a.method]()
+    render, ks = {"flashrefocus": flashrefocus_backend}[a.method]()
     per = {}
     for key in sorted(ann):
         path = a.bench / "aif" / f"{key}.png"

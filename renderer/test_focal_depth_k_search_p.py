@@ -1,3 +1,6 @@
+"""Bokeh-rendering evaluation on EBB! and RealBokeh: for each input the blur strength is searched for the highest SSIM
+to the target (the protocol applied to every method in the bokeh tables), then PSNR, SSIM and LPIPS are reported."""
+import os
 import argparse
 import csv
 import sys
@@ -25,8 +28,14 @@ from train import (
     extract_model_state_dict,
 )
 
-DEPTH_ANYTHING_ROOT = Path("/ssddd/chingheng/ImageStitching/Defocus/old/IGDDD")
-DEPTH_PRO_ROOT = Path("/ssddd/chingheng/ImageStitching/Defocus/ml-depth-pro")
+# datasets under FLASHREFOCUS_DATA, outputs under FLASHREFOCUS_WORK (defaults <repo>/data, <repo>/work; see paths.py)
+_REPO = Path(__file__).resolve().parents[1]
+DATA_ROOT = Path(os.environ.get("FLASHREFOCUS_DATA", _REPO / "data"))
+
+# optional depth backends (--depth-model): Depth Anything 3 and Depth Pro checkouts, under FLASHREFOCUS_BASELINES
+_BASELINES = Path(os.environ.get("FLASHREFOCUS_BASELINES", _REPO / "baselines"))
+DEPTH_ANYTHING_ROOT = Path(os.environ.get("DEPTH_ANYTHING_3_ROOT", _BASELINES / "Depth-Anything-3"))
+DEPTH_PRO_ROOT = Path(os.environ.get("DEPTH_PRO_ROOT", _BASELINES / "ml-depth-pro"))
 
 
 def parse_args():
@@ -46,7 +55,7 @@ def parse_args():
     parser.add_argument(
         "--data-dir",
         type=Path,
-        default=Path("/ssddd/chingheng/Deblurring-Dataset/EBB"),
+        default=(DATA_ROOT / "EBB"),
         help=(
             "Dataset root. For realbokeh: root containing validation/in, "
             "validation/in_depth, and metadata. For ebb: root containing "

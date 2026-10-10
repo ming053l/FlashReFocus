@@ -2,8 +2,20 @@
 
 import argparse
 import json
+import os
 import sys
 from pathlib import Path
+
+
+def _expand_locations(text):
+    """Expand ${FLASHREFOCUS_REPO}, ${FLASHREFOCUS_WEIGHTS} and ${FLASHREFOCUS_DATA} (defaults as in paths.py)."""
+    repo = Path(__file__).resolve().parents[2]
+    env = {"FLASHREFOCUS_REPO": str(repo),
+           "FLASHREFOCUS_WEIGHTS": os.environ.get("FLASHREFOCUS_WEIGHTS", str(repo / "weights")),
+           "FLASHREFOCUS_DATA": os.environ.get("FLASHREFOCUS_DATA", str(repo / "data"))}
+    for k, v in env.items():
+        text = text.replace("${" + k + "}", v)
+    return text
 
 
 def load_options_config(config_path):
@@ -11,7 +23,7 @@ def load_options_config(config_path):
     with path.open("r", encoding="utf-8") as f:
         if path.suffix.lower() == ".json":
             return json.load(f) or {}
-        text = f.read()
+        text = _expand_locations(f.read())
     try:
         import yaml
 
@@ -91,7 +103,7 @@ def parse_args(input_args=None):
     config_parser.add_argument("--config", type=str, default=None)
     config_args, _ = config_parser.parse_known_args(raw_args)
 
-    parser = argparse.ArgumentParser("AutoRefocusV2 PASD training")
+    parser = argparse.ArgumentParser("Stage I training data")
     add_arg(parser, "config", type=str)
     add_arg(parser, "pretrained_model_name_or_path", type=str)
     add_arg(parser, "controlnet_model_name_or_path", type=str)
@@ -99,7 +111,7 @@ def parse_args(input_args=None):
     add_arg(parser, "resume_from_checkpoint", type=str)
     add_arg(parser, "revision", type=str)
     add_arg(parser, "tokenizer_name", type=str)
-    add_arg(parser, "output_dir", "runs/autorefocus")
+    add_arg(parser, "output_dir", "runs/stage1")
     add_arg(parser, "seed", type=int)
 
     add_arg(parser, "dataset_name", "dpdd")

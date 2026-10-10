@@ -1,19 +1,18 @@
 #!/usr/bin/env python
-"""Fine-tune the DeReFocus VAE refiner (Table 1, "+ VAE Refiner") on PiSA-SR outputs.
+"""Train the decoder refiner on Stage I latents.
 
-SD1.5 and SD2.1 share the VAE encoder and quant_conv, so the refiner trained on PASD latents can decode
-PiSA-SR latents as is (run_pisa_refiner.py); this script adapts it to them. Everything follows the original
-refiner run (MyAutoRefocus, autorefocus_sd1_mixed_full_vae_refiner_wo_d_highfreq_mixed_): variant wo_d with
-the high-frequency input, depth 2, 32 hidden map channels, trainable SD1.5 decoder and fusion modules (frozen
-encoder), loss MSE + 0.2 PAL + 0.1 LPIPS(VGG), bf16, lr 5e-5 with 500 warm-up steps and cosine decay,
-batch 2 x accumulation 2, 512 crops of the same four-source mixture, model selection by validation PSNR.
-The only change is the latent: the frozen PiSA-SR one-step output z - UNet(z) (encoder posterior mode,
-empty prompt) instead of the diffusion x0 prediction. --lambda_sem != 1 trains on the omega-mixed latent used at
-inference (two UNet passes, as run_pisa_refiner.py).
-Validation: held-out DPDD val_c and LFDOF test images (neither is in training or Table 1), PSNR and sharpness on
-the full image, LPIPS on the central 768 x 768; the refiner runs on overlapping 1024 tiles (--val_tile) so that
-validation fits a 24 GB GPU. Final numbers are computed separately with whole-image inference.
-"""
+The refiner (refiner/vae_refiner_wo_d.py) is a Stable Diffusion 1.5 VAE decoder with fusion modules that inject
+multi-scale features of the blurred input and its Laplacian high-frequency map into each decoder block. SD1.5 and SD2.1
+share the VAE encoder and quant_conv, so it decodes the latents of the SD2.1-based Stage I. Training latents are the
+frozen Stage I one-step outputs z - UNet(z) (encoder posterior mode, empty prompt) at the inference weight
+omega = --lambda_sem; --pisa_ckpt with several checkpoints and --lambda_sem_choices draw one per step.
+
+Loss: MSE + 0.2 PAL + 0.1 LPIPS(VGG); bf16, lr 5e-5 with 500 warm-up steps and cosine decay, 512 crops of the Stage I
+training mixture. Trainable: decoder and fusion modules (the refiner's own encoder is frozen); --freeze_decoder trains
+the fusion modules only, --decoder_lora_rank trains LoRA adapters on the decoder instead of its weights.
+Validation: held-out DPDD val_c and LFDOF test images, PSNR and sharpness on the full image and LPIPS on the central
+768 x 768 crop; the refiner runs on overlapping 1024 tiles (--val_tile) to bound memory."""
+import os
 import argparse
 import math
 import sys
@@ -31,8 +30,15 @@ from diffusers.optimization import get_scheduler
 from PIL import Image
 from torch.utils.tensorboard import SummaryWriter
 
+# datasets under FLASHREFOCUS_DATA, outputs under FLASHREFOCUS_WORK (defaults <repo>/data, <repo>/work; see paths.py)
+_REPO = Path(__file__).resolve().parents[1]
+DATA_ROOT = Path(os.environ.get("FLASHREFOCUS_DATA", _REPO / "data"))
+WORK_ROOT = Path(os.environ.get("FLASHREFOCUS_WORK", _REPO / "work"))
+
 HERE = Path(__file__).resolve().parent
-sys.path.insert(0, str(HERE))
+sys.path.insert(0, str(HERE.parent))  # repository root
+import paths  # noqa: E402
+paths.add_to_path()
 from run_pisa_refiner import tiled_refine  # noqa: E402
 
 
@@ -41,18 +47,18 @@ def parse_args():
     p.add_argument("--pisa_ckpt", required=True, help="Stage-I checkpoint, or a comma-separated list: each step draws one at random "
                    "(latent augmentation); the first one is used for validation")
     p.add_argument("--lambda_sem_choices", default="", help="comma-separated omegas drawn per step (default: --lambda_sem only)")
-    p.add_argument("--refiner_init", required=True, help="vae_refiner.pt of the Table-1 refiner")
+    p.add_argument("--refiner_init", default=str(paths.REFINER),
+                   help="initial refiner weights (default: the released refiner); 'none' starts from the SD1.5 decoder")
     p.add_argument("--decoder_lora_rank", type=int, default=0, help="> 0: freeze the decoder weights and train LoRA adapters of this rank on its convolutions and attention (merged when saving)")
     p.add_argument("--freeze_decoder", action="store_true", help="train only the fusion modules (keep the VAE decoder weights)")
     p.add_argument("--grad_ckpt", action="store_true", help="recompute decoder up-blocks and fusion blocks in backward (same result, less memory)")
     p.add_argument("--lambda_sem", type=float, default=1.0, help="omega of the Stage-I latent (inference setting)")
     p.add_argument("--output_dir", type=Path, required=True)
-    p.add_argument("--myautorefocus", default="/ssd1/chingheng/Defocus/MyAutoRefocus")
-    p.add_argument("--pasd_config", default="/ssd1/chingheng/Defocus/MyAutoRefocus/options/train_sd1_mixed_early.yaml")
-    p.add_argument("--sd21", default="/ssd1/chingheng/Defocus/stable-diffusion-2-1-base")
-    p.add_argument("--sd15", default="/ssd1/chingheng/Defocus/stable-diffusion-v1-5")
-    p.add_argument("--dpdd_val", default="/ssd1/chingheng/Deblurring-Dataset/dd_dp_dataset_png/val_c")
-    p.add_argument("--lfdof_test", default="/ssd4/chingheng/LFDOF/test_data")
+    p.add_argument("--data_config", default=str(HERE / "configs/stage1_data.yaml"))
+    p.add_argument("--sd21", default=str(paths.SD21))
+    p.add_argument("--sd15", default=str(paths.SD15))
+    p.add_argument("--dpdd_val", default=str(paths.DATA / "dd_dp_dataset_png/val_c"))
+    p.add_argument("--lfdof_test", default=str(DATA_ROOT / "LFDOF/test_data"))
     p.add_argument("--n_val", type=int, default=12, help="images per validation set")
     p.add_argument("--val_tile", type=int, default=1024, help="refiner pixel tile in validation (0 = whole image)")
     p.add_argument("--resolution", type=int, default=512)
@@ -86,7 +92,7 @@ def val_pairs(args):
 
 
 def to01(x):
-    """[-1, 1] -> [0, 1], clamped as torchmetrics' LPIPS requires (as in the original refiner loss)."""
+    """[-1, 1] -> [0, 1], clamped as torchmetrics' LPIPS requires (as in the refiner loss)."""
     return ((x.float().clamp(-1, 1) + 1) * 0.5).clamp(0, 1)
 
 
@@ -127,10 +133,9 @@ class PiSALatents:
 
 def main():
     args = parse_args()
-    sys.path.insert(0, args.myautorefocus)
-    from dpdd_dataset import build_autorefocus_dataset
+    from dpdd_dataset import build_training_dataset
     from refiner.vae_refiner_wo_d import VAEMultiScaleFusionDecoder
-    from train_options import parse_args as parse_pasd_args
+    from train_options import parse_args as parse_data_args
     from train_utils import PALLoss
     from torchmetrics.image.lpip import LearnedPerceptualImagePatchSimilarity
 
@@ -148,13 +153,14 @@ def main():
     rng = __import__("random").Random(args.seed + acc.process_index)
     refiner = VAEMultiScaleFusionDecoder(AutoencoderKL.from_pretrained(args.sd15, subfolder="vae"), depth=2,
                                          map_hidden_channels=32, use_pixel_weighting=False, use_high_freq_info=True)
-    init = torch.load(args.refiner_init, map_location="cpu")
+    init = {} if args.refiner_init.lower() == "none" else torch.load(args.refiner_init, map_location="cpu")
     keep = ("vae.encoder", "vae.quant_conv", "vae.post_quant_conv") + (("vae.decoder",) if args.freeze_decoder else ())
     if args.freeze_decoder:                            # keep the original SD VAE decoder; only the fusion modules come from init
         init = {k: v for k, v in init.items() if not k.startswith("vae.decoder")}
-    res = refiner.load_state_dict(init, strict=False)
-    bad = [k for k in res.missing_keys if not k.startswith(keep)]
-    assert not bad and not res.unexpected_keys, (bad[:5], res.unexpected_keys[:5])
+    if init:
+        res = refiner.load_state_dict(init, strict=False)
+        bad = [k for k in res.missing_keys if not k.startswith(keep)]
+        assert not bad and not res.unexpected_keys, (bad[:5], res.unexpected_keys[:5])
     if args.grad_ckpt:
         for m in list(refiner.vae.decoder.up_blocks) + list(refiner.fusion_blocks):
             f = m.forward
@@ -178,7 +184,7 @@ def main():
     lpips_vgg = LearnedPerceptualImagePatchSimilarity(net_type="vgg", normalize=True, reduction="mean").to(acc.device).eval()
     lpips_vgg.requires_grad_(False)
 
-    dataset = build_autorefocus_dataset(parse_pasd_args(["--config", args.pasd_config]), split="train",
+    dataset = build_training_dataset(parse_data_args(["--config", args.data_config]), split="train",
                                         image_size=args.resolution, use_augmentation=True)
     dl = torch.utils.data.DataLoader(dataset, batch_size=args.train_batch_size, shuffle=True, drop_last=True,
                                      num_workers=args.num_workers, pin_memory=True, persistent_workers=True,

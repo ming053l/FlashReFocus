@@ -1,12 +1,8 @@
 #!/usr/bin/env python
-"""PiSA-SR Stage I decoded by the DeReFocus VAE refiner of Table 1 ("+ VAE Refiner"), with no retraining.
+"""Stage I inference with the decoder refiner: PiSA-SR restores the latent (omega = --lambda_sem; 1.25 for the
+released model) and the refiner decodes it in place of the SD2.1 decoder, guided by the blurred input.
 
-SD1.5 and SD2.1 share the VAE encoder and quant_conv bit for bit (only post_quant_conv and the decoder differ),
-so the latent restored by PiSA-SR lies in the latent space the refiner was trained on. The refiner (a fine-tuned
-SD1.5 decoder that fuses multi-scale encoder features of the blurred input; variant wo_d with high-frequency
-input) replaces the SD2.1 decoder. Test pairs come from pairs/<set>_test.json (Table-1 order, paths relative to
---data_root), outputs are {index:04d}.png as in the Table-1 runs.
-"""
+Pairs come from pairs/<set>_test.json (paths relative to --data_root); outputs are written as {index:04d}.png."""
 import argparse
 import json
 import sys
@@ -19,24 +15,25 @@ from diffusers import AutoencoderKL
 from PIL import Image
 
 HERE = Path(__file__).resolve().parent
-sys.path.insert(0, str(HERE))
+sys.path.insert(0, str(HERE.parent))  # repository root
+import paths  # noqa: E402
+paths.add_to_path()
 from run_pisa_zeroshot import PiSADeterministic  # noqa: E402
 
 
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--pairs", type=Path, required=True)
-    ap.add_argument("--data_root", default="/ssd1/chingheng/Deblurring-Dataset")
+    ap.add_argument("--data_root", default=str(paths.DATA))
     ap.add_argument("--ckpt", required=True, help="PiSA-SR checkpoint (.pkl)")
     ap.add_argument("--refiner", default=None, help="vae_refiner.pt; omit to decode with the SD2.1 VAE (plain PiSA-SR)")
-    ap.add_argument("--myautorefocus", default="/ssd1/chingheng/Defocus/MyAutoRefocus")
-    ap.add_argument("--sd21", default="/ssd1/chingheng/Defocus/stable-diffusion-2-1-base")
-    ap.add_argument("--sd15", default="/ssd1/chingheng/Defocus/stable-diffusion-v1-5")
+    ap.add_argument("--sd21", default=str(paths.SD21))
+    ap.add_argument("--sd15", default=str(paths.SD15))
     ap.add_argument("--lambda_pix", type=float, default=1.0)
     ap.add_argument("--lambda_sem", type=float, default=1.0, help="!= 1 uses PiSA-SR's adjustable mode (two UNet passes)")
     ap.add_argument("--sem_scale", type=float, default=1.0,
                     help="scale the merged semantic-LoRA update in weight space (one UNet pass; alternative to --lambda_sem)")
-    ap.add_argument("--refiner_tile", type=int, default=0, help="pixel tile for the refiner (0 = whole image, as Table 1)")
+    ap.add_argument("--refiner_tile", type=int, default=0, help="pixel tile for the refiner (0 = whole image)")
     ap.add_argument("--refiner_overlap", type=int, default=64)
     ap.add_argument("--out", type=Path, required=True)
     a = ap.parse_args()
@@ -55,7 +52,6 @@ def main():
             p.data = o + a.sem_scale * (p.data - o)
     refiner = None
     if a.refiner:
-        sys.path.insert(0, a.myautorefocus)
         from refiner.vae_refiner_wo_d import VAEMultiScaleFusionDecoder
         vae15 = AutoencoderKL.from_pretrained(a.sd15, subfolder="vae")
         refiner = VAEMultiScaleFusionDecoder(vae15, depth=2, map_hidden_channels=32, use_pixel_weighting=False,

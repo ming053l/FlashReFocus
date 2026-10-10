@@ -103,11 +103,11 @@ class EBB(Dataset):
 
 class EBBFocalDepth(Dataset):
     """
-    EBB loader for DMA-v3 focal-depth evaluation.
+    EBB! loader for focal-depth evaluation.
 
     It reads EBB original/bokeh pairs, a focus annotation JSON, and cached depth
     maps. The returned bokeh_strength_map is abs(depth - focal_depth), matching
-    RealBokehFocalDepth's contract for model_dma_v3.
+    RealBokehFocalDepth's contract.
     """
 
     def __init__(

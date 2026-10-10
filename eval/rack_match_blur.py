@@ -1,11 +1,16 @@
 #!/usr/bin/env python
-"""Blur-matched focus sweep: for each scene, find the FlashReFocus strength whose out-of-focus blur matches GenRefocus'
-(mean absolute Laplacian over pixels far from every focal depth, relative to the AiF input, averaged over the eight focal
-settings), re-render the eight FlashReFocus frames at that strength into <scene>/ours_matched/, and record it.
-Usage: RACK_OUT=... RACK_AIF=... rack_match_blur.py"""
+"""Blur-matched focus sweep: per scene, the FlashReFocus strength whose out-of-focus blur matches GenRefocus' (mean
+absolute Laplacian over pixels far from every focal depth, relative to the all-in-focus input, averaged over the eight
+focal settings); the eight frames are re-rendered at that strength into <scene>/ours_matched/.
+Usage: RACK_OUT=<sweep_dir> RACK_AIF=<aif_dir> rack_match_blur.py"""
+import sys
 import json
 import os
 from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # repository root
+import paths  # noqa: E402
+paths.add_to_path()
+DATA_ROOT, WORK_ROOT = paths.DATA, paths.WORK
 
 import numpy as np
 import torch
@@ -14,8 +19,8 @@ from scipy import ndimage
 import fast_refocus as FR
 import rack_analyze as RA
 
-R = Path(os.environ.get("RACK_OUT", "/ssd1/chingheng/Defocus/refocus_bench/rack_focus"))
-AIF = Path(os.environ.get("RACK_AIF", "/ssd1/chingheng/Defocus/refocus_bench/3creal_lvcorr/aif"))
+R = Path(os.environ.get("RACK_OUT", str(WORK_ROOT / "rack_focus")))
+AIF = Path(os.environ.get("RACK_AIF", str(WORK_ROOT / "3creal_lvcorr/aif")))
 
 
 def sharp(img, m):

@@ -1,15 +1,18 @@
 #!/usr/bin/env python
-"""Rack-focus comparison of FlashReFocus and GenRefocus (outputs of rack_ours.py / rack_genrefocus.py) and material:
-  metrics  - in-focus fidelity: PSNR and LPIPS against the AiF over pixels near the focal depth;
-             edit consistency: between consecutive focal settings, pixels whose expected blur is unchanged
-             (| |d - f_i| - |d - f_i+1| | < tau) should stay the same -> PSNR / mean abs difference between the frames there.
-             Masks use FlashReFocus' DA2 depth for both methods (GenRefocus uses Depth Pro internally, so this is slightly
-             in its disfavour; tau is loose).
-  figures  - comparison strips (far -> near) and consecutive-frame difference maps;
-  videos   - rack-focus and strength sweeps (mp4 + gif) and a side-by-side comparison, for the project page."""
+"""Focus-sweep metrics for FlashReFocus and GenRefocus (outputs of rack_ours.py and rack_genrefocus.py):
+  * in-focus fidelity: PSNR and LPIPS against the all-in-focus input over pixels near the focal depth;
+  * edit consistency: between consecutive focal settings, pixels whose expected blur is unchanged
+    (| |d - f_i| - |d - f_i+1| | < tau) should not change; PSNR and mean absolute difference there.
+Masks use the Depth Anything V2 depth for both methods (GenRefocus uses Depth Pro internally; tau is loose to allow for
+this). Also writes comparison strips, difference maps and sweep videos."""
+import sys
 import json
 import subprocess
 from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # repository root
+import paths  # noqa: E402
+paths.add_to_path()
+DATA_ROOT, WORK_ROOT = paths.DATA, paths.WORK
 
 import lpips
 import numpy as np
@@ -17,9 +20,9 @@ import torch
 from PIL import Image, ImageDraw, ImageFont
 
 import os
-R = Path(os.environ.get("RACK_OUT", "/ssd1/chingheng/Defocus/refocus_bench/rack_focus"))
-AIF = Path(os.environ.get("RACK_AIF", "/ssd1/chingheng/Defocus/refocus_bench/3creal_lvcorr/aif"))
-FFMPEG = "/ssd1/chingheng/Defocus/refocus_bench/pylibs_video/imageio_ffmpeg/binaries/ffmpeg-linux-x86_64-v7.0.2"  # static build with libx264
+R = Path(os.environ.get("RACK_OUT", str(WORK_ROOT / "rack_focus")))
+AIF = Path(os.environ.get("RACK_AIF", str(WORK_ROOT / "3creal_lvcorr/aif")))
+FFMPEG = os.environ.get("FFMPEG", "ffmpeg")   # needs libx264
 TAU_FOCUS, TAU_SAME = 0.04, 0.02
 try:
     FONT = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 22)

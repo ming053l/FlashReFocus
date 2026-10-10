@@ -1,14 +1,11 @@
 #!/usr/bin/env python
-"""Re-score every method in the paper's zero-shot bokeh table (EBB! Val176, 3CReal)
-from saved output images, with one metric implementation for all methods.
-
-Existing columns (PSNR, SSIM, LPIPS-Alex, DISTS) use the same torchmetrics settings
-as SOTA/Genfocus/infer_bokeh_folder_metrics.py so they can be checked against the
-table; MS-SSIM and LPIPS-VGG are the added full-reference metrics.
-Predictions are matched to ground truth by the leading integer in the file name.
-"""
+"""Score the saved outputs of every method in the bokeh-rendering tables (EBB! Val176, 3CReal, RealBokeh validation)
+with one metric implementation: PSNR, SSIM, MS-SSIM, LPIPS (AlexNet and VGG) and DISTS from torchmetrics. Predictions are
+matched to the ground truth by the leading integer of the file name and resized to the target size if needed.
+No-reference metrics and CLIP-I are computed by score_folders.py."""
 
 import argparse
+import sys
 import csv
 import json
 import re
@@ -18,37 +15,20 @@ import torch
 import torch.nn.functional as F
 from PIL import Image
 from torchvision.transforms.functional import pil_to_tensor
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # repository root
+import paths  # noqa: E402
+paths.add_to_path()
 
-ROOT = Path(__file__).resolve().parent
-SOTA = Path("/ssd1/chingheng/Defocus/SOTA")
+# Ground truth under FLASHREFOCUS_DATA; each method's outputs under FLASHREFOCUS_WORK/bokeh_outputs/<method>/<dataset>/,
+# matched to the ground truth by the leading integer of the file name.
 GT = {
-    "ebb": ROOT / "gt_ebb176" / "bokeh",
-    "3creal": Path("/ssd1/chingheng/Deblurring-Dataset/3CReal/validation/bokeh"),
-    "rbval": Path("/ssd1/chingheng/Defocus/refocus_bench/realbokeh_val/bokeh"),     # RealBokeh validation, f/2.0 targets
+    "ebb": paths.DATA / "EBB_Val176" / "bokeh",
+    "3creal": paths.DATA / "3CReal" / "validation" / "bokeh",
+    "rbval": paths.DATA / "RealBokeh_val_f2.0" / "bokeh",          # RealBokeh validation, f/2.0 targets
 }
-RB = Path("/ssd1/chingheng/Defocus/refocus_bench/rbval_out")
-PRED = {
-    "DeepLens": {"ebb": ROOT / "deeplens/ebb/dof", "3creal": SOTA / "deeplens_eval/data/res_3creal_validation/dof"},
-    "MPIB": {"ebb": ROOT / "mpib/ebb", "3creal": ROOT / "mpib/3creal"},
-    "BokehMe": {"ebb": ROOT / "bokehme/ebb/images", "3creal": ROOT / "bokehme/3creal/images"},
-    "Dr.Bokeh": {"ebb": ROOT / "drbokeh/ebb/batch_eval", "3creal": ROOT / "drbokeh/3creal"},
-    "Bokehlicious": {"ebb": ROOT / "bokehlicious/ebb/images/EBB400", "3creal": ROOT / "bokehlicious/3creal"},
-    "BokehDiff": {"ebb": SOTA / "bokehdiff/bokehdiff_ebb_outputs_correct/validation/images",
-                  "3creal": SOTA / "bokehdiff/bokehdiff_3creal_outputs/validation/images"},
-    "GenRefocus": {"ebb": SOTA / "Genfocus/outputs/ebb_bokeh_eval/images", "3creal": SOTA / "Genfocus/outputs/bokeh_3creal/images"},
-    "DeReFocus-B3": {"ebb": ROOT / "ours/ebb_B3"},
-    "DeReFocus": {"ebb": ROOT / "ours/ebb/images", "3creal": ROOT / "ours/3creal/images"},
-    "MagicBokeh": {"ebb": SOTA / "MagicBokeh/outputs/ebb_bokeh_eval/images", "3creal": SOTA / "MagicBokeh/outputs/bokeh_3creal/images"},
-    "Abl-A0": {"3creal": ROOT / "ablation3c/A0_3creal/images"},
-    "Abl-A1": {"3creal": ROOT / "ablation3c/A1_3creal/images"},
-    "Abl-A2": {"3creal": ROOT / "ablation3c/A2_3creal/images"},
-    "Abl-B2": {"3creal": ROOT / "ablation3c/B2_3creal/images"},
-    "Abl-B4": {"3creal": ROOT / "ablation3c/B4_3creal/images"},
-}
-for _m, _d in {"DeepLens": "deeplens_rbval/dof", "BokehMe": "bokehme_rbval/images", "Bokehlicious": "bokehlicious/images",
-               "BokehDiff": "bokehdiff_rbval/validation/images", "GenRefocus": "genrefocus/images", "MagicBokeh": "magicbokeh/images",
-               "DeReFocus": "ours/images", "DeReFocus-bf16": "ours_bf16/images"}.items():
-    PRED.setdefault(_m, {})["rbval"] = RB / _d
+METHODS = ["DeepLens", "MPIB", "BokehMe", "Dr.Bokeh", "Bokehlicious", "BokehDiff", "GenRefocus", "MagicBokeh", "FlashReFocus"]
+OUTPUTS = paths.WORK / "bokeh_outputs"
+PRED = {m: {ds: OUTPUTS / m / ds for ds in GT} for m in METHODS}
 SUFFIXES = {".png", ".jpg", ".jpeg"}
 
 
@@ -77,7 +57,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--methods", nargs="*", default=list(PRED))
     ap.add_argument("--datasets", nargs="*", default=["ebb", "3creal"])
-    ap.add_argument("--out", type=Path, default=ROOT / "results")
+    ap.add_argument("--out", type=Path, default=paths.WORK / "bokeh_results")
     ap.add_argument("--summary_name", default="summary.json")
     ap.add_argument("--inspect", action="store_true", help="only report matching, no metrics")
     args = ap.parse_args()

@@ -1,22 +1,24 @@
 #!/usr/bin/env python
-"""Rack-focus material with FlashReFocus Stage II on 3CReal AiF inputs (long side 1024, the LVCorr inputs given to every
-method). Picks the --n_scenes scenes with the widest depth spread, and per scene
-  * 8 focus points at depth quantiles 95%..5% of the renderer depth (1 = far), i.e. far -> near, shared with GenRefocus;
-  * the 8 comparison frames at strength --strength;
-  * a --video_frames rack-focus sequence along the path through the 8 points, and a strength sweep 0 -> 1;
-  * the normalised depth (depth.npy) used for the common in-focus masks.
-Timing per render call is logged (depth computed once per image, as in fast_refocus.py)."""
+"""Focus sweep with FlashReFocus on 3CReal all-in-focus inputs (long side 1024): picks the --n_scenes scenes with the
+widest depth spread and, per scene, eight focal points at depth quantiles 95% .. 5% (far -> near), shared with
+GenRefocus; renders the eight frames at --strength, a --video_frames sweep along a path through the points and a
+strength sweep 0 -> 1, and saves the normalised depth (depth.npy) used for the in-focus masks. Logs the time per edit."""
+import sys
 import argparse
 import json
 import time
 from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # repository root
+import paths  # noqa: E402
+paths.add_to_path()
+DATA_ROOT, WORK_ROOT = paths.DATA, paths.WORK
 
 import numpy as np
 import torch
 
 import fast_refocus as FR
 
-AIF = Path("/ssd1/chingheng/Defocus/refocus_bench/3creal_lvcorr/aif")
+AIF = (WORK_ROOT / "3creal_lvcorr/aif")
 
 
 def quantile_points(depth, qs, grid=24):
@@ -35,7 +37,7 @@ def quantile_points(depth, qs, grid=24):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--out", type=Path, default=Path("/ssd1/chingheng/Defocus/refocus_bench/rack_focus"))
+    ap.add_argument("--out", type=Path, default=(WORK_ROOT / "rack_focus"))
     ap.add_argument("--aif_dir", type=Path, default=AIF)
     ap.add_argument("--n_scenes", type=int, default=3)
     ap.add_argument("--strength", type=float, default=0.5)

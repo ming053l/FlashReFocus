@@ -1,0 +1,21 @@
+# Tested with Python 3.10, CUDA 12.8. Install torch and torchvision for your CUDA version first, e.g.
+#   pip install torch==2.7.1 torchvision==0.22.1 --index-url https://download.pytorch.org/whl/cu128
+diffusers==0.25.0
+transformers==4.46.0
+accelerate==1.13.0
+peft==0.9.0
+huggingface_hub
+timm==1.0.24
+torchmetrics==1.8.2
+lpips
+opencv-python
+scipy
+numpy<2
+pillow
+pyyaml
+tqdm
+tensorboard
+# Stage I training only (RAM++ tagger)
+fairscale
+# evaluation only (score_folders.py: CLIP-IQA, MUSIQ, MANIQA)
+# pyiqa

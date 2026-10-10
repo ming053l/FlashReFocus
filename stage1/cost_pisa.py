@@ -1,16 +1,13 @@
 #!/usr/bin/env python
-"""Deblurring cost of the PiSA-SR Stage I at 1680x1120 (Table 2 protocol).
+"""Deblurring cost of Stage I (parameters, FLOPs, time, memory) at a fixed input size, default 1680x1120.
 
-Configurations: plain (one UNet pass, SD2.1 VAE decoder), +refiner (the DeReFocus VAE refiner decodes the latent),
-+refiner with lambda_sem = 1.25 (PiSA-SR adjustable mode: two UNet passes). Inference is exactly as in
-run_pisa_refiner.py: text encoder (empty prompt), VAE encoder, UNet at t=1, then the decoder or refiner (the refiner
-runs its own encoder pass on the input, as implemented).
+Configurations: plain (one U-Net pass, SD2.1 VAE decoder), refiner (the decoder refiner decodes the latent) and
+refiner_l125 (omega = 1.25: two U-Net passes). Inference as run_pisa_refiner.py: empty-prompt text encoding, VAE
+encoder, U-Net at t = 1, then the decoder or the refiner.
 
   --flops : FLOPs of one traced run with torch.utils.flop_counter (one multiply-add = 2 FLOPs, element-wise operations
-            excluded), as refocus_bench/flops_deblur.py; counts depend only on tensor shapes, so the GPU run is exact.
-  --time  : mean time over --runs after --warmup warm-up runs and peak allocated memory on the current GPU,
-            excluding disk I/O (Table 2 protocol).
-"""
+            excluded); counts depend only on tensor shapes.
+  --time  : mean time over --runs after --warmup runs and peak allocated memory, excluding disk I/O."""
 import argparse
 import json
 import sys
@@ -21,7 +18,9 @@ import torch
 from torch.utils.flop_counter import FlopCounterMode
 
 HERE = Path(__file__).resolve().parent
-sys.path.insert(0, str(HERE))
+sys.path.insert(0, str(HERE.parent))  # repository root
+import paths  # noqa: E402
+paths.add_to_path()
 H, W = 1120, 1680
 
 
@@ -41,7 +40,6 @@ def build(a, lambda_sem, refiner, device, dtype):
     ref = None
     if refiner:
         from diffusers import AutoencoderKL
-        sys.path.insert(0, a.myautorefocus)
         from refiner.vae_refiner_wo_d import VAEMultiScaleFusionDecoder
         ref = VAEMultiScaleFusionDecoder(AutoencoderKL.from_pretrained(a.sd15, subfolder="vae"), depth=2,
                                          map_hidden_channels=32, use_pixel_weighting=False, use_high_freq_info=True)
@@ -78,11 +76,10 @@ def main():
     ap.add_argument("--time", action="store_true")
     ap.add_argument("--warmup", type=int, default=10)
     ap.add_argument("--runs", type=int, default=100)
-    ap.add_argument("--ckpt", required=True)
+    ap.add_argument("--ckpt", default=str(paths.STAGE1))
     ap.add_argument("--refiner", default=None)
-    ap.add_argument("--sd21", default="/ssd1/chingheng/Defocus/stable-diffusion-2-1-base")
-    ap.add_argument("--sd15", default="/ssd1/chingheng/Defocus/stable-diffusion-v1-5")
-    ap.add_argument("--myautorefocus", default="/ssd1/chingheng/Defocus/MyAutoRefocus")
+    ap.add_argument("--sd21", default=str(paths.SD21))
+    ap.add_argument("--sd15", default=str(paths.SD15))
     ap.add_argument("--out", type=Path, default=None)
     ap.add_argument("--height", type=int, default=H)
     ap.add_argument("--width", type=int, default=W)

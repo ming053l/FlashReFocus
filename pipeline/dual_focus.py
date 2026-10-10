@@ -1,8 +1,8 @@
 #!/usr/bin/env python
-"""Two focal planes by depth editing (no retraining): with focal depths d_A (near subject) and d_B (far subject), the
-renderer receives d' = f + min(|d - d_A|, |d - d_B|) with f = d_A, so every pixel's defocus is its distance to the nearer
-of the two planes. Renders single-plane A, single-plane B and dual-plane results, measures the sharpness (mean |Laplacian|
-relative to the input) around each plane, and saves a strip and the panels.
+"""Two focal planes by depth editing, without retraining: with focal depths d_A and d_B, the renderer receives
+d' = d_A + min(|d - d_A|, |d - d_B|), so every pixel is blurred by its distance to the nearer of the two planes.
+Renders plane A only, plane B only and both, measures the sharpness around each plane (mean |Laplacian| relative to the
+input), and saves the panels and a strip.
 Usage: dual_focus.py <aif.png> <xA> <yA> <xB> <yB> <strength> <out_prefix>"""
 import json
 import sys
@@ -12,8 +12,11 @@ import numpy as np
 import torch
 from scipy import ndimage
 
-import fast_refocus as FR
-import rack_analyze as RA
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # repository root
+import paths  # noqa: E402
+paths.add_to_path()
+import fast_refocus as FR  # noqa: E402
+import rack_analyze as RA  # noqa: E402
 
 aif_p = Path(sys.argv[1]); xa, ya, xb, yb = map(float, sys.argv[2:6]); st = float(sys.argv[6]); out = Path(sys.argv[7])
 FR.setup_backend(True)

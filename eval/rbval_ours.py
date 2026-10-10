@@ -6,13 +6,17 @@ unimodal SSIM, as the baselines' K searches). Inputs, targets and focus points i
 import argparse
 import csv
 import json
+import sys
 from pathlib import Path
 
 import torch
 from PIL import Image
 from torchmetrics.functional.image import structural_similarity_index_measure as ssim
 
-import fast_refocus as FR
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # repository root
+import paths  # noqa: E402
+paths.add_to_path()
+import fast_refocus as FR  # noqa: E402
 
 
 def main():

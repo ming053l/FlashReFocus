@@ -1,3 +1,5 @@
+"""Validation metrics of a renderer checkpoint on RealBokeh pairs at the annotated strength."""
+import os
 import argparse
 from pathlib import Path
 
@@ -11,6 +13,10 @@ from dataset.util import Mode
 from method.config_dma import build_bokehlicious_dma
 from train import build_metric_funcs, extract_model_state_dict
 
+# datasets under FLASHREFOCUS_DATA, outputs under FLASHREFOCUS_WORK (defaults <repo>/data, <repo>/work; see paths.py)
+_REPO = Path(__file__).resolve().parents[1]
+DATA_ROOT = Path(os.environ.get("FLASHREFOCUS_DATA", _REPO / "data"))
+
 
 def parse_args():
     parser = argparse.ArgumentParser(
@@ -19,7 +25,7 @@ def parse_args():
     parser.add_argument(
         "--data-dir",
         type=Path,
-        default=Path("/ssddd/chingheng/Deblurring-Dataset/RealBokeh"),
+        default=(DATA_ROOT / "RealBokeh"),
         help="RealBokeh dataset root containing validation/metadata and validation/pseudo_defocus_map.",
     )
     parser.add_argument(

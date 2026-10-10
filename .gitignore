@@ -8,3 +8,8 @@ __pycache__/
 runs/
 outputs/
 .ipynb_checkpoints/
+weights/
+data/
+work/
+baselines/
+checkpoints/

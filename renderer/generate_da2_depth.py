@@ -1,12 +1,19 @@
+"""Cache Depth Anything V2 relative depth (float32 TIFF) for RealBokeh, EBB! and 3CReal images, as read by the
+renderer's data loaders (--depth-map-dir da2_depth)."""
+import os
 import argparse
 import json
 from pathlib import Path
 
+# datasets under FLASHREFOCUS_DATA, outputs under FLASHREFOCUS_WORK (defaults <repo>/data, <repo>/work; see paths.py)
+_REPO = Path(__file__).resolve().parents[1]
+DATA_ROOT = Path(os.environ.get("FLASHREFOCUS_DATA", _REPO / "data"))
+
 
 BOKEHLICIOUS_ROOT = Path(__file__).resolve().parent
-DA2_ROOT = BOKEHLICIOUS_ROOT.parent / "Depth-Anything-V2"
-DEFAULT_REALBOKEH_ROOT = Path("/ssddd/chingheng/Deblurring-Dataset/RealBokeh")
-DEFAULT_EBB_ROOT = Path("/ssddd/chingheng/Deblurring-Dataset/EBB")
+DA2_ROOT = BOKEHLICIOUS_ROOT.parent / "third_party" / "Depth-Anything-V2"
+DEFAULT_REALBOKEH_ROOT = (DATA_ROOT / "RealBokeh")
+DEFAULT_EBB_ROOT = (DATA_ROOT / "EBB")
 DEFAULT_REAL3C_ROOT = BOKEHLICIOUS_ROOT / "Real3C"
 
 IMAGE_SUFFIXES = {".jpg", ".jpeg", ".png", ".bmp", ".tif", ".tiff", ".JPG", ".JPEG", ".PNG"}

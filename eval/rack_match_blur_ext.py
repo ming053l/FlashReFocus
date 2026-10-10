@@ -1,12 +1,17 @@
 #!/usr/bin/env python
-"""Blur matching with an extended strength range: FlashReFocus strength is searched in [0, 2] (above 1 extrapolates beyond
-the trained range, and blur is not always monotonic there, so it is searched only up to the blurriest of 1.25..2); if that
-is still sharper than GenRefocus, the renderer is applied twice (strength in [0, 1], then up to that value). Matching per focal setting -> <scene>/ours_matched_pf_ext/ (figures, in-focus fidelity); one setting per scene
-matching the blur averaged over the eight settings -> <scene>/ours_matched_ext/ (edit consistency).
-Sharpness ratio as in rack_match_blur.py. Usage: RACK_OUT=... RACK_AIF=... rack_match_blur_ext.py"""
+"""Blur matching with an extended strength range: the FlashReFocus strength is searched in [0, 2] (above 1 extrapolates
+beyond the trained range and blur is not always monotonic there, so only up to the blurriest of 1.25 .. 2); if the result
+is still sharper than GenRefocus, the renderer is applied twice. Matched per focal setting -> <scene>/ours_matched_pf_ext/;
+one strength per scene matching the blur averaged over the eight settings -> <scene>/ours_matched_ext/.
+Usage: RACK_OUT=<sweep_dir> RACK_AIF=<aif_dir> rack_match_blur_ext.py"""
+import sys
 import json
 import os
 from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # repository root
+import paths  # noqa: E402
+paths.add_to_path()
+DATA_ROOT, WORK_ROOT = paths.DATA, paths.WORK
 
 import numpy as np
 
@@ -14,8 +19,8 @@ import fast_refocus as FR
 import rack_analyze as RA
 from rack_match_blur import sharp
 
-R = Path(os.environ.get("RACK_OUT", "/ssd1/chingheng/Defocus/refocus_bench/rack_focus"))
-AIF = Path(os.environ.get("RACK_AIF", "/ssd1/chingheng/Defocus/refocus_bench/3creal_lvcorr/aif"))
+R = Path(os.environ.get("RACK_OUT", str(WORK_ROOT / "rack_focus")))
+AIF = Path(os.environ.get("RACK_AIF", str(WORK_ROOT / "3creal_lvcorr/aif")))
 SMAX = 2.0
 
 

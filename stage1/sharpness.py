@@ -1,24 +1,22 @@
 #!/usr/bin/env python
-"""Sharpness of restored images relative to the ground truth (the paper's Laplacian-variance measure).
-
-For every pair (outputs named {index:04d}.png as in the PASD Table-1 runs) reports the ratio
-LapVar(output) / LapVar(GT) of the grey image, at full resolution and after 0.5x bicubic downscaling
-(which suppresses pixel-level noise and compares edges), plus PSNR at 0.5x.
-A ratio of 1 means as much high-frequency energy as the ground truth; blurry outputs are < 1.
-"""
+"""Sharpness of restored images relative to the ground truth: the ratio LapVar(output) / LapVar(GT) of the grey image,
+at full resolution and after 0.5x bicubic downscaling (which suppresses pixel-level noise and compares edges), plus PSNR
+at 0.5x. 1 means as much high-frequency energy as the ground truth; blurry outputs are below 1.
+Outputs are expected as {index:04d}.png, as written by run_pisa_refiner.py."""
 import argparse
 import json
+import sys
 from pathlib import Path
 
 import cv2
 import numpy as np
 from PIL import Image
 
-PASD_RUNS = Path("/ssd1/chingheng/Defocus/MyAutoRefocus/runs")
-PAIRS = {
-    "dpdd": PASD_RUNS / "dpdd_ans_sweep/n400/two_stage_dpdd_cfg1.0_ans400_tile320/validation/step_000000/metrics.json",
-    "realdof": PASD_RUNS / "realdof_ans_sweep/n400/two_stage_realdof_cfg1.0_ans400_tile320/validation/step_000000/metrics.json",
-}
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # repository root
+import paths  # noqa: E402
+
+HERE = Path(__file__).resolve().parent
+PAIRS = {"dpdd": HERE / "pairs/dpdd_test.json", "realdof": HERE / "pairs/realdof_test.json"}   # paths relative to paths.DATA
 
 
 def lapvar(rgb):
@@ -35,8 +33,8 @@ def main():
     if a.gt_dir:
         pairs = [(p, a.gt_dir / p.name) for p in sorted(a.pred_dir.glob("*.png"))]
     else:
-        pairs = [(a.pred_dir / a.pred_pattern.format(index=s["index"]), Path(s["target_path"]))
-                 for s in json.load(open(PAIRS[a.dataset]))["samples"]]
+        pairs = [(a.pred_dir / a.pred_pattern.format(index=s["index"]), paths.DATA / s["target"])
+                 for s in json.load(open(PAIRS[a.dataset]))]
     r_full, r_half, psnr_half = [], [], []
     for p, t in pairs:
         if not p.exists():

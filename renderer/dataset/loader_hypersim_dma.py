@@ -18,6 +18,10 @@ from dataset.util import (
     make_point_focus_map,
 )
 
+# datasets under FLASHREFOCUS_DATA, outputs under FLASHREFOCUS_WORK (defaults <repo>/data, <repo>/work; see paths.py)
+_REPO = Path(__file__).resolve().parents[2]
+DATA_ROOT = Path(os.environ.get("FLASHREFOCUS_DATA", _REPO / "data"))
+
 
 def _to_inverse_depth_tensor(
     tensor: torch.Tensor,
@@ -215,9 +219,9 @@ def _joint_random_rotate90(
 
 class HypersimBokehDMA(Dataset):
     """
-    Hypersim synthetic bokeh loader for Bokehlicious DMA training.
+    Hypersim synthetic bokeh loader for renderer pre-training.
 
-    Expected metadata item keys follow AutoRefocusV2's HypersimBokehDataset:
+    Expected metadata item keys:
     rgb_path, output_path, depth_path, K, disp_focus, and optional pair_id.
     The depth file is used both to build the synthetic defocus supervision map
     and as the model input for focal-distance learning.
@@ -227,7 +231,7 @@ class HypersimBokehDMA(Dataset):
         self,
         root: Union[
             str, Path
-        ] = "/ssddd/chingheng/Deblurring-Dataset/Hypersim_preprocessed",
+        ] = str(DATA_ROOT / "Hypersim_preprocessed"),
         split: str = "train",
         metadata_name: str = "bokeh_random_metadata.json",
         device: str = "cuda",

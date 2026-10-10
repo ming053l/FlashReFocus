@@ -1,9 +1,8 @@
 #!/usr/bin/env python
-"""Model selection on held-out sets that are neither in training nor in Table 1:
-DPDD val_c (74 pairs, full resolution) and LFDOF test (50 scenes, one focal slice each, full resolution).
-Writes restored images named like the ground truth, for MyAutoRefocus/evaluate_folders.py and sharpness.py.
-Inference is identical to run_pisa_zeroshot.py (deterministic encoding, whole image, empty prompt, one UNet pass).
-"""
+"""Restore the held-out model-selection sets with a Stage I checkpoint: DPDD val_c (74 pairs) and LFDOF test (50 scenes,
+one focal slice each), both at full resolution and used in neither training nor the reported results. Outputs are named
+like the ground truth, for eval/score_folders.py and sharpness.py. Inference as run_pisa_zeroshot.py."""
+import os
 import argparse
 import sys
 from pathlib import Path
@@ -12,12 +11,19 @@ import torch
 import torchvision.transforms.functional as TF
 from PIL import Image
 
+# datasets under FLASHREFOCUS_DATA, outputs under FLASHREFOCUS_WORK (defaults <repo>/data, <repo>/work; see paths.py)
+_REPO = Path(__file__).resolve().parents[1]
+DATA_ROOT = Path(os.environ.get("FLASHREFOCUS_DATA", _REPO / "data"))
+WORK_ROOT = Path(os.environ.get("FLASHREFOCUS_WORK", _REPO / "work"))
+
 HERE = Path(__file__).resolve().parent
-sys.path.insert(0, str(HERE))
+sys.path.insert(0, str(HERE.parent))  # repository root
+import paths  # noqa: E402
+paths.add_to_path()
 from run_pisa_zeroshot import PiSADeterministic  # noqa: E402
 
-DPDD_VAL = Path("/ssd1/chingheng/Deblurring-Dataset/dd_dp_dataset_png/val_c")
-LFDOF_TEST = Path("/ssd4/chingheng/LFDOF/test_data")
+DPDD_VAL = paths.DATA / "dd_dp_dataset_png/val_c"
+LFDOF_TEST = (DATA_ROOT / "LFDOF/test_data")
 
 
 def heldout_pairs(name):
@@ -35,7 +41,7 @@ def main():
     ap.add_argument("--out", type=Path, required=True)
     a = ap.parse_args()
     import argparse as _ap
-    args = _ap.Namespace(pretrained_model_path="/ssd1/chingheng/Defocus/stable-diffusion-2-1-base", pretrained_path=a.ckpt,
+    args = _ap.Namespace(pretrained_model_path=str(paths.SD21), pretrained_path=a.ckpt,
                          lambda_pix=1.0, lambda_sem=1.0, mixed_precision="fp16", default=True,
                          vae_decoder_tiled_size=100000, vae_encoder_tiled_size=100000,
                          latent_tiled_size=100000, latent_tiled_overlap=0, seed=42)

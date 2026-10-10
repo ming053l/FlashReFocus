@@ -1,8 +1,8 @@
 #!/usr/bin/env python
-"""Focus-sweep metrics for matching version B: FlashReFocus at its default strength 0.5 (<scene>/ours) against GenRefocus
-with K matched to that blur (<scene>/genrefocus_matched, rack_genrefocus_match.py). Same masks and metrics as
-rack_analyze.py; also the out-of-focus sharpness ratio over all eight settings (rack_match_blur.sharp) and the per-panel
-in-focus PSNR/LPIPS of the four settings shown in the figures. Usage: RACK_OUT=... RACK_AIF=... rack_metrics_kmatch.py"""
+"""Focus-sweep metrics with GenRefocus matched to FlashReFocus: FlashReFocus at its default strength 0.5 (<scene>/ours)
+against GenRefocus with K matched to that blur (<scene>/genrefocus_matched, rack_genrefocus_match.py). Same masks and
+metrics as rack_analyze.py, plus the out-of-focus sharpness ratio and per-panel in-focus PSNR / LPIPS.
+Usage: RACK_OUT=<sweep_dir> RACK_AIF=<aif_dir> rack_metrics_kmatch.py"""
 import json
 
 import lpips

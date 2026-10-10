@@ -1,17 +1,17 @@
 #!/usr/bin/env python
-"""MODEST aperture ladder: strength controllability of each method. For every method the per-image best strength (its own
-unit: FlashReFocus strength, BokehMe / MagicBokeh K, DeepLens aperture) found against the f/16, 9, 5, 2.8 targets is compared
-with 1/N: ladders whose best strength never decreases as the aperture opens (monotonic), mean Spearman rank correlation per
-ladder, and the Pearson correlation of the mean strength with 1/N; plus mean SSIM per aperture from the searches.
-Output: rbval_out/modest_summary.json"""
+"""Strength controllability on MODEST aperture ladders: for each method, the per-image best strength (in the method's
+own unit) found against the f/16, 9, 5 and 2.8 targets is compared with 1/N: the share of ladders whose best strength
+never decreases as the aperture opens, the mean Spearman rank correlation per ladder, and the Pearson correlation of the
+mean strength with 1/N; plus the mean SSIM per aperture. Reads <work>/rbval_out/modest_*; writes modest_summary.json."""
 import csv
 import json
+import os
 from pathlib import Path
 
 import numpy as np
 from scipy.stats import pearsonr, spearmanr
 
-O = Path(__file__).resolve().parent / "rbval_out"
+O = Path(os.environ.get("FLASHREFOCUS_WORK", Path(__file__).resolve().parents[1] / "work")) / "rbval_out"
 APS = ["F16.0", "F9.0", "F5.0", "F2.8"]
 INV = np.array([1 / float(a[1:]) for a in APS])
 SRC = {"FlashReFocus": ("modest_ours_bf16_{}/results.csv", "key", "strength", "ssim"),

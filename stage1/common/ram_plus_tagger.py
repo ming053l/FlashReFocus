@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import os
 from pathlib import Path
 from typing import List, Sequence
 
@@ -13,17 +14,16 @@ from PIL import Image
 from torch import nn
 import random
 
-DEFAULT_CHECKPOINT = Path(
-    "/ssd1/chingheng/Defocus/SOTA/recognize-anything/pretrained/ram_plus_swin_large_14m.pth"
-)
+DEFAULT_CHECKPOINT = Path(os.environ.get("FLASHREFOCUS_WEIGHTS", Path(__file__).resolve().parents[2] / "weights")) \
+    / "ram_plus_swin_large_14m.pth"
 
 
 try:
     from ram.models import ram_plus
 except ModuleNotFoundError as exc:
     raise ModuleNotFoundError(
-        "Failed to import AutoRefocus's vendored `ram` package. Make sure "
-        "`AutoRefocus/ram` exists."
+        "Failed to import the `ram` package of RAM++. Run `git submodule update --init` "
+        "(third_party/recognize-anything) and import paths.py first."
     ) from exc
 
 

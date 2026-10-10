@@ -2,6 +2,7 @@ import argparse
 import inspect
 import os
 import time
+from pathlib import Path
 
 import torch
 import torch.nn.functional as F
@@ -17,6 +18,10 @@ from dataset.loader import RealBokeh
 from dataset.util import Mode
 from method.config import bokehlicious_size_builder
 from method.model import Bokehlicious
+
+# datasets under FLASHREFOCUS_DATA, outputs under FLASHREFOCUS_WORK (defaults <repo>/data, <repo>/work; see paths.py)
+_REPO = Path(__file__).resolve().parents[1]
+DATA_ROOT = Path(os.environ.get("FLASHREFOCUS_DATA", _REPO / "data"))
 
 
 def set_seed(seed):
@@ -758,7 +763,7 @@ def main():
     parser.add_argument(
         "--data-dir",
         type=str,
-        default="/ssddd/chingheng/Deblurring-Dataset/RealBokeh",
+        default=str(DATA_ROOT / "RealBokeh"),
     )
     parser.add_argument(
         "--size",

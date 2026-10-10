@@ -1,5 +1,6 @@
 import csv
 import json
+import os
 import random
 import re
 from pathlib import Path
@@ -15,6 +16,9 @@ import torch.nn.functional as F
 
 from defocus_prior import build_prior_bundle
 from train_utils import format_aperture_prompt
+
+# datasets live under FLASHREFOCUS_DATA (default <repo>/data), see paths.py
+DATA_ROOT = Path(os.environ.get("FLASHREFOCUS_DATA", Path(__file__).resolve().parents[2] / "data"))
 
 
 def _normalize_image_sizes(
@@ -77,9 +81,11 @@ def _load_rgb_tensor(path: Path) -> torch.Tensor:
 
 
 def _resolve_manifest_path(manifest_root: Path, value: str) -> Path:
+    """Relative manifest entries are resolved against the data root (FLASHREFOCUS_DATA, default <repo>/data) when
+    they exist there, otherwise against the manifest's own folder."""
     path = Path(value)
     if not path.is_absolute():
-        path = manifest_root / path
+        path = DATA_ROOT / path if (DATA_ROOT / path).exists() else manifest_root / path
     return path
 
 
@@ -362,7 +368,7 @@ def synthetic_defocus_blur(
 class DPDDDataset(Dataset):
     def __init__(
         self,
-        root: str = "/ssddd/chingheng/Deblurring-Dataset/dd_dp_dataset_png",
+        root: str = str(DATA_ROOT / "dd_dp_dataset_png"),
         split: str = "train",
         prediction_root: Optional[str] = None,
         image_size: Optional[int] = None,
@@ -719,7 +725,7 @@ class DPDDDataset(Dataset):
 class HypersimBokehDataset(DPDDDataset):
     def __init__(
         self,
-        root: str = "/ssddd/chingheng/Deblurring-Dataset/Hypersim_preprocessed",
+        root: str = str(DATA_ROOT / "Hypersim_preprocessed"),
         split: str = "train",
         image_size: Optional[int] = None,
         use_augmentation: Optional[bool] = None,
@@ -848,7 +854,7 @@ class HypersimBokehDataset(DPDDDataset):
 class RealBokehDataset(DPDDDataset):
     def __init__(
         self,
-        root: str = "/ssddd/chingheng/Deblurring-Dataset/RealBokeh",
+        root: str = str(DATA_ROOT / "RealBokeh"),
         split: str = "train",
         image_size: Optional[int] = None,
         use_augmentation: Optional[bool] = None,
@@ -1034,7 +1040,7 @@ class RealBokehDataset(DPDDDataset):
 class RealDOFDataset(DPDDDataset):
     def __init__(
         self,
-        root: str = "/ssd1/chingheng/Deblurring-Dataset/RealDOF",
+        root: str = str(DATA_ROOT / "RealDOF"),
         split: str = "test",
         image_size: Optional[int] = None,
         use_augmentation: Optional[bool] = None,
@@ -1455,7 +1461,7 @@ class DeblurringDataset(DPDDDataset):
 class LFDOFDataset(DPDDDataset):
     def __init__(
         self,
-        root: str = "/ssd4/chingheng/LFDOF",
+        root: str = str(DATA_ROOT / "LFDOF"),
         split: str = "train",
         image_size: Optional[int] = None,
         use_augmentation: Optional[bool] = None,
@@ -1591,12 +1597,12 @@ class MixedDeblurDataset(Dataset):
             split == "train" if use_augmentation is None else use_augmentation
         )
 
-        dpdd_root = dpdd_root or "/ssd1/chingheng/Deblurring-Dataset/dd_dp_dataset_png"
+        dpdd_root = dpdd_root or str(DATA_ROOT / "dd_dp_dataset_png")
         deblurring_root = (
             deblurring_root
-            or "/ssd1/chingheng/Defocus/SOTA/Genfocus/manifests/deblur_train_realbokeh_top1000_laplacian.csv"
+            or str(Path(__file__).resolve().parents[1] / "configs/deblur_train_realbokeh_top1000_laplacian.csv")
         )
-        lfdof_root = lfdof_root or "/ssd4/chingheng/LFDOF"
+        lfdof_root = lfdof_root or str(DATA_ROOT / "LFDOF")
         if clear_data_dir is None:
             dpdd_target_dir = Path(dpdd_root) / f"{split}_c" / "target"
             clear_data_dir = str(
@@ -1696,7 +1702,7 @@ class MixedDeblurDataset(Dataset):
         return sample
 
 
-def build_autorefocus_dataset(
+def build_training_dataset(
     args,
     split: str,
     image_size: Optional[int],
@@ -1739,7 +1745,7 @@ def build_autorefocus_dataset(
             dpdd_kwargs = dict(common_kwargs)
             dpdd_kwargs["root"] = (
                 getattr(args, "mixed_dpdd_data_dir", None)
-                or "/ssd1/chingheng/Deblurring-Dataset/dd_dp_dataset_png"
+                or str(DATA_ROOT / "dd_dp_dataset_png")
             )
             return DPDDDataset(**dpdd_kwargs)
         return MixedDeblurDataset(

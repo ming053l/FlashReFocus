@@ -1,18 +1,18 @@
 """Route the Stage II attention through torch.nn.functional.scaled_dot_product_attention (SDPA).
 
-apply() replaces, at runtime and without editing the shared repositories,
-  * Depth Anything V2 (DINOv2) Attention.forward: plain softmax attention -> SDPA (Flash / mem-efficient kernels);
-  * Bokehlicious DMADefocusBiasAttention.forward: both axial passes -> SDPA with the additive defocus bias as a float
-    attn_mask (mem-efficient kernel; Flash does not take a float bias) and scale=1, since k is pre-scaled.
-Both are the same computation as the originals up to floating-point reordering.
-"""
+apply() replaces at runtime, without editing the submodules:
+  * Depth Anything V2 (DINOv2) Attention.forward: plain softmax attention -> SDPA (Flash / memory-efficient kernels);
+  * DMADefocusBiasAttention.forward (renderer): both axial passes -> SDPA with the additive defocus bias as a float
+    attn_mask (memory-efficient kernel; Flash does not take a float bias) and scale = 1, since k is pre-scaled.
+Both compute the same result as the originals up to floating-point reordering."""
 import sys
 from pathlib import Path
 
 import torch
 import torch.nn.functional as F
 
-SOTA = Path("/ssd1/chingheng/Defocus/SOTA")
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # repository root
+import paths  # noqa: E402
 
 
 def _da2_forward(self, x, attn_bias=None):
@@ -47,9 +47,8 @@ def _dma_forward(self, x, defocus_map, bokeh_strength=None, attention_rel_pos=No
 
 def apply(da2=True, renderer=True):
     """renderer=False keeps the renderer's own attention: its short axial rows with a float bias run slower through SDPA
-    (0.31 s vs 0.26 s at 1536x1536 on the RTX PRO 6000), while DA2 gains 4.2x (0.057 s vs 0.244 s)."""
-    sys.path.insert(0, str(SOTA / "Depth-Anything-V2"))
-    sys.path.insert(0, str(SOTA / "Bokehlicious"))
+    (0.31 s against 0.26 s at 1536x1536 in our measurement), while DA2 runs 4.2x faster."""
+    paths.add_to_path()
     if da2:
         from depth_anything_v2.dinov2_layers import attention as da2_attn
         da2_attn.Attention.forward = _da2_forward

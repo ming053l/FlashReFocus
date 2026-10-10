@@ -1,3 +1,5 @@
+"""Renderer pre-training on synthetic multi-focal Hypersim scenes (rendering targets from BokehMe), built on the
+Bokehlicious training loop (train.py). See train_renderer.sh for the configuration of the released renderer."""
 import os
 import sys
 import time

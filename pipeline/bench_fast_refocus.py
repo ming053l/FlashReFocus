@@ -1,8 +1,9 @@
 #!/usr/bin/env python
-"""Table 6 protocol for the faster pipeline (fast_refocus.py): time per call including image read/write, over --runs calls
-after --warmup calls; First = Stage I + depth + render, New focus = render with the cached depth. Also compares every
-output with the original code path (cost_pisa.run + to_pil_image; BokehliciousFocusEngine.infer_image)."""
+"""Refocusing cost of the full pipeline at 1536x1536: time per call including image read and write, over --runs calls
+after --warmup calls. First = Stage I + depth + rendering; New focus = rendering with the cached depth of the same
+image. Also checks that the outputs match the reference code path (cost_pisa.run; BokehliciousFocusEngine.infer_image)."""
 import argparse
+import sys
 import json
 import time
 from pathlib import Path
@@ -12,7 +13,10 @@ import torch
 import torchvision.transforms.functional as TF
 from PIL import Image
 
-import fast_refocus as FR
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # repository root
+import paths  # noqa: E402
+paths.add_to_path()
+import fast_refocus as FR  # noqa: E402
 
 
 def timed(fn, warmup, runs):
@@ -34,8 +38,8 @@ def psnr(a, b):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--ckpt", required=True)
-    ap.add_argument("--refiner", required=True)
+    ap.add_argument("--ckpt", default=str(paths.STAGE1))
+    ap.add_argument("--refiner", default=str(paths.REFINER))
     ap.add_argument("--refiner_fp16", action="store_true")
     ap.add_argument("--compile", action="store_true")
     ap.add_argument("--compile_mode", default=None, help="e.g. reduce-overhead (CUDA graphs)")
@@ -44,8 +48,8 @@ def main():
     ap.add_argument("--render_amp", choices=["none", "bf16", "fp16"], default="none")
     ap.add_argument("--warmup", type=int, default=3)
     ap.add_argument("--runs", type=int, default=10)
-    ap.add_argument("--real", type=Path, default=Path("/tmp/claude-1016/render_real_1536.png"))
-    ap.add_argument("--work", type=Path, default=Path("/tmp/claude-1016/fast_refocus"))
+    ap.add_argument("--real", type=Path, default=None, help="a real 1536x1536 image for the output check (default: random)")
+    ap.add_argument("--work", type=Path, default=paths.WORK / "bench_fast_refocus")
     ap.add_argument("--out", type=Path, default=None)
     a = ap.parse_args()
     a.work.mkdir(parents=True, exist_ok=True)
@@ -62,9 +66,9 @@ def main():
                channels_last=a.channels_last, cudnn_benchmark=not a.no_cudnn_benchmark, render_amp=a.render_amp,
                params_B=(s1.params + rd.params) / 1e9)
 
-    # outputs vs the original code path, on the random and a real image
+    # outputs vs the reference code path, on the random and (optionally) a real image
     import cost_pisa
-    for tag, img in (("random", src), ("real", a.real)):
+    for tag, img in [("random", src)] + ([("real", a.real)] if a.real else []):
         s1(img, a.work / f"{tag}_aif_fast.png")
         with torch.no_grad():
             x = TF.to_tensor(Image.open(img).convert("RGB")).unsqueeze(0).cuda() * 2 - 1
@@ -78,7 +82,7 @@ def main():
                            marked_output=a.work / f"{tag}_marker.png", focus_map_type=rd.bc.focus_map_type)
         res[f"render_{tag}_psnr_maxdiff"] = psnr(a.work / f"{tag}_bokeh_fast.png", a.work / f"{tag}_bokeh_orig.png")
 
-    # timing (Table 6 protocol): every call reads its input and writes its PNG
+    # timing: every call reads its input and writes its PNG
     t1, m1 = timed(lambda: s1(src, aif), a.warmup, a.runs)
     first = lambda: (rd.set_image(aif), rd.render(768, 768, 0.5, bokeh))
     t2, m2 = timed(first, a.warmup, a.runs)

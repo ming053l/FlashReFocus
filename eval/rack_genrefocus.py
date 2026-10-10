@@ -1,24 +1,29 @@
 #!/usr/bin/env python
-"""GenRefocus bokeh stage (official BokehNetEngine: Depth Pro depth, K=15, 28 steps, fixed seeds) on the same AiF inputs
-and focus points as rack_ours.py, for the rack-focus consistency comparison. Run from SOTA/Genfocus in the Genfocus env."""
+"""Focus sweep with GenRefocus for the edit-consistency comparison: its bokeh stage (BokehNetEngine: Depth Pro depth,
+K = 15, 28 steps, fixed seeds) on the same all-in-focus inputs and focal points as rack_ours.py.
+Run in the GenRefocus environment, with its code under FLASHREFOCUS_BASELINES/Genfocus.
+Usage: rack_genrefocus.py [<sweep_dir>] [<aif_dir>]"""
 import json
 import os
 import sys
 import time
 from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # repository root
+import paths  # noqa: E402
+paths.add_to_path()
 
-GEN = Path("/ssd1/chingheng/Defocus/SOTA/Genfocus")
+GEN = paths.BASELINES / "Genfocus"   # GenRefocus code (github.com/rayray9999/Genfocus)
 os.chdir(GEN)
 sys.path.insert(0, str(GEN))
 import torch  # noqa: E402
 import Inference_bokehNet as IB  # noqa: E402
 
-LOCAL_FLUX = "/ssd2/ming/Genfocus/models/FLUX.1-dev"   # the gated HF id is not accessible from this account
-OUT = Path(sys.argv[1] if len(sys.argv) > 1 else "/ssd1/chingheng/Defocus/refocus_bench/rack_focus")
-AIF = Path(sys.argv[2] if len(sys.argv) > 2 else "/ssd1/chingheng/Defocus/refocus_bench/3creal_lvcorr/aif")
+FLUX = os.environ.get("FLUX_MODEL", "black-forest-labs/FLUX.1-dev")   # Hugging Face id or a local copy
+OUT = Path(sys.argv[1] if len(sys.argv) > 1 else str(WORK_ROOT / "rack_focus"))
+AIF = Path(sys.argv[2] if len(sys.argv) > 2 else str(WORK_ROOT / "3creal_lvcorr/aif"))
 K = 15.0
 
-eng = IB.BokehNetEngine(model_id=LOCAL_FLUX)
+eng = IB.BokehNetEngine(model_id=FLUX)
 times = {}
 for scene_dir in sorted(p for p in OUT.iterdir() if (p / "points.json").exists()):
     pts = json.loads((scene_dir / "points.json").read_text())

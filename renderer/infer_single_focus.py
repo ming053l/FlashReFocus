@@ -1,3 +1,5 @@
+"""Stage II on one image: Depth Anything V2 depth, a focal point and a blur strength -> rendered bokeh.
+pipeline/fast_refocus.py wraps the same engine for repeated edits on one image."""
 import argparse
 import os
 import sys
@@ -13,11 +15,18 @@ from method.config import bokehlicious_size_builder
 from method.model_dma_p import BokehliciousDMA
 
 PROJECT_ROOT = Path(__file__).resolve().parent
+_WEIGHTS = Path(os.environ.get("FLASHREFOCUS_WEIGHTS", PROJECT_ROOT.parent / "weights"))   # see paths.py
+_DA2_ROOT = PROJECT_ROOT.parent / "third_party" / "Depth-Anything-V2"
+
+
+def _default_da2_checkpoint(da2_root, encoder):
+    p = _WEIGHTS / f"depth_anything_v2_{encoder}.pth"
+    return p if p.is_file() else Path(da2_root) / "checkpoints" / f"depth_anything_v2_{encoder}.pth"
 
 
 def parse_args(argv=None):
     parser = argparse.ArgumentParser(
-        description="Run Bokehlicious DMA-p inference on one image with one focus point."
+        description="Render bokeh for one all-in-focus image and one focal point."
     )
     parser.add_argument("--input", "--img-path", "-i", type=Path, required=True)
     parser.add_argument("--output", "-o", type=Path, required=True)
@@ -56,8 +65,8 @@ def parse_args(argv=None):
     parser.add_argument(
         "--checkpoint",
         type=Path,
-        default=PROJECT_ROOT / "checkpoints/train_realbokeh_da2_disparity_p/best.pt",
-        help="Bokehlicious DMA-p checkpoint.",
+        default=_WEIGHTS / "renderer.pt",
+        help="Renderer checkpoint.",
     )
     parser.add_argument(
         "--size",
@@ -76,7 +85,7 @@ def parse_args(argv=None):
         "--da2-root",
         type=Path,
         default=Path(
-            os.environ.get("DA2_ROOT", PROJECT_ROOT.parent / "Depth-Anything-V2")
+            os.environ.get("DA2_ROOT", _DA2_ROOT)
         ),
         help="Depth-Anything-V2 repository root.",
     )
@@ -84,7 +93,7 @@ def parse_args(argv=None):
         "--da2-checkpoint",
         type=Path,
         default=None,
-        help="Depth-Anything-V2 checkpoint. Defaults to <da2-root>/checkpoints/depth_anything_v2_<encoder>.pth.",
+        help="Depth-Anything-V2 checkpoint. Defaults to <weights>/depth_anything_v2_<encoder>.pth, else <da2-root>/checkpoints/.",
     )
     parser.add_argument(
         "--da2-encoder",
@@ -359,7 +368,7 @@ class BokehliciousFocusEngine:
         checkpoint,
         size="small",
         attn_version="rel_then_defocus",
-        da2_root=PROJECT_ROOT.parent / "Depth-Anything-V2",
+        da2_root=_DA2_ROOT,
         da2_checkpoint=None,
         da2_encoder="vitl",
         da2_input_size=1024,
@@ -379,9 +388,7 @@ class BokehliciousFocusEngine:
             raise FileNotFoundError(f"Bokeh checkpoint not found: {checkpoint}")
         da2_root = Path(da2_root)
         if da2_checkpoint is None:
-            da2_checkpoint = (
-                da2_root / "checkpoints" / f"depth_anything_v2_{da2_encoder}.pth"
-            )
+            da2_checkpoint = _default_da2_checkpoint(da2_root, da2_encoder)
         da2_checkpoint = Path(da2_checkpoint)
         if not da2_checkpoint.is_file():
             raise FileNotFoundError(
@@ -512,9 +519,7 @@ def main():
 
     da2_checkpoint = args.da2_checkpoint
     if da2_checkpoint is None:
-        da2_checkpoint = (
-            args.da2_root / "checkpoints" / f"depth_anything_v2_{args.da2_encoder}.pth"
-        )
+        da2_checkpoint = _default_da2_checkpoint(args.da2_root, args.da2_encoder)
     if not da2_checkpoint.is_file():
         raise FileNotFoundError(
             f"Depth-Anything-V2 checkpoint not found: {da2_checkpoint}"

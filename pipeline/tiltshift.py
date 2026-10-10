@@ -1,54 +1,62 @@
-"""Tilt-shift demo: the renderer is conditioned on an edited depth map (a vertical ramp) instead of the
-estimated one, so a horizontal band stays sharp and blur grows above and below it. No retraining."""
-import os, sys
+#!/usr/bin/env python
+"""Tilt-shift by depth editing, without retraining: the renderer receives a vertical depth ramp with a flat band
+instead of the estimated depth, so a horizontal band stays sharp and blur grows above and below it.
+
+Usage: tiltshift.py <input> <out_prefix> [--row 0.3] [--slope 3.0] [--band 0.06] [--strength 0.6] [--aif]
+--row is the band centre as a fraction of the height; --aif skips Stage I for an image that is already all-in-focus.
+Writes <out_prefix>_aif.png, _tiltshift.png (edited depth), _depthbokeh.png (estimated depth, focus on the band
+centre) and _tiltdepth.png.
+"""
+import argparse
+import shutil
+import sys
 from pathlib import Path
-import numpy as np, torch
+
+import numpy as np
+import torch
 from PIL import Image
-DEF = Path("/ssd1/chingheng/Defocus"); OUT = DEF / "refocus_bench/tiltshift"; OUT.mkdir(exist_ok=True)
-AP = DEF / "refocus_bench/aperture_sweep"
-# sample -> (sharp band row as fraction of height, ramp slope, strength, focal point for the depth-based baseline)
-CFG = {"07": (0.30, 3.0, 0.6, (0.46, 0.30))}
-PLATEAU = 0.06  # half-height of the fully sharp band
-sys.path.insert(0, str(DEF / "MyAutoRefocus")); sys.path.insert(0, str(DEF / "SOTA/Bokehlicious"))
-# ---- Stage I for samples without a restored image
-todo = [s for s in CFG if not (OUT / f"{s}_aif.png").exists()]
-for s in list(todo):
-    if (AP / f"{s}_aif.png").exists():
-        Image.open(AP / f"{s}_aif.png").save(OUT / f"{s}_aif.png"); todo.remove(s)
-if todo:
-    os.chdir(DEF / "MyAutoRefocus")
-    from infer_single_sd1 import AutoRefocusSD1Engine, parse_args as pd
-    eng = AutoRefocusSD1Engine(pd(["--input", "x.png", "--output", "y.png", "--no_auto_depth"]))
-    for s in todo:
-        im = Image.open(next((DEF.parent / "Deblurring-Dataset/Refocus_samples").glob(f"{s}.jp*g"))).convert("RGB")
-        k = 1024 / max(im.size); im = im.resize((int(im.width * k) // 8 * 8, int(im.height * k) // 8 * 8), Image.LANCZOS)
-        im.save(OUT / f"{s}_input.png"); eng.infer_image(OUT / f"{s}_input.png", OUT / f"{s}_aif.png")
-    del eng; torch.cuda.empty_cache()
-# ---- renderer with the estimated depth vs an edited (tilt-shift) depth
-os.chdir(DEF / "SOTA/Bokehlicious")
-import infer_single_focus as F
-b = F.parse_args(["--input", "x.png", "--output", "y.png", "--focus-x", "0", "--focus-y", "0", "--bokeh-strength", "0.5"])
-ren = F.BokehliciousFocusEngine(checkpoint=b.checkpoint, size=b.size, attn_version=b.attn_version, da2_root=b.da2_root,
-                                da2_checkpoint=b.da2_checkpoint, da2_encoder=b.da2_encoder, da2_input_size=b.da2_input_size,
-                                no_da2_amp=b.no_da2_amp, da2_amp_dtype=b.da2_amp_dtype, device=b.device, amp=b.amp)
 
-def render(src_pil, depth_cpu, fx, fy, k):
-    src = F.to_tensor(src_pil).float().clamp(0, 1).unsqueeze(0).to(ren.device)
-    fm, dfoc, dval, xy = F.build_focus_inputs(depth_cpu, fx, fy, b.focus_map_type, ren.device, src.dtype)
-    with torch.inference_mode():
-        pred = ren.model(source=src, bokeh_strength=torch.tensor([[k]], device=ren.device, dtype=src.dtype),
-                         focus_map=fm, depth_map=depth_cpu.unsqueeze(0).to(ren.device), disp_focus=dfoc)
-    return F.to_pil_image(pred.clamp(0, 1).squeeze(0).float().cpu())
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # repository root
+import paths  # noqa: E402
+paths.add_to_path()
+import fast_refocus as FR  # noqa: E402
 
-for s, (row, slope, k, (px, py)) in CFG.items():
-    src = Image.open(OUT / f"{s}_aif.png").convert("RGB"); W, H = src.size
-    est = F.process_da2_depth_like_dataset(F.predict_da2_depth_from_pil(src, ren.da2_model, ren.da2_input_size, device=ren.device,
-                                            use_amp=ren.da2_amp, amp_dtype=ren.da2_amp_dtype), src.size)
-    render(src, est, px * W, py * H, k).save(OUT / f"{s}_depthbokeh.png")
-    y = torch.linspace(0, 1, H).view(H, 1).expand(H, W)
-    dy = (y - row).abs().sub(PLATEAU).clamp(min=0) * torch.sign(y - row)
-    tilt = (0.5 + slope * dy / 2).clamp(0, 1).unsqueeze(0)          # vertical ramp with a flat sharp band, focal row -> 0.5
-    render(src, tilt, W / 2, row * H, k).save(OUT / f"{s}_tiltshift.png")
-    Image.fromarray((tilt[0].numpy() * 255).astype(np.uint8)).save(OUT / f"{s}_tiltdepth.png")
-    Image.fromarray((np.clip(est[0].numpy(), 0, 1) * 255).astype(np.uint8)).save(OUT / f"{s}_estdepth.png")
-    print(s, "done", flush=True)
+
+def fit(img, long_side=1024):
+    """Long side at most `long_side`, both sides multiples of 16."""
+    s = min(1.0, long_side / max(img.size))
+    return img.resize((max(16, int(img.width * s) // 16 * 16), max(16, int(img.height * s) // 16 * 16)), Image.LANCZOS)
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("input", type=Path)
+    ap.add_argument("out_prefix")
+    ap.add_argument("--row", type=float, default=0.3)
+    ap.add_argument("--slope", type=float, default=3.0)
+    ap.add_argument("--band", type=float, default=0.06, help="half-height of the fully sharp band")
+    ap.add_argument("--strength", type=float, default=0.6)
+    ap.add_argument("--aif", action="store_true")
+    a = ap.parse_args()
+    out = Path(a.out_prefix); out.parent.mkdir(parents=True, exist_ok=True)
+    aif = Path(f"{out}_aif.png")
+    if a.aif:
+        shutil.copy(a.input, aif)
+    else:
+        src = Path(f"{out}_input.png")
+        fit(Image.open(a.input).convert("RGB")).save(src)
+        FR.FastStageI()(src, aif)
+    rd = FR.FastRenderer()
+    rd.set_image(aif)
+    _, H, W = rd.depth.shape
+    rd.render(W / 2, a.row * H, a.strength, Path(f"{out}_depthbokeh.png"))
+    y = torch.linspace(0, 1, H, device=rd.depth.device).view(H, 1).expand(H, W)
+    dy = (y - a.row).abs().sub(a.band).clamp(min=0) * torch.sign(y - a.row)
+    est, rd.depth = rd.depth, (0.5 + a.slope * dy / 2).clamp(0, 1)[None]   # focal row -> depth 0.5
+    rd.render(W / 2, a.row * H, a.strength, Path(f"{out}_tiltshift.png"))
+    Image.fromarray((rd.depth[0].cpu().numpy() * 255).astype(np.uint8)).save(f"{out}_tiltdepth.png")
+    rd.depth = est
+
+
+if __name__ == "__main__":
+    main()

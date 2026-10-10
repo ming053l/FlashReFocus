@@ -1,15 +1,16 @@
-"""Faster implementation of the same FlashReFocus refocusing pipeline (same models, same outputs up to floating point).
+"""Refocusing pipeline for interactive use: restore once, then render any number of focal edits.
 
-Only the code around the models changes; every call still reads its input image from disk and writes its output as
-PNG, as in the Table 6 protocol:
-  * Stage I: the empty-prompt text embedding is computed once; optional fp16 refiner and torch.compile.
-  * Stage II: Depth Anything V2 pre-/post-processing on the GPU (bicubic resize to DA2's own target size, ImageNet
-    normalisation, min-max depth normalisation, as infer_single_focus.py does on the CPU), focus map built on the GPU,
-    the depth of an AiF image is computed once and reused for every further focal edit, and no extra marker image.
-  * PNG written losslessly with a fast zlib level.
-Options: cudnn autotuning for the fixed input size, channels_last for the convolutional nets (VAE, refiner, renderer),
-fp16 refiner, renderer autocast, and torch.compile (optionally with CUDA graphs).
-"""
+  s1 = FastStageI()                     # Stage I: one-step diffusion + decoder refiner (weights from paths.py)
+  s1("input.png", "aif.png")            # once per photograph
+  rd = FastRenderer()                   # Stage II: Depth Anything V2 + renderer
+  rd.set_image("aif.png")               # depth is estimated once and cached
+  rd.render(x, y, strength, "out.png")  # per edit; strength in [0, 1]
+
+Compared with the reference scripts (stage1/run_pisa_refiner.py, renderer/infer_single_focus.py) only the code around
+the models changes, so the outputs are the same up to floating point: the empty-prompt text embedding is computed once,
+Depth Anything V2 pre- and post-processing and the focus map run on the GPU, the depth of an image is reused by every
+edit, and PNGs are written with a fast zlib level. Options: cuDNN autotuning, channels_last, fp16 refiner, renderer
+autocast (bf16 by default) and torch.compile."""
 import sys
 from pathlib import Path
 
@@ -18,10 +19,9 @@ import torch
 import torch.nn.functional as F
 from PIL import Image
 
-DEFOCUS = Path("/ssd1/chingheng/Defocus")
-sys.path.insert(0, str(DEFOCUS / "Stage1_PiSA"))
-sys.path.insert(0, str(DEFOCUS / "SOTA" / "Bokehlicious"))
-sys.path.insert(0, str(Path(__file__).resolve().parent))
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # repository root
+import paths  # noqa: E402
+paths.add_to_path()
 
 PNG_LEVEL = 1
 
@@ -43,12 +43,12 @@ def setup_backend(cudnn_benchmark=True):
 
 
 class FastStageI:
-    def __init__(self, ckpt, refiner, lambda_sem=1.25, refiner_fp16=False, compile_=False, channels_last=False,
+    def __init__(self, ckpt=paths.STAGE1, refiner=paths.REFINER, lambda_sem=1.25, refiner_fp16=False, compile_=False, channels_last=False,
                  compile_mode=None):
         import argparse
         import cost_pisa
-        ns = argparse.Namespace(sd21=str(DEFOCUS / "stable-diffusion-2-1-base"), sd15=str(DEFOCUS / "stable-diffusion-v1-5"),
-                                myautorefocus=str(DEFOCUS / "MyAutoRefocus"), ckpt=ckpt, refiner=refiner)
+        ns = argparse.Namespace(sd21=str(paths.SD21), sd15=str(paths.SD15), ckpt=str(ckpt),
+                                refiner=None if refiner is None else str(refiner))
         self.m, self.ref, self.default = cost_pisa.build(ns, lambda_sem, refiner is not None, "cuda", torch.float16)
         self.params = cost_pisa.params(self.m, self.ref)
         self.wd = self.m.weight_dtype
@@ -89,7 +89,7 @@ class FastStageI:
 
 class FastRenderer:
     def __init__(self, sdpa_da2=True, channels_last=False, amp_dtype=torch.bfloat16, compile_=False, compile_mode=None):
-        # bf16 autocast by default, as in the evaluation behind the bokeh tables (test_focal_depth_k_search_p.py --amp);
+        # bf16 autocast by default, as in the bokeh-rendering evaluation (test_focal_depth_k_search_p.py --amp);
         # amp_dtype=None renders in fp32
         from infer_single_focus import BokehliciousFocusEngine, parse_args as parse_bokeh_args
         bc = parse_bokeh_args(["--input", "a", "--output", "b", "--focus-x", "0", "--focus-y", "0", "--bokeh-strength", "0.5"])

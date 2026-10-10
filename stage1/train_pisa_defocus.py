@@ -1,42 +1,25 @@
 #!/usr/bin/env python
-"""PiSA-SR (dual LoRA, one-step SD2.1) fine-tuned as the DeReFocus Stage-I deblurrer.
+"""Stage I training: PiSA-SR (one-step Stable Diffusion 2.1 with a pixel LoRA and a detail LoRA) fine-tuned for
+defocus deblurring. The PiSA-SR model code (third_party/PiSA-SR: PiSASR, CSDLoss) is used unchanged; compared with its
+train_pisasr.py:
+  * data: paired defocus mixture of DPDD (0.3), RealBokeh (0.2), LFDOF (0.3) and synthetic spatially varying blur on
+    DIV2K (0.2), see common/dpdd_dataset.py and configs/stage1_data.yaml, instead of online Real-ESRGAN
+    degradation;
+  * CSD teacher prompts: RAM++ tags of the sharp target;
+  * CSD negative prompt without "over-smooth" (it penalises naturally smooth regions such as sky) and with defocus
+    terms, so CSD pushes away from defocus blur rather than from smoothness.
 
-The official model code (PiSA-SR/pisasr.py: PiSASR, CSDLoss) is used unchanged. Differences from the
-official train_pisasr.py, all specific to defocus deblurring:
-  * data: our four-source paired mixture from MyAutoRefocus/dpdd_dataset.py (DPDD 0.3, RealBokeh 0.2,
-    LFDOF 0.3, synthetic DIV2K 0.2, same augmentation), imported read-only, instead of online
-    Real-ESRGAN degradation;
-  * tags for the CSD teacher: our RAM++ tagger on the sharp target (the official code uses RAM);
-  * CSD negative prompt: "over-smooth" removed (it penalises naturally smooth regions such as sky)
-    and defocus terms added, so CSD pushes away from the look of defocus rather than from smoothness;
-  * 2 GPUs x batch 4 x gradient accumulation 2 = effective batch 16, as the official 4 x 4.
-Everything else follows the official script: pixel LoRA with L2 for 4k steps, then semantic LoRA with
-L2 + 2 LPIPS + 1 CSD (cfg 7.5, t in [20, 500]), 50% null prompt, lr 5e-5, rank 4, 100k steps.
-TensorBoard: losses and lr every step; validation images and PSNR/LPIPS every --val_every steps.
+Pixel stage (--pix_steps steps): L2 on the pixel LoRA, optionally with a LoRA on the VAE encoder (--vae_lora_rank)
+and a trainable U-Net conv_in (--train_conv_in). Detail stage: L2 + 2 LPIPS + 1 CSD (cfg 7.5, t in [20, 500]) on the
+detail ("semantic" in PiSA-SR) LoRA, with everything trained in the pixel stage frozen. 50% null prompt, lr 5e-5.
 
-v2 options (defaults reproduce v1): a longer pixel stage (--pix_steps), a larger pixel LoRA
-(--lora_rank_unet_pix; the released rank-4 LoRA is embedded exactly into the first ranks),
-a LoRA on the VAE encoder (--vae_lora_rank) and a fully trainable UNet conv_in (--train_conv_in),
-as in OSEDiff / MagicBokeh. The VAE-encoder LoRA and conv_in are trained with the pixel LoRA and
-frozen with it in the semantic stage. All parameters that are ever trained require grad when DDP
-wraps the model, so the semantic LoRA is also synchronised across GPUs (in v1 it was not).
+LoRA scaling: peft scales a LoRA update by lora_alpha / r, so a higher-rank LoRA learns more slowly than the released
+rank-4 one; --pix_lora_scaling and --pix_lora_a_std keep it at the released scale (--sem_lora_* likewise).
+Checkpoints store B with scaling 8 / r, so PiSASR_eval loads them unchanged.
 
-LoRA scaling: peft scales a LoRA update by lora_alpha / r (alpha 8 here, as in the official code), so a
-rank-16 LoRA gets 0.5 instead of 2.0, and its new ranks start from A ~ N(0, 1/16^2): the update per step
-is 4-16x smaller than for the released rank-4 LoRA. --pix_lora_scaling 2 and --pix_lora_a_std 0.25 keep
-every rank at the released LoRA's scale (--sem_lora_* likewise). Checkpoints always store B in the official convention
-(scaling = 8 / r), so PiSASR_eval and run_pisa_zeroshot.py load them unchanged.
-
-Alternating stages (--alternate_every N, default off): the stage at step s is semantic iff (s // N) is odd,
-so with N = --pix_steps the run starts as usual and then switches pixel <-> semantic every N steps (pixel:
-pixel LoRA only with L2, pixel LoRA + VAE-encoder LoRA + conv_in trained; semantic: both LoRAs, semantic LoRA
-trained with L2 + LPIPS + CSD). A resumed run starts in the stage its step falls in.
-
-Optional semantic-stage losses (default off): an adversarial loss with the Real-ESRGAN U-Net discriminator
-(spectral norm, non-saturating logistic loss, fp32, Adam 1e-4; --lambda_gan) and a Fourier loss (L1 between
-orthonormal 2-D spectra of output and target; --lambda_fft), which asks for the target's high frequencies
-without rewarding texture the target does not have.
-"""
+Optional, off by default: alternating pixel and detail stages (--alternate_every), an adversarial loss with the
+Real-ESRGAN U-Net discriminator (--lambda_gan), and an L1 loss between Fourier spectra (--lambda_fft).
+train_stage1.sh gives the configuration of the released model."""
 import argparse
 import json
 import math
@@ -47,10 +30,15 @@ import time
 from pathlib import Path
 from types import SimpleNamespace
 
+# datasets under FLASHREFOCUS_DATA, outputs under FLASHREFOCUS_WORK (defaults <repo>/data, <repo>/work; see paths.py)
+_REPO = Path(__file__).resolve().parents[1]
+DATA_ROOT = Path(os.environ.get("FLASHREFOCUS_DATA", _REPO / "data"))
+WORK_ROOT = Path(os.environ.get("FLASHREFOCUS_WORK", _REPO / "work"))
+
 HERE = Path(__file__).resolve().parent
-# MyAutoRefocus first: its vendored `ram` package (RAM++) must win over PiSA-SR/ram; it has no `src`.
-sys.path.insert(0, str(HERE / "PiSA-SR"))
-sys.path.insert(0, "/ssd1/chingheng/Defocus/MyAutoRefocus")
+sys.path.insert(0, str(HERE.parent))  # repository root
+import paths  # noqa: E402
+paths.add_to_path()  # third_party/PiSA-SR, and RAM++ ahead of PiSA-SR's own `ram`
 
 import lpips  # noqa: E402
 import numpy as np  # noqa: E402
@@ -64,9 +52,9 @@ from torch.utils.tensorboard import SummaryWriter  # noqa: E402
 import torchvision.transforms.functional as TF  # noqa: E402
 
 from pisasr import CSDLoss, PiSASR  # noqa: E402
-from dpdd_dataset import build_autorefocus_dataset  # noqa: E402
+from dpdd_dataset import build_training_dataset  # noqa: E402
 from ram_plus_tagger import RamPlusTagger  # noqa: E402
-from train_options import parse_args as parse_pasd_args  # noqa: E402
+from train_options import parse_args as parse_data_args  # noqa: E402
 
 OFFICIAL_NEG = ("painting, oil painting, illustration, drawing, art, sketch, oil painting, cartoon, CG Style, 3D render, "
                 "unreal engine, blurring, dirty, messy, worst quality, low quality, frames, watermark, signature, "
@@ -77,10 +65,10 @@ DEFOCUS_NEG = OFFICIAL_NEG.replace(", over-smooth", "") + ", bokeh, shallow dept
 def parse_args():
     p = argparse.ArgumentParser()
     p.add_argument("--output_dir", type=Path, default=HERE / "runs/train_pisa_defocus")
-    p.add_argument("--sd21", default="/ssd1/chingheng/Defocus/stable-diffusion-2-1-base")
-    p.add_argument("--init_pkl", default=str(HERE / "PiSA-SR/preset/models/PiSA-SR/pisa_sr.pkl"),
+    p.add_argument("--sd21", default=str(paths.SD21))
+    p.add_argument("--init_pkl", default=str(paths.PISA_SR / "preset/models/PiSA-SR/pisa_sr.pkl"),
                    help="start from the released PiSA-SR LoRAs ('' = random LoRA init as in the official training)")
-    p.add_argument("--pasd_config", default="/ssd1/chingheng/Defocus/MyAutoRefocus/options/train_sd1_mixed_early.yaml")
+    p.add_argument("--data_config", default=str(HERE / "configs/stage1_data.yaml"))
     p.add_argument("--resolution", type=int, default=512)
     p.add_argument("--train_batch_size", type=int, default=4)
     p.add_argument("--gradient_accumulation_steps", type=int, default=2)
@@ -99,7 +87,7 @@ def parse_args():
     p.add_argument("--null_text_ratio", type=float, default=0.5)
     p.add_argument("--lora_rank_unet_pix", type=int, default=4)
     p.add_argument("--lora_rank_unet_sem", type=int, default=4)
-    p.add_argument("--vae_lora_rank", type=int, default=0, help="LoRA rank on the VAE encoder (0 = frozen VAE, v1)")
+    p.add_argument("--vae_lora_rank", type=int, default=0, help="LoRA rank on the VAE encoder (0 = frozen VAE)")
     p.add_argument("--train_conv_in", action="store_true", help="train the UNet conv_in weights (pixel stage)")
     p.add_argument("--pix_lora_scaling", type=float, default=None, help="scaling of the pixel LoRA (default: peft 8 / r)")
     p.add_argument("--pix_lora_a_std", type=float, default=None, help="std of the pixel LoRA A init (default: peft 1 / r)")
@@ -115,7 +103,7 @@ def parse_args():
     p.add_argument("--checkpoint_every", type=int, default=2500)
     p.add_argument("--val_every", type=int, default=1000)
     p.add_argument("--resume", default=None, help="checkpoint .pkl to resume from (step read from its name)")
-    p.add_argument("--max_steps_this_run", type=int, default=None, help="stop early (smoke test)")
+    p.add_argument("--max_steps_this_run", type=int, default=None, help="stop this run after this many steps")
     p.add_argument("--alternate_every", type=int, default=0,
                    help="alternate pixel/semantic stages every N steps (semantic iff (step // N) is odd); 0 = off")
     return p.parse_args()
@@ -265,15 +253,15 @@ vae_encoder_lora_modules_cache = None
 
 def val_pairs():
     """Fixed validation crops (768x768, centre) from the DPDD validation split."""
-    root = Path("/ssd1/chingheng/Deblurring-Dataset/dd_dp_dataset_png/val_c")
+    root = paths.DATA / "dd_dp_dataset_png/val_c"
     src = sorted((root / "source").glob("*.png"))[:6]
     tgt = sorted((root / "target").glob("*.png"))[:6]
     return list(zip(src, tgt))
 
 
 def val_pairs_lfdof():
-    """Held-out LFDOF test scenes (not part of Table 1; full 1008x688 images, the middle focal slice)."""
-    root = Path("/ssd4/chingheng/LFDOF/test_data")
+    """Held-out LFDOF test scenes for validation (full 1008x688 images, the middle focal slice)."""
+    root = (DATA_ROOT / "LFDOF/test_data")
     scenes = sorted(p for p in (root / "input").iterdir() if p.is_dir())[::8][:6]
     return [(sorted(s.glob("*.png"))[len(list(s.glob("*.png"))) // 2], root / "ground_truth" / f"{s.name}.png")
             for s in scenes]
@@ -347,7 +335,7 @@ def main():
     net_csd.requires_grad_(False)
     net_lpips = lpips.LPIPS(net="vgg").to(acc.device).eval()
     net_lpips.requires_grad_(False)
-    tagger = RamPlusTagger(checkpoint_path="/ssd1/chingheng/Defocus/SOTA/recognize-anything/pretrained/ram_plus_swin_large_14m.pth",
+    tagger = RamPlusTagger(checkpoint_path=str(paths.RAM_PLUS),
                            image_size=384, vit="swin_l", fallback_prompt="a sharp, clear image", prompt_threshold=0.7,
                            max_tags=50).to(acc.device).eval()
     tagger.requires_grad_(False)
@@ -381,15 +369,15 @@ def main():
     opt = torch.optim.AdamW(params, lr=args.learning_rate, betas=(0.9, 0.999), weight_decay=1e-2, eps=1e-8)
     sched = get_scheduler("constant_with_warmup", optimizer=opt, num_warmup_steps=args.lr_warmup_steps * acc.num_processes)
 
-    # ---- data: our four-source mixture (read-only import)
-    dargs = parse_pasd_args(["--config", args.pasd_config])
-    dataset = build_autorefocus_dataset(dargs, split="train", image_size=args.resolution, use_augmentation=True)
+    # ---- data: DPDD, RealBokeh, LFDOF and synthetic DIV2K mixture (common/dpdd_dataset.py)
+    dargs = parse_data_args(["--config", args.data_config])
+    dataset = build_training_dataset(dargs, split="train", image_size=args.resolution, use_augmentation=True)
     dl = torch.utils.data.DataLoader(dataset, batch_size=args.train_batch_size, shuffle=True, drop_last=True,
                                      num_workers=args.num_workers, pin_memory=True, persistent_workers=True,
                                      collate_fn=collate_pair)
     net, opt, dl, sched = acc.prepare(net, opt, dl, sched)
     # optimizer / lr-schedule / grad-scaler state saved next to the checkpoint (opt_<step>.pt), so a resume keeps the
-    # Adam moments and does not warm up again; checkpoints written before this was added have none and start fresh
+    # Adam moments and does not warm up again
     opt_ckpt = Path(args.resume).with_name(f"opt_{start_step}.pt") if args.resume else None
     if opt_ckpt is not None and opt_ckpt.exists():
         st = torch.load(opt_ckpt, map_location="cpu")
