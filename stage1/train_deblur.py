@@ -1,25 +1,25 @@
 #!/usr/bin/env python
-"""Stage I training: PiSA-SR (one-step Stable Diffusion 2.1 with a pixel LoRA and a detail LoRA) fine-tuned for
-defocus deblurring. The PiSA-SR model code (third_party/PiSA-SR: PiSASR, CSDLoss) is used unchanged; compared with its
-train_pisasr.py:
+"""Stage I training: one-step diffusion on Stable Diffusion 2.1 with a pixel LoRA and a detail LoRA, trained for defocus
+deblurring. The model and CSD loss code come from third_party/PiSA-SR and are used unchanged; the LoRAs are initialised
+from its pretrained one-step weights (--init_pkl).
   * data: paired defocus mixture of DPDD (0.3), RealBokeh (0.2), LFDOF (0.3) and synthetic spatially varying blur on
-    DIV2K (0.2), see common/dpdd_dataset.py and configs/stage1_data.yaml, instead of online Real-ESRGAN
-    degradation;
+    DIV2K (0.2), see common/dpdd_dataset.py and configs/stage1_data.yaml;
   * CSD teacher prompts: RAM++ tags of the sharp target;
   * CSD negative prompt without "over-smooth" (it penalises naturally smooth regions such as sky) and with defocus
     terms, so CSD pushes away from defocus blur rather than from smoothness.
 
 Pixel stage (--pix_steps steps): L2 on the pixel LoRA, optionally with a LoRA on the VAE encoder (--vae_lora_rank)
 and a trainable U-Net conv_in (--train_conv_in). Detail stage: L2 + 2 LPIPS + 1 CSD (cfg 7.5, t in [20, 500]) on the
-detail ("semantic" in PiSA-SR) LoRA, with everything trained in the pixel stage frozen. 50% null prompt, lr 5e-5.
+detail LoRA ("sem" in the option names), with everything trained in the pixel stage frozen. 50% null prompt, lr 5e-5.
 
-LoRA scaling: peft scales a LoRA update by lora_alpha / r, so a higher-rank LoRA learns more slowly than the released
-rank-4 one; --pix_lora_scaling and --pix_lora_a_std keep it at the released scale (--sem_lora_* likewise).
-Checkpoints store B with scaling 8 / r, so PiSASR_eval loads them unchanged.
+LoRA scaling: peft scales a LoRA update by lora_alpha / r, so a higher-rank LoRA learns more slowly than the rank-4
+initialisation; --pix_lora_scaling and --pix_lora_a_std keep it at that scale (--sem_lora_* likewise). Checkpoints
+store B with scaling 8 / r.
 
 Optional, off by default: alternating pixel and detail stages (--alternate_every), an adversarial loss with the
 Real-ESRGAN U-Net discriminator (--lambda_gan), and an L1 loss between Fourier spectra (--lambda_fft).
-train_stage1.sh gives the configuration of the released model."""
+train_stage1.sh gives the configuration of the released model.
+"""
 import argparse
 import json
 import math
@@ -38,7 +38,7 @@ WORK_ROOT = Path(os.environ.get("FLASHREFOCUS_WORK", _REPO / "work"))
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent))  # repository root
 import paths  # noqa: E402
-paths.add_to_path()  # third_party/PiSA-SR, and RAM++ ahead of PiSA-SR's own `ram`
+paths.add_to_path()
 
 import lpips  # noqa: E402
 import numpy as np  # noqa: E402
@@ -64,10 +64,10 @@ DEFOCUS_NEG = OFFICIAL_NEG.replace(", over-smooth", "") + ", bokeh, shallow dept
 
 def parse_args():
     p = argparse.ArgumentParser()
-    p.add_argument("--output_dir", type=Path, default=HERE / "runs/train_pisa_defocus")
+    p.add_argument("--output_dir", type=Path, default=HERE / "runs/train_deblur")
     p.add_argument("--sd21", default=str(paths.SD21))
     p.add_argument("--init_pkl", default=str(paths.PISA_SR / "preset/models/PiSA-SR/pisa_sr.pkl"),
-                   help="start from the released PiSA-SR LoRAs ('' = random LoRA init as in the official training)")
+                   help="initial LoRAs ('' = random LoRA init)")
     p.add_argument("--data_config", default=str(HERE / "configs/stage1_data.yaml"))
     p.add_argument("--resolution", type=int, default=512)
     p.add_argument("--train_batch_size", type=int, default=4)
@@ -158,7 +158,7 @@ def vae_encoder_lora_modules(vae):
     return sorted(set(mods))
 
 
-OFFICIAL_ALPHA = 8.0  # peft default lora_alpha, used by the official PiSA-SR code
+OFFICIAL_ALPHA = 8.0  # peft default lora_alpha, used by the base code
 
 
 def lora_scaling(unet, pname):
@@ -230,7 +230,7 @@ def set_pixel_extras(m, trainable, args):
 
 
 def save_ckpt(m, path, args):
-    """Official PiSA-SR pkl (loadable by PiSASR_eval) plus the optional VAE-encoder LoRA and conv_in.
+    """Checkpoint in the base code's format (loadable by its evaluation model) plus the optional VAE-encoder LoRA and conv_in.
     LoRA B matrices are converted to the official scaling convention (8 / r)."""
     m.save_model(path)
     sd = torch.load(path, map_location="cpu")
@@ -300,7 +300,7 @@ def main():
         json.dump({k: str(v) for k, v in vars(args).items()}, open(args.output_dir / "args.json", "w"), indent=1)
         tb = SummaryWriter(str(args.output_dir / "tb"))
 
-    # ---- model (official PiSASR); optionally start from the released LoRAs
+    # ---- model; optionally start from the pretrained LoRAs
     pargs = SimpleNamespace(pretrained_model_path=args.sd21, pretrained_model_path_csd=args.sd21,
                             lora_rank_unet_pix=args.lora_rank_unet_pix, lora_rank_unet_sem=args.lora_rank_unet_sem,
                             resume_ckpt=None, timesteps1=args.timesteps1, enable_xformers_memory_efficient_attention=False,

@@ -1,13 +1,14 @@
 #!/usr/bin/env python
-"""Stage I inference without the refiner on DPDD / RealDOF; with the default --ckpt, the released PiSA-SR as a
-zero-shot deblurring baseline.
+"""Stage I inference without the refiner (decoding with the SD2.1 VAE decoder) on DPDD / RealDOF.
 
-PiSADeterministic wraps PiSA-SR's evaluation model with three changes for deblurring:
+Stage1Model wraps the evaluation model of the base code (third_party/PiSA-SR) with three changes for deblurring:
   * VAE encoding uses latent_dist.mode() instead of .sample(), so the output is deterministic (the restored
     all-in-focus image is reused by every focal edit);
   * no latent or VAE tiling: the whole image is processed at once;
   * no upscaling; inputs are only cropped to a multiple of 8.
-Pairs come from pairs/<set>_test.json (paths relative to the data root); outputs are written as {index:04d}.png."""
+It also loads the Stage I extras (trained conv_in, VAE-encoder LoRA). Pairs come from pairs/<set>_test.json (paths
+relative to the data root); outputs are written as {index:04d}.png.
+"""
 import argparse
 import json
 import time
@@ -21,16 +22,16 @@ from PIL import Image
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent))  # repository root
 import paths  # noqa: E402
-paths.add_to_path()  # third_party/PiSA-SR, and RAM++ ahead of PiSA-SR's own `ram`
+paths.add_to_path()
 from pisasr import PiSASR_eval  # noqa: E402
 from src.my_utils.wavelet_color_fix import adain_color_fix  # noqa: E402
 
 PAIRS = {"dpdd": HERE / "pairs/dpdd_test.json", "realdof": HERE / "pairs/realdof_test.json"}   # paths relative to paths.DATA
 
 
-class PiSADeterministic(PiSASR_eval):
+class Stage1Model(PiSASR_eval):
     def _load_pretrained_weights(self, pretrained_path):
-        """PiSA-SR loader, plus the optional Stage I extras (trained conv_in, VAE-encoder LoRA merged into the VAE)."""
+        """Base loader, plus the Stage I extras (trained conv_in, VAE-encoder LoRA merged into the VAE)."""
         sd = torch.load(pretrained_path, map_location="cpu")
         if "conv_in" in sd:  # base weights, before the pixel LoRA is merged on top
             self.unet.load_state_dict(sd["conv_in"], strict=False)
@@ -61,12 +62,11 @@ def main():
     ap.add_argument("--lambda_pix", type=float, default=1.0)
     ap.add_argument("--lambda_sem", type=float, default=1.0)
     ap.add_argument("--limit", type=int, default=None)
-    ap.add_argument("--latent_tile", type=int, default=100000, help="latent tile size (official PiSA-SR: 96); default = whole image")
-    ap.add_argument("--latent_overlap", type=int, default=0, help="latent tile overlap (official: 32)")
+    ap.add_argument("--latent_tile", type=int, default=100000, help="latent tile size; default = whole image")
+    ap.add_argument("--latent_overlap", type=int, default=0, help="latent tile overlap")
     ap.add_argument("--scale", type=float, default=1.0, help="deblur at this input scale, then resize back")
     ap.add_argument("--ram", action="store_true", help="prompt = RAM++ tags of the blurred input")
-    ap.add_argument("--ckpt", default=str(paths.PISA_SR / "preset/models/PiSA-SR/pisa_sr.pkl"),
-                    help="LoRA checkpoint (default: released PiSA-SR; or a fine-tuned model_*.pkl)")
+    ap.add_argument("--ckpt", default=str(paths.STAGE1), help="Stage I checkpoint (.pkl)")
     a = ap.parse_args()
     args = argparse.Namespace(
         pretrained_model_path=str(paths.SD21),
@@ -74,7 +74,7 @@ def main():
         lambda_pix=a.lambda_pix, lambda_sem=a.lambda_sem, mixed_precision="fp16", default=a.default,
         vae_decoder_tiled_size=100000, vae_encoder_tiled_size=100000,   # effectively no VAE tiling
         latent_tiled_size=a.latent_tile, latent_tiled_overlap=a.latent_overlap, seed=42)  # default: no latent tiling
-    model = PiSADeterministic(args)
+    model = Stage1Model(args)
     model.set_eval()
     tagger = None
     if a.ram:

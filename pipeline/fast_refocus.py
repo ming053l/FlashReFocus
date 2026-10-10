@@ -6,7 +6,7 @@
   rd.set_image("aif.png")               # depth is estimated once and cached
   rd.render(x, y, strength, "out.png")  # per edit; strength in [0, 1]
 
-Compared with the reference scripts (stage1/run_pisa_refiner.py, renderer/infer_single_focus.py) only the code around
+Compared with the reference scripts (stage1/deblur.py, renderer/infer_single_focus.py) only the code around
 the models changes, so the outputs are the same up to floating point: the empty-prompt text embedding is computed once,
 Depth Anything V2 pre- and post-processing and the focus map run on the GPU, the depth of an image is reused by every
 edit, and PNGs are written with a fast zlib level. Options: cuDNN autotuning, channels_last, fp16 refiner, renderer
@@ -46,11 +46,11 @@ class FastStageI:
     def __init__(self, ckpt=paths.STAGE1, refiner=paths.REFINER, lambda_sem=1.25, refiner_fp16=False, compile_=False, channels_last=False,
                  compile_mode=None):
         import argparse
-        import cost_pisa
+        import cost_stage1
         ns = argparse.Namespace(sd21=str(paths.SD21), sd15=str(paths.SD15), ckpt=str(ckpt),
                                 refiner=None if refiner is None else str(refiner))
-        self.m, self.ref, self.default = cost_pisa.build(ns, lambda_sem, refiner is not None, "cuda", torch.float16)
-        self.params = cost_pisa.params(self.m, self.ref)
+        self.m, self.ref, self.default = cost_stage1.build(ns, lambda_sem, refiner is not None, "cuda", torch.float16)
+        self.params = cost_stage1.params(self.m, self.ref)
         self.wd = self.m.weight_dtype
         with torch.no_grad():
             self.emb = self.m.encode_prompt([""]).to(dtype=self.wd)
@@ -63,7 +63,7 @@ class FastStageI:
                 self.ref.to(memory_format=torch.channels_last)
         self.channels_last = channels_last
         if compile_:
-            # compile forward functions, not the modules: PiSA-SR's omega path swaps U-Net weights by parameter name,
+            # compile forward functions, not the modules: the omega path swaps U-Net weights by parameter name,
             # which a module wrapper would rename (_orig_mod.*)
             for mod in (self.m.unet, self.m.vae.encoder, self.ref if self.ref is not None else self.m.vae.decoder):
                 mod.forward = torch.compile(mod.forward, mode=compile_mode)

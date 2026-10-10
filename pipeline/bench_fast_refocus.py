@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """Refocusing cost of the full pipeline at 1536x1536: time per call including image read and write, over --runs calls
 after --warmup calls. First = Stage I + depth + rendering; New focus = rendering with the cached depth of the same
-image. Also checks that the outputs match the reference code path (cost_pisa.run; BokehliciousFocusEngine.infer_image)."""
+image. Also checks that the outputs match the reference code path (cost_stage1.run; BokehliciousFocusEngine.infer_image)."""
 import argparse
 import sys
 import json
@@ -67,12 +67,12 @@ def main():
                params_B=(s1.params + rd.params) / 1e9)
 
     # outputs vs the reference code path, on the random and (optionally) a real image
-    import cost_pisa
+    import cost_stage1
     for tag, img in [("random", src)] + ([("real", a.real)] if a.real else []):
         s1(img, a.work / f"{tag}_aif_fast.png")
         with torch.no_grad():
             x = TF.to_tensor(Image.open(img).convert("RGB")).unsqueeze(0).cuda() * 2 - 1
-            y = cost_pisa.run(s1.m, s1.ref, s1.default, x)
+            y = cost_stage1.run(s1.m, s1.ref, s1.default, x)
         TF.to_pil_image((y[0].float().clamp(-1, 1) * 0.5 + 0.5).cpu()).save(a.work / f"{tag}_aif_orig.png")
         res[f"stage1_{tag}_psnr_maxdiff"] = psnr(a.work / f"{tag}_aif_fast.png", a.work / f"{tag}_aif_orig.png")
         orig_aif = a.work / f"{tag}_aif_orig.png"

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """Restore the held-out model-selection sets with a Stage I checkpoint: DPDD val_c (74 pairs) and LFDOF test (50 scenes,
 one focal slice each), both at full resolution and used in neither training nor the reported results. Outputs are named
-like the ground truth, for eval/score_folders.py and sharpness.py. Inference as run_pisa_zeroshot.py."""
+like the ground truth, for eval/score_folders.py and sharpness.py. Inference as deblur_no_refiner.py."""
 import os
 import argparse
 import sys
@@ -20,7 +20,7 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent))  # repository root
 import paths  # noqa: E402
 paths.add_to_path()
-from run_pisa_zeroshot import PiSADeterministic  # noqa: E402
+from deblur_no_refiner import Stage1Model  # noqa: E402
 
 DPDD_VAL = paths.DATA / "dd_dp_dataset_png/val_c"
 LFDOF_TEST = (DATA_ROOT / "LFDOF/test_data")
@@ -45,7 +45,7 @@ def main():
                          lambda_pix=1.0, lambda_sem=1.0, mixed_precision="fp16", default=True,
                          vae_decoder_tiled_size=100000, vae_encoder_tiled_size=100000,
                          latent_tiled_size=100000, latent_tiled_overlap=0, seed=42)
-    model = PiSADeterministic(args)
+    model = Stage1Model(args)
     model.set_eval()
     a.out.mkdir(parents=True, exist_ok=True)
     for src, gt in heldout_pairs(a.set):

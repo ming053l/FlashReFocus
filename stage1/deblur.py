@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Stage I inference with the decoder refiner: PiSA-SR restores the latent (omega = --lambda_sem; 1.25 for the
+"""Stage I inference with the decoder refiner: the one-step diffusion model restores the latent (omega = --lambda_sem; 1.25 for the
 released model) and the refiner decodes it in place of the SD2.1 decoder, guided by the blurred input.
 
 Pairs come from pairs/<set>_test.json (paths relative to --data_root); outputs are written as {index:04d}.png."""
@@ -18,19 +18,19 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent))  # repository root
 import paths  # noqa: E402
 paths.add_to_path()
-from run_pisa_zeroshot import PiSADeterministic  # noqa: E402
+from deblur_no_refiner import Stage1Model  # noqa: E402
 
 
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--pairs", type=Path, required=True)
     ap.add_argument("--data_root", default=str(paths.DATA))
-    ap.add_argument("--ckpt", required=True, help="PiSA-SR checkpoint (.pkl)")
-    ap.add_argument("--refiner", default=None, help="vae_refiner.pt; omit to decode with the SD2.1 VAE (plain PiSA-SR)")
+    ap.add_argument("--ckpt", required=True, help="Stage I checkpoint (.pkl)")
+    ap.add_argument("--refiner", default=None, help="refiner.pt; omit to decode with the SD2.1 VAE decoder")
     ap.add_argument("--sd21", default=str(paths.SD21))
     ap.add_argument("--sd15", default=str(paths.SD15))
     ap.add_argument("--lambda_pix", type=float, default=1.0)
-    ap.add_argument("--lambda_sem", type=float, default=1.0, help="!= 1 uses PiSA-SR's adjustable mode (two UNet passes)")
+    ap.add_argument("--lambda_sem", type=float, default=1.0, help="detail weight omega; != 1 runs two U-Net passes")
     ap.add_argument("--sem_scale", type=float, default=1.0,
                     help="scale the merged semantic-LoRA update in weight space (one UNet pass; alternative to --lambda_sem)")
     ap.add_argument("--refiner_tile", type=int, default=0, help="pixel tile for the refiner (0 = whole image)")
@@ -42,7 +42,7 @@ def main():
     args = argparse.Namespace(pretrained_model_path=a.sd21, pretrained_path=a.ckpt, lambda_pix=a.lambda_pix,
                               lambda_sem=a.lambda_sem, mixed_precision="fp16", default=default, vae_decoder_tiled_size=100000,
                               vae_encoder_tiled_size=100000, latent_tiled_size=100000, latent_tiled_overlap=0, seed=42)
-    model = PiSADeterministic(args)
+    model = Stage1Model(args)
     model.set_eval()
     if a.sem_scale != 1.0:
         assert default, "--sem_scale replaces --lambda_sem; use one of them"

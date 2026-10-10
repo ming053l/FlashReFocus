@@ -5,7 +5,7 @@ The refiner (refiner/vae_refiner_wo_d.py) is a Stable Diffusion 1.5 VAE decoder 
 multi-scale features of the blurred input and its Laplacian high-frequency map into each decoder block. SD1.5 and SD2.1
 share the VAE encoder and quant_conv, so it decodes the latents of the SD2.1-based Stage I. Training latents are the
 frozen Stage I one-step outputs z - UNet(z) (encoder posterior mode, empty prompt) at the inference weight
-omega = --lambda_sem; --pisa_ckpt with several checkpoints and --lambda_sem_choices draw one per step.
+omega = --lambda_sem; --stage1_ckpt with several checkpoints and --lambda_sem_choices draw one per step.
 
 Loss: MSE + 0.2 PAL + 0.1 LPIPS(VGG); bf16, lr 5e-5 with 500 warm-up steps and cosine decay, 512 crops of the Stage I
 training mixture. Trainable: decoder and fusion modules (the refiner's own encoder is frozen); --freeze_decoder trains
@@ -39,12 +39,12 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent))  # repository root
 import paths  # noqa: E402
 paths.add_to_path()
-from run_pisa_refiner import tiled_refine  # noqa: E402
+from deblur import tiled_refine  # noqa: E402
 
 
 def parse_args():
     p = argparse.ArgumentParser()
-    p.add_argument("--pisa_ckpt", required=True, help="Stage-I checkpoint, or a comma-separated list: each step draws one at random "
+    p.add_argument("--stage1_ckpt", required=True, help="Stage-I checkpoint, or a comma-separated list: each step draws one at random "
                    "(latent augmentation); the first one is used for validation")
     p.add_argument("--lambda_sem_choices", default="", help="comma-separated omegas drawn per step (default: --lambda_sem only)")
     p.add_argument("--refiner_init", default=str(paths.REFINER),
@@ -103,17 +103,17 @@ def lapvar(x):
     return F.conv2d(g, k).var().item()
 
 
-class PiSALatents:
-    """Frozen PiSA-SR: blurred image in [-1, 1] -> restored (unscaled) latent, exactly as run_pisa_zeroshot.py."""
+class Stage1Latents:
+    """Frozen Stage I: blurred image in [-1, 1] -> restored (unscaled) latent, exactly as deblur_no_refiner.py."""
 
     def __init__(self, ckpt, sd21, device, lambda_sem=1.0):
-        from run_pisa_zeroshot import PiSADeterministic
+        from deblur_no_refiner import Stage1Model
         a = argparse.Namespace(pretrained_model_path=sd21, pretrained_path=ckpt, lambda_pix=1.0, lambda_sem=lambda_sem,
                                mixed_precision="fp16", default=lambda_sem == 1.0, vae_decoder_tiled_size=100000,
                                vae_encoder_tiled_size=100000, latent_tiled_size=100000, latent_tiled_overlap=0, seed=42)
-        if device.index is not None:  # several processes: build PiSA-SR on this process's GPU
+        if device.index is not None:  # several processes: build Stage I on this process's GPU
             torch.cuda.set_device(device)
-        self.m = PiSADeterministic(a)
+        self.m = Stage1Model(a)
         self.m.set_eval()
         self.emb = self.m.encode_prompt([""]).to(dtype=self.m.weight_dtype)
         self.sf = self.m.vae.config.scaling_factor
@@ -148,8 +148,8 @@ def main():
 
     omegas = [float(w) for w in args.lambda_sem_choices.split(",") if w] or [args.lambda_sem]
     build_omega = max(omegas + [args.lambda_sem], key=lambda w: w != 1.0)      # two-pass mode if any omega != 1
-    pisas = [PiSALatents(c, args.sd21, acc.device, build_omega) for c in args.pisa_ckpt.split(",")]
-    pisa = lambda x: pisas[0](x, args.lambda_sem)                              # validation: deployed checkpoint and omega
+    stage1_models = [Stage1Latents(c, args.sd21, acc.device, build_omega) for c in args.stage1_ckpt.split(",")]
+    stage1_fn = lambda x: stage1_models[0](x, args.lambda_sem)                              # validation: deployed checkpoint and omega
     rng = __import__("random").Random(args.seed + acc.process_index)
     refiner = VAEMultiScaleFusionDecoder(AutoencoderKL.from_pretrained(args.sd15, subfolder="vae"), depth=2,
                                          map_hidden_channels=32, use_pixel_weighting=False, use_high_freq_info=True)
@@ -198,13 +198,13 @@ def main():
 
     step, best, t_last, done = 0, -1.0, time.time(), False
     if main_proc:
-        best = validate(acc.unwrap_model(refiner), pisa, vals, lpips_vgg, tb, 0, args)
+        best = validate(acc.unwrap_model(refiner), stage1_fn, vals, lpips_vgg, tb, 0, args)
     while not done:
         for batch in dl:
             with acc.accumulate(refiner):
                 x = batch["source"] * 2 - 1
                 y = batch["target"] * 2 - 1
-                lat = rng.choice(pisas)(x, rng.choice(omegas))
+                lat = rng.choice(stage1_models)(x, rng.choice(omegas))
                 with acc.autocast():
                     pred = refiner(x, latent=lat, sample_posterior=False)
                 pred = pred.float()
@@ -233,7 +233,7 @@ def main():
                 if step % args.checkpoint_every == 0 or step == args.max_train_steps:
                     save(acc.unwrap_model(refiner), args.output_dir / "checkpoints" / f"refiner_{step}.pt")
                 if step % args.val_every == 0 or step == args.max_train_steps:
-                    psnr = validate(acc.unwrap_model(refiner), pisa, vals, lpips_vgg, tb, step, args)
+                    psnr = validate(acc.unwrap_model(refiner), stage1_fn, vals, lpips_vgg, tb, step, args)
                     if psnr > best:
                         best = psnr
                         save(acc.unwrap_model(refiner), args.output_dir / "checkpoints" / "best.pt")
@@ -262,7 +262,7 @@ def save(refiner, path):
 
 
 @torch.no_grad()
-def validate(refiner, pisa, vals, lpips_vgg, tb, step, args):
+def validate(refiner, stage1_fn, vals, lpips_vgg, tb, step, args):
     refiner.eval()
     torch.cuda.empty_cache()
     psnr_dpdd = 0.0
@@ -274,7 +274,7 @@ def validate(refiner, pisa, vals, lpips_vgg, tb, step, args):
             src, tgt = src.crop((0, 0, w - w % 8, h - h % 8)), tgt.crop((0, 0, w - w % 8, h - h % 8))
             x = TF.to_tensor(src)[None].cuda() * 2 - 1
             y = TF.to_tensor(tgt)[None].cuda() * 2 - 1
-            lat = pisa(x)
+            lat = stage1_fn(x)
             with torch.autocast(device_type="cuda", dtype=torch.bfloat16):
                 if args.val_tile > 0:
                     out = tiled_refine(refiner, x, lat, args.val_tile, 64)

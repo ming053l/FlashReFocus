@@ -5,7 +5,7 @@ splits it by what each part needs: deblurring has to recover lost detail, so it 
 **once** per photograph; rendering new blur is determined by depth and the focal plane, so every edit is rendered by an
 explicit 1.3M-parameter network that leaves in-focus content untouched.
 
-- **Stage I, deblurring.** One-step diffusion on Stable Diffusion 2.1 following PiSA-SR: a pixel LoRA for fidelity and a
+- **Stage I, deblurring.** One-step diffusion on Stable Diffusion 2.1 with a pixel LoRA for fidelity and a
   detail LoRA weighted by ω at inference, trained on a mixture of real and synthetic defocus pairs, plus a decoder
   refiner that reinjects structure of the blurred input lost in VAE decoding.
 - **Stage II, rendering.** A residual encoder–decoder conditioned on a defocus map from Depth Anything V2 depth, the
@@ -22,7 +22,7 @@ stage1/       Stage I training and inference, decoder-refiner training, data con
 refiner/      decoder refiner (VAEMultiScaleFusionDecoder)
 renderer/     Stage II renderer: model, data loaders, training, inference, evaluation
 eval/         evaluation: bokeh-rendering tables, LVCorr, focus-sweep consistency, MODEST aperture ladders
-third_party/  PiSA-SR, Depth Anything V2, RAM++ (git submodules)
+third_party/  base one-step diffusion code, Depth Anything V2, RAM++ (git submodules)
 ```
 
 ## Setup
@@ -82,12 +82,12 @@ python pipeline/tiltshift.py photo.png out/tilt --row 0.3 --strength 0.6
 
 | Result | Scripts |
 |---|---|
-| Defocus deblurring (DPDD, RealDOF) | `stage1/run_pisa_refiner.py --pairs stage1/pairs/<set>_test.json`, `eval/score_folders.py` |
+| Defocus deblurring (DPDD, RealDOF) | `stage1/deblur.py --pairs stage1/pairs/<set>_test.json`, `eval/score_folders.py` |
 | Bokeh rendering (EBB! Val176, 3CReal, RealBokeh val.) | `eval/rbval_ours.py`, `renderer/test_focal_depth_k_search_p.py`, `eval/eval_bokeh_table.py`, `eval/score_folders.py` |
 | Strength control (LVCorr) | `eval/lvcorr.py` |
 | Focus-sweep consistency | `eval/rack_ours.py`, `eval/rack_genrefocus.py`, `eval/rack_match_blur*.py`, `eval/rack_analyze.py`, `eval/rack_metrics_kmatch.py` |
 | MODEST aperture ladders | `eval/build_modest_ladder.py`, `eval/modest_analyze.py` |
-| Cost | `stage1/cost_pisa.py`, `pipeline/bench_fast_refocus.py` |
+| Cost | `stage1/cost_stage1.py`, `pipeline/bench_fast_refocus.py` |
 
 Outputs of compared methods are produced with their own code (under `baselines/`, `FLASHREFOCUS_BASELINES`) and
 scored with the same scripts.

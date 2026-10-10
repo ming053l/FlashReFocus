@@ -2,7 +2,7 @@
 """Deblurring cost of Stage I (parameters, FLOPs, time, memory) at a fixed input size, default 1680x1120.
 
 Configurations: plain (one U-Net pass, SD2.1 VAE decoder), refiner (the decoder refiner decodes the latent) and
-refiner_l125 (omega = 1.25: two U-Net passes). Inference as run_pisa_refiner.py: empty-prompt text encoding, VAE
+refiner_l125 (omega = 1.25: two U-Net passes). Inference as deblur.py: empty-prompt text encoding, VAE
 encoder, U-Net at t = 1, then the decoder or the refiner.
 
   --flops : FLOPs of one traced run with torch.utils.flop_counter (one multiply-add = 2 FLOPs, element-wise operations
@@ -29,13 +29,13 @@ def n_params(m):
 
 
 def build(a, lambda_sem, refiner, device, dtype):
-    from run_pisa_zeroshot import PiSADeterministic
+    from deblur_no_refiner import Stage1Model
     default = lambda_sem == 1.0
     args = argparse.Namespace(pretrained_model_path=a.sd21, pretrained_path=a.ckpt, lambda_pix=1.0, lambda_sem=lambda_sem,
                               mixed_precision="fp16" if dtype == torch.float16 else "fp32", default=default,
                               vae_decoder_tiled_size=100000, vae_encoder_tiled_size=100000, latent_tiled_size=100000,
                               latent_tiled_overlap=0, seed=42)
-    m = PiSADeterministic(args)
+    m = Stage1Model(args)
     m.set_eval()
     ref = None
     if refiner:

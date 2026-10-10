@@ -34,8 +34,8 @@ RAM_ROOT = REPO / "third_party" / "recognize-anything"   # RAM++ tagger (Stage I
 
 def add_to_path():
     """Make the repository's packages importable from any script: refiner (as a package), stage1 and stage1/common,
-    renderer, pipeline, eval, and the submodules. recognize-anything precedes PiSA-SR, whose own older `ram` package must
-    not shadow RAM++."""
+    renderer, pipeline, eval, and the submodules. recognize-anything precedes third_party/PiSA-SR, whose own older `ram`
+    package must not shadow RAM++."""
     for p in (DA2_ROOT, PISA_SR, RAM_ROOT, REPO / "eval", REPO / "pipeline", REPO / "renderer", REPO / "stage1" / "common",
               REPO / "stage1", REPO):
         if str(p) not in sys.path:

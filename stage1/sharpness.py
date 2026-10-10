@@ -2,7 +2,7 @@
 """Sharpness of restored images relative to the ground truth: the ratio LapVar(output) / LapVar(GT) of the grey image,
 at full resolution and after 0.5x bicubic downscaling (which suppresses pixel-level noise and compares edges), plus PSNR
 at 0.5x. 1 means as much high-frequency energy as the ground truth; blurry outputs are below 1.
-Outputs are expected as {index:04d}.png, as written by run_pisa_refiner.py."""
+Outputs are expected as {index:04d}.png, as written by deblur.py."""
 import argparse
 import json
 import sys
