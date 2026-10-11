@@ -1,10 +1,3 @@
-<!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="description" content="FlashReFocus: Interactive Image Refocusing in Seconds">
-<style>body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
 <title>FlashReFocus</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -88,6 +81,7 @@ a.pill:hover{background:#474E69;text-decoration:none}
 .dual figure{margin:0;display:grid;gap:8px}
 .dual img{width:100%;height:auto;border-radius:8px;display:block}
 .dual figcaption{font-size:13.5px;color:var(--soft);text-align:center;line-height:1.35}
+.dual.two{grid-template-columns:repeat(2,minmax(0,1fr))}
 @media (max-width:720px){.dual{grid-template-columns:repeat(2,minmax(0,1fr))}}
 
 /* tables */
@@ -109,8 +103,6 @@ pre{background:var(--panel);border:1px solid var(--line);border-radius:10px;padd
 footer{text-align:center;font-size:14px;color:var(--soft);padding-top:8px}
 @media (prefers-reduced-motion:reduce){*{scroll-behavior:auto}}
 </style>
-</head>
-<body>
 
 <div class="wrap">
 <header>
@@ -147,7 +139,7 @@ footer{text-align:center;font-size:14px;color:var(--soft);padding-top:8px}
 
 <section aria-labelledby="abs">
   <h2 id="abs">Abstract</h2>
-  <p class="lead">Single-image refocusing changes the focal plane and depth of field after capture. It is inherently interactive: users try many focal points and blur strengths on one photograph, so each edit should be fast and change only the blur. Recent generative methods instead rerun large diffusion models for every edit. Yet refocusing is asymmetric: deblurring must restore lost information, whereas rendering is determined by depth and the focal plane. We therefore propose FlashReFocus, which spends diffusion once on restoration and renders every edit with an explicit, lightweight network. For restoration, a one-step diffusion deblurrer is paired with a decoder refiner that reinjects input structure lost in VAE decoding. For rendering, defocus-bias attention relates pixels by defocus rather than image distance under a depth-derived defocus map, so the focal point and blur strength are controlled directly and in-focus content stays untouched. Editing this map further yields tilt-shift and two focal planes without retraining. We also introduce 3CReal, a three-camera benchmark of 89 pairs. FlashReFocus achieves the best perceptual fidelity for zero-shot bokeh rendering on EBB! and 3CReal and refocuses 148.3&times; faster than GenRefocus, at about half a second per further edit.</p>
+  <p class="lead">Single-image refocusing changes the focal plane and depth of field of a photograph after capture. Users try many focal points and blur strengths on one image, so each edit should be fast and change only the blur, yet recent generative methods rerun large diffusion models for every edit. The two parts of the task differ: deblurring must recover lost detail, whereas rendering new blur is determined by depth and the focal plane. We therefore propose FlashReFocus, which runs diffusion once to restore an all-in-focus image and renders every edit with a lightweight network. For restoration, a one-step diffusion deblurrer is paired with a decoder refiner that recovers fine structures lost in VAE decoding. For rendering, a network conditioned on a defocus map from depth and the chosen focal point uses defocus-bias attention, which lets pixels with similar defocus exchange information wherever they lie; focal point and blur strength are controlled directly, and in-focus content is left untouched. Editing the map also yields tilt-shift and two focal planes without retraining. We also introduce 3CReal, a three-camera benchmark of 89 pairs. FlashReFocus achieves the best perceptual fidelity for zero-shot bokeh rendering on EBB! and 3CReal and refocuses 148.3&times; faster than GenRefocus, taking about half a second for each additional edit.</p>
 </section>
 
 <section aria-labelledby="method">
@@ -230,6 +222,43 @@ footer{text-align:center;font-size:14px;color:var(--soft);padding-top:8px}
       <tr class="ours"><td>FlashReFocus</td><td class="best">38.81</td><td class="best">0.048</td><td class="best">49.31</td><td>&ndash;</td></tr>
     </tbody></table></div>
   <p class="note">Left FlashReFocus, right GenRefocus, on two 3CReal scenes and one RealBokeh scene; the 3CReal labels show the measured seconds per edit at a long side of 1024. In-focus fidelity compares each result with the all-in-focus input near the focal depth; consistency compares consecutive edits where the expected blur does not change.</p>
+</section>
+
+<section aria-labelledby="portraits">
+  <h2 id="portraits">Portraits</h2>
+  <p class="lead">Unsplash portraits with a shallow depth of field. Stage I restores the out-of-focus background once; every edit after that is one pass of the renderer on the same restored image, here with the focus on the face or on the background at strength 0.8.</p>
+  <div class="tabs" role="group" aria-label="Portrait">
+    <button type="button" data-pt="20" aria-pressed="true">Tulip field</button>
+    <button type="button" data-pt="21" aria-pressed="false">Aquarium</button>
+    <button type="button" data-pt="09" aria-pressed="false">City view</button>
+    <button type="button" data-pt="18" aria-pressed="false">Rainbow light</button>
+  </div>
+  <div class="dual" id="ptGrid">
+    <figure><img data-k="input" src="assets/pt_20_input.jpg" alt="Input portrait with a blurred background" loading="lazy"><figcaption>Input</figcaption></figure>
+    <figure><img data-k="aif" src="assets/pt_20_aif.jpg" alt="All-in-focus image restored by Stage I" loading="lazy"><figcaption>Restored all-in-focus</figcaption></figure>
+    <figure><img data-k="subject" src="assets/pt_20_subject.jpg" alt="Rendered with the focus on the face" loading="lazy"><figcaption>Focus on the face</figcaption></figure>
+    <figure><img data-k="background" src="assets/pt_20_background.jpg" alt="Rendered with the focus on the background" loading="lazy"><figcaption>Focus on the background</figcaption></figure>
+  </div>
+  <p class="lead">The strength works like the aperture of a lens: with the focus on the face, the background blur grows from strength 0.25 to 1 while the face stays sharp.</p>
+  <div class="tabs" role="group" aria-label="Portrait for the strength series">
+    <button type="button" data-pk="21" aria-pressed="true">Aquarium</button>
+    <button type="button" data-pk="09" aria-pressed="false">City view</button>
+  </div>
+  <div class="dual" id="pkGrid">
+    <figure><img data-k="k25" src="assets/pt_21_k25.jpg" alt="Focus on the face at strength 0.25" loading="lazy"><figcaption>Strength 0.25</figcaption></figure>
+    <figure><img data-k="k50" src="assets/pt_21_k50.jpg" alt="Focus on the face at strength 0.5" loading="lazy"><figcaption>Strength 0.5</figcaption></figure>
+    <figure><img data-k="k75" src="assets/pt_21_k75.jpg" alt="Focus on the face at strength 0.75" loading="lazy"><figcaption>Strength 0.75</figcaption></figure>
+    <figure><img data-k="k100" src="assets/pt_21_k100.jpg" alt="Focus on the face at strength 1" loading="lazy"><figcaption>Strength 1</figcaption></figure>
+  </div>
+</section>
+
+<section aria-labelledby="tilt">
+  <h2 id="tilt">Tilt-shift</h2>
+  <p class="lead">Replacing the depth given to the renderer with a vertical ramp keeps a horizontal band sharp regardless of scene depth, the miniature look of a tilted lens, again without retraining.</p>
+  <div class="dual two">
+    <figure><img data-k="face" src="assets/tilt_face.jpg" alt="Sharp band at the height of the face" loading="lazy"><figcaption>Sharp band at the face</figcaption></figure>
+    <figure><img data-k="valley" src="assets/tilt_valley.jpg" alt="Sharp band at the valley; the subject in front blurs" loading="lazy"><figcaption>Sharp band at the valley</figcaption></figure>
+  </div>
 </section>
 
 <section aria-labelledby="dual">
@@ -385,6 +414,12 @@ footer{text-align:center;font-size:14px;color:var(--soft);padding-top:8px}
   } else { lazies.forEach(loadLazy); }
 
   var dualNames={'21':['the trunk','the stump'],'rb42':['the left birch','the right birch'],'3c19':['the flower','the bench']};
+  tabs('data-pt', function(k){
+    document.querySelectorAll('#ptGrid img').forEach(function(im){ im.src='assets/pt_'+k+'_'+im.getAttribute('data-k')+'.jpg'; });
+  });
+  tabs('data-pk', function(k){
+    document.querySelectorAll('#pkGrid img').forEach(function(im){ im.src='assets/pt_'+k+'_'+im.getAttribute('data-k')+'.jpg'; });
+  });
   tabs('data-dual', function(k){
     document.querySelectorAll('#dualGrid img').forEach(function(im){ im.src='assets/dual_'+k+'_'+im.getAttribute('data-k')+'.jpg'; });
     document.getElementById('dualCapA').textContent='Focus on A ('+dualNames[k][0]+')';
@@ -398,5 +433,3 @@ footer{text-align:center;font-size:14px;color:var(--soft);padding-top:8px}
   });
 })();
 </script>
-</body>
-</html>
