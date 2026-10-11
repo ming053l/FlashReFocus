@@ -1,115 +1,125 @@
 <title>FlashReFocus</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Google+Sans:400,500,700">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@500;700;800&family=Noto+Sans:ital,wght@0,400;0,600;1,400&family=Noto+Sans+Mono:wght@400;500&display=swap">
 <style>
-/* Layout: one centred column on a night-blue ground, as in video project pages; media carries the page, text stays short. */
+/* Light academic project page in the Nerfies style (as LongSplat): white ground, Google Sans headings, green links,
+   dark rounded buttons, left-aligned section titles over a rule, justified text. */
 :root{
-  color-scheme:dark;
-  --bg:#101529; --panel:#182040; --line:#2B3560; --fg:#FFFFFF; --soft:#C9D0E6; --warm:#FFE4C4; --link:#7FB2F5;
-  --best:#7CE0A6; --paper:#FFFFFF;
-  --display:"Figtree","Google Sans","Helvetica Neue",Arial,sans-serif;
+  color-scheme:light;
+  --bg:#FFFFFF; --band:#F5F5F5; --panel:#FAFAFA; --line:#DBDBDB; --fg:#363636; --text:#4A4A4A; --soft:#7A7A7A;
+  --green:#48A43F; --green-dk:#3A8A32; --link:#48A43F; --best:#2E8B3A; --paper:#FFFFFF; --warm:#48A43F;
+  --display:"Google Sans","Figtree","Noto Sans","Helvetica Neue",Arial,sans-serif;
   --body:"Noto Sans","Helvetica Neue",Arial,sans-serif;
   --mono:"Noto Sans Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
 }
 *{box-sizing:border-box}
-body{background:var(--bg);color:var(--fg);font:16.5px/1.65 var(--body);padding-inline:16px;padding-block:0 40px}
-.wrap{max-width:1040px;margin:0 auto;display:grid;gap:64px}
-h1,h2,h3{font-family:var(--display);margin:0;text-wrap:balance}
-h2{font-size:clamp(24px,3.2vw,32px);font-weight:700;text-align:center}
+html{background:var(--bg)}
+body{background:var(--bg);color:var(--text);font:15.5px/1.6 var(--body);padding-inline:16px;padding-block:0;margin:0}
+.wrap{max-width:960px;margin:0 auto;display:grid;gap:52px}
+h1,h2,h3{font-family:var(--display);margin:0;text-wrap:balance;color:var(--fg)}
+h2{font-size:clamp(23px,2.8vw,28px);font-weight:500;text-align:left;padding-bottom:10px;border-bottom:1px solid var(--line)}
+h2[style*="text-align:left"]{text-align:left}
 p{margin:0}
 a{color:var(--link);text-decoration:none}
-a:hover{text-decoration:underline}
-section{display:grid;gap:22px;min-width:0}
+a:hover{color:var(--green-dk);text-decoration:underline}
+section{display:grid;gap:18px;min-width:0}
 .lead{text-align:justify;hyphens:auto}
 .lead b{color:var(--fg)}
 .note{font-size:14px;color:var(--soft);line-height:1.55}
 .center{text-align:center}
 .rule{height:1px;background:var(--line)}
-:focus-visible{outline:2px solid var(--warm);outline-offset:2px}
+:focus-visible{outline:2px solid var(--green);outline-offset:2px}
 
 /* hero */
-header{display:grid;gap:16px;justify-items:center;text-align:center;padding-block:56px 0}
-.mark{font-size:clamp(44px,9vw,88px);font-weight:800;letter-spacing:-.03em;line-height:1}
-.mark i{font-style:normal;color:var(--warm)}
-.sub{font:700 clamp(20px,3vw,30px)/1.25 var(--display)}
-.authors{display:flex;flex-wrap:wrap;justify-content:center;gap:4px 20px;font-size:18px;color:var(--link)}
+header{display:grid;gap:10px;justify-items:center;text-align:center;padding-block:52px 0}
+.mark{font-size:clamp(40px,6vw,58px);font-weight:500;letter-spacing:-.01em;line-height:1.05}
+.mark i{font-style:normal;color:var(--green)}
+.sub{font:500 clamp(20px,2.6vw,27px)/1.3 var(--display);color:var(--fg)}
+.authors{display:flex;flex-wrap:wrap;justify-content:center;gap:2px 16px;font-size:18px;margin-top:6px}
+.authors a,.authors span{color:var(--link)}
 .authors sup,.affil sup{font-size:.68em}
-.affil{display:flex;flex-wrap:wrap;justify-content:center;gap:4px 20px;font-size:17px;color:var(--warm)}
-.links{display:flex;flex-wrap:wrap;justify-content:center;gap:10px;margin-top:6px}
-.pill{font:500 15px/1 var(--display);padding:11px 18px;border-radius:999px;background:#363C52;color:var(--fg);display:inline-flex;gap:8px;align-items:center}
-.pill .ic{width:18px;height:18px;flex:none}
-a.pill:hover{background:#474E69;text-decoration:none}
-.pill small{font:400 12px/1 var(--body);color:var(--soft)}
+.affil{display:flex;flex-wrap:wrap;justify-content:center;gap:2px 16px;font-size:16.5px;color:var(--fg)}
+.links{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin-top:8px}
+.pill{font:500 15px/1 var(--display);padding:10px 17px;border-radius:999px;background:#363636;color:#FFF;display:inline-flex;gap:8px;align-items:center}
+.pill .ic{width:17px;height:17px;flex:none}
+a.pill:hover{background:#4A4A4A;color:#FFF;text-decoration:none}
+.pill small{font:400 12px/1 var(--body);color:#C8C8C8}
+
+/* full-width grey band (teaser), as the carousel band of Nerfies pages */
+.band{background:var(--band);margin-inline:calc(50% - 50vw);padding:28px calc(50vw - 50%)}
 
 /* media */
-.frame{border-radius:10px;overflow:hidden;background:#000;line-height:0}
+.frame{border-radius:6px;overflow:hidden;background:#000;line-height:0}
 .frame video,.frame img{width:100%;height:auto;display:block}
-.fig{background:var(--paper);border-radius:10px;padding:12px;line-height:0}
+.fig{background:var(--paper);border:1px solid var(--line);border-radius:6px;padding:12px;line-height:0}
 .fig img{width:100%;height:auto;display:block}
 .fig.narrow{max-width:560px;margin-inline:auto}
-.stack{display:grid;gap:16px}
+.stack{display:grid;gap:14px}
 .stack video{aspect-ratio:2060/682;object-fit:cover}
 
 /* compare slider */
-.cmp{position:relative;border-radius:10px;overflow:hidden;background:#000;line-height:0;touch-action:pan-y;user-select:none;--pos:50%}
+.cmp{position:relative;border-radius:6px;overflow:hidden;background:#000;line-height:0;touch-action:pan-y;user-select:none;--pos:50%}
 .cmp img{width:100%;height:auto;display:block;pointer-events:none}
 .cmp .top{position:absolute;inset:0;clip-path:inset(0 calc(100% - var(--pos)) 0 0)}
 .cmp .top img{height:100%;object-fit:cover}
-.cmp .bar{position:absolute;top:0;bottom:0;left:var(--pos);width:2px;margin-left:-1px;background:var(--fg);pointer-events:none}
-.cmp .knob{position:absolute;top:50%;left:var(--pos);width:40px;height:40px;margin:-20px 0 0 -20px;border-radius:50%;background:rgba(16,21,41,.75);border:2px solid var(--fg);pointer-events:none;display:grid;place-items:center;font:500 14px/1 var(--mono);color:var(--fg)}
-.cmp .tag{position:absolute;top:12px;font:500 12.5px/1 var(--mono);padding:7px 10px;border-radius:6px;background:rgba(16,21,41,.78);color:var(--fg);pointer-events:none}
+.cmp .bar{position:absolute;top:0;bottom:0;left:var(--pos);width:2px;margin-left:-1px;background:#FFF;pointer-events:none}
+.cmp .knob{position:absolute;top:50%;left:var(--pos);width:40px;height:40px;margin:-20px 0 0 -20px;border-radius:50%;background:rgba(0,0,0,.55);border:2px solid #FFF;pointer-events:none;display:grid;place-items:center;font:500 14px/1 var(--mono);color:#FFF}
+.cmp .tag{position:absolute;top:12px;font:500 12.5px/1 var(--display);padding:6px 10px;border-radius:4px;background:rgba(0,0,0,.6);color:#FFF;pointer-events:none}
 .cmp .tag.l{left:12px}.cmp .tag.r{right:12px}
 .cmp input{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:ew-resize;margin:0}
-.picker{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px}
-.picker button{flex:0 0 96px;padding:0;border:2px solid transparent;border-radius:8px;overflow:hidden;background:none;cursor:pointer;line-height:0;opacity:.6}
-.picker button[aria-pressed="true"]{border-color:var(--warm);opacity:1}
+.picker{display:flex;gap:8px;overflow-x:auto;padding:2px 2px 6px;justify-content:center}
+.picker button{flex:0 0 84px;padding:0;border:2px solid transparent;border-radius:6px;overflow:hidden;background:none;cursor:pointer;line-height:0;opacity:.55}
+.picker button[aria-pressed="true"]{border-color:var(--green);opacity:1}
 .picker img{width:100%;aspect-ratio:3/2;object-fit:cover;display:block}
 
-/* viewer */
-.tabs{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
-.tabs button,.play{font:500 14px/1 var(--display);padding:9px 15px;border-radius:999px;border:1px solid var(--line);background:transparent;color:var(--soft);cursor:pointer}
-.tabs button[aria-pressed="true"]{background:var(--fg);color:var(--bg);border-color:var(--fg)}
-.play{border-color:var(--warm);color:var(--warm);min-width:7.5em}
+/* tabs and controls: green text, filled green when selected */
+.tabs{display:flex;gap:6px;flex-wrap:wrap;justify-content:center}
+.tabs button{font:500 14px/1 var(--display);padding:9px 14px;border-radius:4px;border:0;background:transparent;color:var(--green);cursor:pointer}
+.tabs button:hover{background:#EEF7EC}
+.tabs button[aria-pressed="true"]{background:var(--green);color:#FFF}
+.play{font:500 14px/1 var(--display);padding:9px 15px;border-radius:999px;border:1px solid var(--green);background:#FFF;color:var(--green);cursor:pointer;min-width:7.5em}
+.play:hover{background:#EEF7EC}
 .viewer{display:grid;gap:12px}
 .ctl{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:14px;align-items:center}
-.ctl input{width:100%;accent-color:var(--warm);height:28px}
+.ctl input{width:100%;accent-color:var(--green);height:28px}
 .read{font:500 13.5px/1.2 var(--mono);color:var(--soft);min-width:8.5em;text-align:right}
 .scale{display:flex;justify-content:space-between;font:500 11.5px/1 var(--mono);color:var(--soft);letter-spacing:.05em}
 @media (max-width:560px){.ctl{grid-template-columns:1fr}.read{text-align:left}}
 .dual{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
-.dual figure{margin:0;display:grid;gap:8px}
-.dual img{width:100%;height:auto;border-radius:8px;display:block}
+.dual figure{margin:0;display:grid;gap:6px}
+.dual img{width:100%;height:auto;border-radius:6px;display:block}
 .dual figcaption{font-size:13.5px;color:var(--soft);text-align:center;line-height:1.35}
-.dual.two{grid-template-columns:repeat(2,minmax(0,1fr))}
-.yt{position:relative;width:100%;max-width:880px;margin:8px auto 0;aspect-ratio:16/9;border-radius:12px;overflow:hidden;background:#000}
+.dual.two,.dual.big{grid-template-columns:repeat(2,minmax(0,1fr))}
+.yt{position:relative;width:100%;max-width:880px;margin:0 auto;aspect-ratio:16/9;border-radius:6px;overflow:hidden;background:#000}
 .yt iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
-.dual.big{grid-template-columns:repeat(2,minmax(0,1fr))}
-.stage{max-width:880px;margin:14px auto 10px;border-radius:10px;overflow:hidden;line-height:0;background:#000}
+.stage{max-width:860px;width:100%;margin:6px auto 4px;border-radius:6px;overflow:hidden;line-height:0;background:#000}
 .stage img{width:100%;height:auto;display:block}
-.tabs.small button{font-size:13px;padding:7px 12px}
-.ptctl{width:100%;max-width:880px;margin-inline:auto}
+.tabs.small button{font-size:13px;padding:7px 11px}
+.ptctl{width:100%;max-width:860px;margin-inline:auto}
 .ctl.ptctl{grid-template-columns:minmax(0,1fr) auto}
-h3.sub{font:700 20px/1.3 var(--display);text-align:center;margin:44px 0 6px}
+h3.sub{font:500 20px/1.3 var(--display);text-align:left;margin:30px 0 0;color:var(--fg)}
 @media (max-width:720px){.dual{grid-template-columns:repeat(2,minmax(0,1fr))}}
 
 /* tables */
-.tbl{overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:var(--panel)}
-table{border-collapse:collapse;width:100%;font:13.5px/1.3 var(--mono);font-variant-numeric:tabular-nums}
-th,td{padding:9px 12px;text-align:right;white-space:nowrap;border-bottom:1px solid var(--line)}
+.tbl{overflow-x:auto;border-top:2px solid var(--fg);border-bottom:2px solid var(--fg)}
+table{border-collapse:collapse;width:100%;font:14px/1.35 var(--body);font-variant-numeric:tabular-nums;color:var(--fg)}
+th,td{padding:8px 12px;text-align:right;white-space:nowrap;border-bottom:1px solid #EDEDED}
 th:first-child,td:first-child{text-align:left}
-thead th{font-weight:500;color:var(--soft);font-size:12.5px}
+thead th{font-weight:600;color:var(--fg);font-size:13.5px;border-bottom:1px solid var(--fg)}
 tbody tr:last-child td{border-bottom:0}
-tr.ours td{color:var(--warm);font-weight:500}
-td.best{color:var(--best)}
-tr.ours td.best{color:var(--best)}
-.group td{color:var(--soft);font-size:12px;letter-spacing:.06em;text-transform:uppercase;text-align:left}
+tr.ours td{font-weight:600;background:#F3FAF1}
+td.best,tr.ours td.best{color:var(--best);font-weight:700}
+.group td{color:var(--soft);font-size:12px;letter-spacing:.06em;text-transform:uppercase;text-align:left;font-style:italic;background:var(--panel)}
 
-.related{display:grid;gap:14px;margin:0;padding-left:1.2em}
-.related p{color:var(--warm);font-size:15px}
-pre{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px 18px;overflow-x:auto;font:13.5px/1.55 var(--mono);margin:0;color:var(--fg)}
+.related{display:grid;gap:12px;margin:0;padding-left:1.2em}
+.related a{color:var(--link)}
+.related p{color:var(--text);font-size:14.5px}
+pre{background:var(--panel);border:1px solid var(--line);border-radius:4px;padding:16px 18px;overflow-x:auto;font:13.5px/1.55 var(--mono);margin:0;color:var(--fg)}
 .copy{justify-self:start}
-footer{text-align:center;font-size:14px;color:var(--soft);padding-top:8px}
+footer{text-align:center;font-size:14px;color:var(--soft);background:var(--band);margin-inline:calc(50% - 50vw);padding:28px 16px 34px}
+@media (max-width:560px){.lead{text-align:left;hyphens:manual}}
 @media (prefers-reduced-motion:reduce){*{scroll-behavior:auto}}
 </style>
 
@@ -118,8 +128,12 @@ footer{text-align:center;font-size:14px;color:var(--soft);padding-top:8px}
   <h1 class="mark">Flash<i>Re</i>Focus</h1>
   <p class="sub">Interactive Image Refocusing in Seconds</p>
   <div class="authors">
-    <span>Ching-Heng Cheng<sup>1*</sup></span><span>Chia-Ming Lee<sup>2*</sup></span><span>Ming-Ching Chang<sup>2</sup></span>
-    <span>Xin Li<sup>2</sup></span><span>Yu-Lun Liu<sup>3</sup></span><span>Chih-Chung Hsu<sup>3&dagger;</sup></span>
+    <span>Ching-Heng Cheng<sup>1*</sup></span>
+    <a href="https://ming053l.github.io/" target="_blank" rel="noopener">Chia-Ming Lee<sup>2*</sup></a>
+    <a href="https://www.albany.edu/faculty/mchang2/" target="_blank" rel="noopener">Ming-Ching Chang<sup>2</sup></a>
+    <a href="https://scholar.google.com/citations?user=gMBvzGoAAAAJ&amp;hl=en" target="_blank" rel="noopener">Xin Li<sup>2</sup></a>
+    <a href="https://yulunalexliu.github.io/" target="_blank" rel="noopener">Yu-Lun Liu<sup>3</sup></a>
+    <a href="https://cchsu.info/" target="_blank" rel="noopener">Chih-Chung Hsu<sup>3&dagger;</sup></a>
   </div>
   <div class="affil"><span><sup>1</sup>National Cheng Kung University</span><span><sup>2</sup>State University of New York at Albany</span><span><sup>3</sup>National Yang Ming Chiao Tung University</span></div>
   <p class="note">* Equal contribution &nbsp;&middot;&nbsp; &dagger; Corresponding author</p>
@@ -130,7 +144,7 @@ footer{text-align:center;font-size:14px;color:var(--soft);padding-top:8px}
   </div>
 </header>
 
-<section aria-label="Video" class="yt-wrap">
+<section aria-label="Video" class="band">
   <div class="yt"><iframe src="https://www.youtube-nocookie.com/embed/g032M7moWQ4?rel=0" title="FlashReFocus video" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe></div>
 </section>
 
@@ -330,12 +344,12 @@ footer{text-align:center;font-size:14px;color:var(--soft);padding-top:8px}
 
 <section aria-labelledby="rel">
   <h2 id="rel">Related work</h2>
-  <p class="center">FlashReFocus builds on and compares with these works on refocusing and bokeh rendering.</p>
+  <p>FlashReFocus builds on and compares with these works on refocusing and bokeh rendering.</p>
   <ul class="related">
     <li><a href="https://arxiv.org/abs/2512.16923" target="_blank" rel="noopener">[arXiv 2025] Generative Refocusing: Flexible Defocus Control from a Single Image</a><p>Two-stage refocusing that restores and then renders bokeh with diffusion transformers.</p></li>
-    <li><span>[SIGGRAPH Asia 2025] DiffCamera: Arbitrary Refocusing on Images</span><p>End-to-end refocusing with a single diffusion transformer.</p></li>
-    <li><span>[CVPR 2026] MagicBokeh: Towards Photorealistic and Efficient Bokeh Rendering via Diffusion Framework</span><p>Restoration and bokeh rendering fused into one diffusion step.</p></li>
-    <li><span>[ICCV 2025] Bokehlicious: Photorealistic Bokeh Rendering with Controllable Apertures</span><p>Feed-forward bokeh rendering with aperture-aware attention and the RealBokeh dataset.</p></li>
+    <li><a href="https://arxiv.org/abs/2509.26599" target="_blank" rel="noopener">[SIGGRAPH Asia 2025] DiffCamera: Arbitrary Refocusing on Images</a><p>End-to-end refocusing with a single diffusion transformer.</p></li>
+    <li><a href="https://arxiv.org/abs/2605.07429" target="_blank" rel="noopener">[CVPR 2026] MagicBokeh: Towards Photorealistic and Efficient Bokeh Rendering via Diffusion Framework</a><p>Restoration and bokeh rendering fused into one diffusion step.</p></li>
+    <li><a href="https://arxiv.org/abs/2503.16067" target="_blank" rel="noopener">[ICCV 2025] Bokehlicious: Photorealistic Bokeh Rendering with Controllable Apertures</a><p>Feed-forward bokeh rendering with aperture-aware attention and the RealBokeh dataset.</p></li>
     <li><a href="https://github.com/csslc/PiSA-SR" target="_blank" rel="noopener">[CVPR 2025] PiSA-SR: Pixel-level and Semantic-level Adjustable Super-resolution</a><p>The one-step diffusion restorer with pixel and semantic LoRAs that Stage I adapts to defocus.</p></li>
   </ul>
 </section>
@@ -351,7 +365,7 @@ footer{text-align:center;font-size:14px;color:var(--soft);padding-top:8px}
   <button type="button" class="play copy" id="copyBib">Copy BibTeX</button>
 </section>
 
-<footer>Page layout after the <a href="https://github.com/nerfies/nerfies.github.io" target="_blank" rel="noopener">Nerfies</a> project-page template.</footer>
+<footer>Website template borrowed from <a href="https://github.com/nerfies/nerfies.github.io" target="_blank" rel="noopener">Nerfies</a>.</footer>
 </div>
 
 <script>
