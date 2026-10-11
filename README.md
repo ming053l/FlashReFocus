@@ -136,6 +136,7 @@ fixed input size, but may pick different convolution algorithms between runs, ch
 | Strength control (LVCorr) | `eval/lvcorr.py` |
 | Focus-sweep consistency | `eval/rack_ours.py`, `eval/rack_genrefocus.py`, `eval/rack_match_blur*.py`, `eval/rack_analyze.py`, `eval/rack_metrics_kmatch.py` |
 | MODEST aperture series | `eval/build_modest_series.py`, `eval/modest_analyze.py` |
+| Effect of the defocus bias on attention (Appendix C.1) | `eval/attention_bias.py` |
 | Cost | `deblur/cost_stage1.py`, `pipeline/bench_fast_refocus.py` |
 
 Outputs of compared methods are produced with their own code (under `baselines/`, `FLASHREFOCUS_BASELINES`) and
