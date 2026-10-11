@@ -1,11 +1,11 @@
 # Stage I training data: DPDD 0.3, RealBokeh 0.2, LFDOF 0.3, synthetic spatially varying blur on DIV2K 0.2.
-# RealBokeh: 4,179 pairs of the top-1000 scenes (released model). ${FLASHREFOCUS_*} are expanded with the defaults of paths.py.
+# RealBokeh: all 20,554 training pairs. ${FLASHREFOCUS_*} are expanded with the defaults of paths.py.
 
 dataset_name: mixed
 task_mode: defocus_deblurring
-train_data_dir: ${FLASHREFOCUS_REPO}/stage1/configs/deblur_train_realbokeh_top1000_laplacian.csv
+train_data_dir: ${FLASHREFOCUS_REPO}/deblur/configs/deblur_train_realbokeh_full.csv
 mixed_dpdd_data_dir: ${FLASHREFOCUS_DATA}/dd_dp_dataset_png
-mixed_deblurring_data_dir: ${FLASHREFOCUS_REPO}/stage1/configs/deblur_train_realbokeh_top1000_laplacian.csv
+mixed_deblurring_data_dir: ${FLASHREFOCUS_REPO}/deblur/configs/deblur_train_realbokeh_full.csv
 lfdof_data_dir: ${FLASHREFOCUS_DATA}/LFDOF
 clear_data_dir: ${FLASHREFOCUS_DATA}/div2k/DIV2K_train_HR
 mixed_dpdd_prob: 0.3

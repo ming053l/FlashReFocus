@@ -5,5 +5,5 @@ set -e
 cd "$(dirname "$0")"
 export PYTHONUNBUFFERED=1 PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 accelerate launch --num_processes 2 --multi_gpu --mixed_precision bf16 train_refiner.py \
-  --stage1_ckpt "${STAGE1_CKPT:-runs/stage1/checkpoints/model_40000.pkl}" --lambda_sem 1.25 --output_dir runs/refiner \
+  --stage1_ckpt "${STAGE1_CKPT:-runs/deblur/checkpoints/model_40000.pkl}" --lambda_sem 1.25 --output_dir runs/refiner \
   --train_batch_size 1 --gradient_accumulation_steps 2 --max_train_steps 15000 --grad_ckpt "$@"

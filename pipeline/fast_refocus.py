@@ -7,7 +7,7 @@
   rd.set_image("aif.png")               # depth is estimated once and cached
   rd.render(x, y, strength, "out.png")  # per edit; strength in [0, 1]
 
-Compared with the reference scripts (stage1/deblur.py, renderer/infer_single_focus.py) only the code around
+Compared with the reference scripts (deblur/deblur.py, renderer/infer_single_focus.py) only the code around
 the models changes, so the outputs are the same up to floating point: the empty-prompt text embedding is computed once,
 Depth Anything V2 pre- and post-processing and the focus map run on the GPU, the depth of an image is reused by every
 edit, and PNGs are written with a fast zlib level. Options: cuDNN autotuning, channels_last, fp16 refiner, renderer
@@ -44,7 +44,7 @@ def setup_backend(cudnn_benchmark=True):
 
 
 class FastStageI:
-    """Stage I for the pipeline: restore an image file into an all-in-focus PNG (stage1/model.py does the work)."""
+    """Stage I for the pipeline: restore an image file into an all-in-focus PNG (deblur/model.py does the work)."""
 
     def __init__(self, ckpt=paths.STAGE1, refiner=paths.REFINER, lambda_sem=1.25, refiner_fp16=False, compile_=False,
                  channels_last=False, compile_mode=None, merge_vae_lora=False):

@@ -10,8 +10,8 @@ export PYTHONUNBUFFERED=1 NCCL_P2P_DISABLE=1 NCCL_SHM_DISABLE=1
 PIX="--pix_steps 20000 --lora_rank_unet_pix 16 --pix_lora_scaling 2 --pix_lora_a_std 0.25 --vae_lora_rank 4 --train_conv_in"
 
 accelerate launch --num_processes 2 --multi_gpu --mixed_precision fp16 train_deblur.py \
-  --output_dir runs/stage1_pixel $PIX --max_train_steps 20000
+  --output_dir runs/deblur_pixel $PIX --max_train_steps 20000
 
 accelerate launch --num_processes 1 --mixed_precision fp16 train_deblur.py \
-  --output_dir runs/stage1 --resume runs/stage1_pixel/checkpoints/model_20000.pkl $PIX \
+  --output_dir runs/deblur --resume runs/deblur_pixel/checkpoints/model_20000.pkl $PIX \
   --train_batch_size 4 --gradient_accumulation_steps 4 --max_train_steps 40000

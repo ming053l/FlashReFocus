@@ -18,7 +18,7 @@ store B with scaling 8 / r.
 
 Optional, off by default: alternating pixel and detail stages (--alternate_every), an adversarial loss with the
 Real-ESRGAN U-Net discriminator (--lambda_gan), and an L1 loss between Fourier spectra (--lambda_fft).
-train_stage1.sh gives the configuration of the released model.
+train_deblur.sh gives the configuration of the released model.
 """
 import argparse
 import json

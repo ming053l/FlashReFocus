@@ -111,7 +111,7 @@ def parse_args(input_args=None):
     add_arg(parser, "resume_from_checkpoint", type=str)
     add_arg(parser, "revision", type=str)
     add_arg(parser, "tokenizer_name", type=str)
-    add_arg(parser, "output_dir", "runs/stage1")
+    add_arg(parser, "output_dir", "runs/deblur")
     add_arg(parser, "seed", type=int)
 
     add_arg(parser, "dataset_name", "dpdd")

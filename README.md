@@ -18,7 +18,7 @@ explicit 1.3M-parameter network that leaves in-focus content untouched.
 ```
 paths.py      locations of weights, data and outputs (environment variables, see below)
 pipeline/     refocusing pipeline (fast_refocus.py), two focal planes, tilt-shift, cost benchmark
-stage1/       Stage I model (model.py), inference, training, decoder-refiner training, data configuration, test pairs
+deblur/       Stage I model (model.py), inference, training, decoder-refiner training, data configuration, test pairs
 refiner/      decoder refiner (VAEMultiScaleFusionDecoder)
 renderer/     Stage II renderer: model, data loaders, training, inference, evaluation
 eval/         evaluation: bokeh-rendering tables, LVCorr, focus-sweep consistency, MODEST aperture ladders
@@ -78,8 +78,8 @@ Refocusing your own photos needs no dataset. For training and evaluation, downlo
 | `MODEST/` | MODEST | aperture-ladder evaluation (optional) | `huggingface-cli download independent-vision-lab/MODEST --repo-type dataset --local-dir data/MODEST` |
 | `Hypersim_processed/` | Hypersim scenes with rendered bokeh targets | renderer pre-training | scenes from [github.com/apple/ml-hypersim](https://github.com/apple/ml-hypersim); target rendering script to be released |
 
-Stage I trains on 4,179 RealBokeh pairs of the top-1000 scenes (`stage1/configs/deblur_train_realbokeh_top1000_laplacian.csv`);
-these manifests and the test pairs in `stage1/pairs/` store paths relative to `data/`. Our focal-point annotations for
+Stage I trains on 4,179 RealBokeh pairs of the top-1000 scenes (`deblur/configs/deblur_train_realbokeh_top1000_laplacian.csv`);
+these manifests and the test pairs in `deblur/pairs/` store paths relative to `data/`. Our focal-point annotations for
 EBB!, RealBokeh, 3CReal and LFDOF are in `annotations/`; `tools/prepare_data.py` copies them next to the images and
 builds the evaluation folders:
 
@@ -112,7 +112,7 @@ python pipeline/dual_focus.py aif.png xA yA xB yB 0.8 out/dual
 python pipeline/tiltshift.py photo.png out/tilt --row 0.3 --strength 0.6
 ```
 
-For scripts and notebooks, `stage1/model.py` exposes the restoration directly:
+For scripts and notebooks, `deblur/model.py` exposes the restoration directly:
 `Deblurrer(load_stage1(omega=1.25), load_refiner())(read_image("photo.png"))`.
 
 Outputs are bit-reproducible with `FR.setup_backend(False)`; `setup_backend(True)` (cuDNN autotuning) is faster for a
@@ -123,20 +123,20 @@ fixed input size, but may pick different convolution algorithms between runs, ch
 
 | Stage | Script | Data |
 |---|---|---|
-| Stage I | `stage1/train_stage1.sh` (pixel stage, then detail stage) | DPDD, RealBokeh (`stage1/configs/*.csv`), LFDOF, DIV2K |
-| Decoder refiner | `stage1/train_refiner.sh` | same mixture, Stage I latents at ω = 1.25 |
+| Stage I | `deblur/train_deblur.sh` (pixel stage, then detail stage) | DPDD, RealBokeh (`deblur/configs/*.csv`), LFDOF, DIV2K |
+| Decoder refiner | `deblur/train_refiner.sh` | same mixture, Stage I latents at ω = 1.25 |
 | Renderer | `renderer/train_renderer.sh` (Hypersim pre-training, RealBokeh adaptation) | Hypersim with BokehMe targets, RealBokeh |
 
 ## Evaluation
 
 | Result | Scripts |
 |---|---|
-| Defocus deblurring (DPDD, RealDOF) | `stage1/deblur.py --pairs stage1/pairs/<set>_test.json`, `eval/score_folders.py` |
+| Defocus deblurring (DPDD, RealDOF) | `deblur/deblur.py --pairs deblur/pairs/<set>_test.json`, `eval/score_folders.py` |
 | Bokeh rendering (EBB! Val176, 3CReal, RealBokeh val.) | `eval/rbval_ours.py`, `renderer/test_focal_depth_k_search_p.py`, `eval/eval_bokeh_table.py`, `eval/score_folders.py` |
 | Strength control (LVCorr) | `eval/lvcorr.py` |
 | Focus-sweep consistency | `eval/rack_ours.py`, `eval/rack_genrefocus.py`, `eval/rack_match_blur*.py`, `eval/rack_analyze.py`, `eval/rack_metrics_kmatch.py` |
 | MODEST aperture ladders | `eval/build_modest_ladder.py`, `eval/modest_analyze.py` |
-| Cost | `stage1/cost_stage1.py`, `pipeline/bench_fast_refocus.py` |
+| Cost | `deblur/cost_stage1.py`, `pipeline/bench_fast_refocus.py` |
 
 Outputs of compared methods are produced with their own code (under `baselines/`, `FLASHREFOCUS_BASELINES`) and
 scored with the same scripts.
