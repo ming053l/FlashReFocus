@@ -82,6 +82,13 @@ a.pill:hover{background:#474E69;text-decoration:none}
 .dual img{width:100%;height:auto;border-radius:8px;display:block}
 .dual figcaption{font-size:13.5px;color:var(--soft);text-align:center;line-height:1.35}
 .dual.two{grid-template-columns:repeat(2,minmax(0,1fr))}
+.dual.big{grid-template-columns:repeat(2,minmax(0,1fr))}
+.stage{max-width:880px;margin:14px auto 10px;border-radius:10px;overflow:hidden;line-height:0;background:#000}
+.stage img{width:100%;height:auto;display:block}
+.tabs.small button{font-size:13px;padding:7px 12px}
+.ptctl{width:100%;max-width:880px;margin-inline:auto}
+.ctl.ptctl{grid-template-columns:minmax(0,1fr) auto}
+h3.sub{font:700 20px/1.3 var(--display);text-align:center;margin:44px 0 6px}
 @media (max-width:720px){.dual{grid-template-columns:repeat(2,minmax(0,1fr))}}
 
 /* tables */
@@ -207,9 +214,9 @@ footer{text-align:center;font-size:14px;color:var(--soft);padding-top:8px}
   <h2 id="versus">Focus sweep against GenRefocus (seconds per edit)</h2>
   <p class="lead">Both methods receive the same inputs and the same eight focal points, and our strength is set so that the background blur matches for every setting. FlashReFocus keeps in-focus regions close to the restored image; GenRefocus regenerates the image at every edit.</p>
   <div class="stack">
-    <div class="frame"><video class="lazy" muted loop playsinline preload="none" data-src="assets/sbs_04.mp4"></video></div>
-    <div class="frame"><video class="lazy" muted loop playsinline preload="none" data-src="assets/sbs_59.mp4"></video></div>
-    <div class="frame"><video class="lazy" muted loop playsinline preload="none" style="aspect-ratio:2060/768" data-src="assets/sbs_rb133.mp4"></video></div>
+    <div class="frame"><video class="lazy" muted loop playsinline preload="none" poster="assets/sbs_poster_04.jpg" data-src="assets/sbs_04.mp4"></video></div>
+    <div class="frame"><video class="lazy" muted loop playsinline preload="none" poster="assets/sbs_poster_59.jpg" data-src="assets/sbs_59.mp4"></video></div>
+    <div class="frame"><video class="lazy" muted loop playsinline preload="none" style="aspect-ratio:2060/768" poster="assets/sbs_poster_rb133.jpg" data-src="assets/sbs_rb133.mp4"></video></div>
   </div>
   <div class="tbl"><table>
     <thead><tr><th>Method</th><th>In-focus PSNR &uarr;</th><th>In-focus LPIPS &darr;</th><th>Consistency PSNR &uarr;</th><th>Seconds per edit &darr;</th></tr></thead>
@@ -226,30 +233,33 @@ footer{text-align:center;font-size:14px;color:var(--soft);padding-top:8px}
 
 <section aria-labelledby="portraits">
   <h2 id="portraits">Portraits</h2>
-  <p class="lead">Unsplash portraits with a shallow depth of field. Stage I restores the out-of-focus background once; every edit after that is one pass of the renderer on the same restored image, here with the focus on the face or on the background at strength 0.8.</p>
+  <p class="lead">Unsplash portraits with a shallow depth of field. Stage I restores the out-of-focus background once; every view after that is one pass of the renderer on the same restored image, at strength 0.8. Switch the view to see the focus move.</p>
   <div class="tabs" role="group" aria-label="Portrait">
     <button type="button" data-pt="20" aria-pressed="true">Tulip field</button>
     <button type="button" data-pt="21" aria-pressed="false">Aquarium</button>
     <button type="button" data-pt="09" aria-pressed="false">City view</button>
     <button type="button" data-pt="18" aria-pressed="false">Rainbow light</button>
   </div>
-  <div class="dual" id="ptGrid">
-    <figure><img data-k="input" src="assets/pt_20_input.jpg" alt="Input portrait with a blurred background" loading="lazy"><figcaption>Input</figcaption></figure>
-    <figure><img data-k="aif" src="assets/pt_20_aif.jpg" alt="All-in-focus image restored by Stage I" loading="lazy"><figcaption>Restored all-in-focus</figcaption></figure>
-    <figure><img data-k="subject" src="assets/pt_20_subject.jpg" alt="Rendered with the focus on the face" loading="lazy"><figcaption>Focus on the face</figcaption></figure>
-    <figure><img data-k="background" src="assets/pt_20_background.jpg" alt="Rendered with the focus on the background" loading="lazy"><figcaption>Focus on the background</figcaption></figure>
+  <div class="stage"><img id="ptImg" src="assets/pt_20_subject.jpg" alt="Portrait rendered with the focus on the face"></div>
+  <div class="tabs small" role="group" aria-label="View">
+    <button type="button" data-pv="input" aria-pressed="false">Input</button>
+    <button type="button" data-pv="aif" aria-pressed="false">Restored all-in-focus</button>
+    <button type="button" data-pv="subject" aria-pressed="true">Focus on the face</button>
+    <button type="button" data-pv="background" aria-pressed="false">Focus on the background</button>
   </div>
-  <p class="lead">The strength works like the aperture of a lens: with the focus on the face, the background blur grows from strength 0.25 to 1 while the face stays sharp.</p>
+
+  <h3 class="sub">Strength as an aperture</h3>
+  <p class="lead">With the focus on the face, the background blur grows with the strength while the face stays sharp.</p>
   <div class="tabs" role="group" aria-label="Portrait for the strength series">
     <button type="button" data-pk="21" aria-pressed="true">Aquarium</button>
     <button type="button" data-pk="09" aria-pressed="false">City view</button>
   </div>
-  <div class="dual" id="pkGrid">
-    <figure><img data-k="k25" src="assets/pt_21_k25.jpg" alt="Focus on the face at strength 0.25" loading="lazy"><figcaption>Strength 0.25</figcaption></figure>
-    <figure><img data-k="k50" src="assets/pt_21_k50.jpg" alt="Focus on the face at strength 0.5" loading="lazy"><figcaption>Strength 0.5</figcaption></figure>
-    <figure><img data-k="k75" src="assets/pt_21_k75.jpg" alt="Focus on the face at strength 0.75" loading="lazy"><figcaption>Strength 0.75</figcaption></figure>
-    <figure><img data-k="k100" src="assets/pt_21_k100.jpg" alt="Focus on the face at strength 1" loading="lazy"><figcaption>Strength 1</figcaption></figure>
+  <div class="stage"><img id="pkImg" src="assets/pt_21_k25.jpg" alt="Portrait with the focus on the face at strength 0.25"></div>
+  <div class="ctl ptctl">
+    <input id="pkRange" type="range" min="0" max="3" step="1" value="0" aria-label="Strength">
+    <span class="read" id="pkLab">strength 0.25</span>
   </div>
+  <div class="scale ptctl" aria-hidden="true"><span>0.25</span><span>0.5</span><span>0.75</span><span>1</span></div>
 </section>
 
 <section aria-labelledby="tilt">
@@ -269,7 +279,7 @@ footer{text-align:center;font-size:14px;color:var(--soft);padding-top:8px}
     <button type="button" data-dual="rb42" aria-pressed="false">Two birches</button>
     <button type="button" data-dual="3c19" aria-pressed="false">Flower and bench</button>
   </div>
-  <div class="dual" id="dualGrid">
+  <div class="dual big" id="dualGrid">
     <figure><img data-k="A" src="assets/dual_21_A.jpg" alt="Focus on the first subject; the second one is blurred" loading="lazy"><figcaption id="dualCapA">Focus on A (the trunk)</figcaption></figure>
     <figure><img data-k="B" src="assets/dual_21_B.jpg" alt="Focus on the second subject; the first one is blurred" loading="lazy"><figcaption id="dualCapB">Focus on B (the stump)</figcaption></figure>
     <figure><img data-k="dual" src="assets/dual_21_dual.jpg" alt="Both subjects sharp with the rest blurred" loading="lazy"><figcaption>Both A and B, the rest blurred</figcaption></figure>
@@ -414,12 +424,25 @@ footer{text-align:center;font-size:14px;color:var(--soft);padding-top:8px}
   } else { lazies.forEach(loadLazy); }
 
   var dualNames={'21':['the trunk','the stump'],'rb42':['the left birch','the right birch'],'3c19':['the flower','the bench']};
-  tabs('data-pt', function(k){
-    document.querySelectorAll('#ptGrid img').forEach(function(im){ im.src='assets/pt_'+k+'_'+im.getAttribute('data-k')+'.jpg'; });
-  });
-  tabs('data-pk', function(k){
-    document.querySelectorAll('#pkGrid img').forEach(function(im){ im.src='assets/pt_'+k+'_'+im.getAttribute('data-k')+'.jpg'; });
-  });
+  // portraits: one large image, scene tabs and view buttons
+  var ptScene='20', ptView='subject', ptImg=document.getElementById('ptImg');
+  var ptAlt={input:'Input portrait with a blurred background',aif:'All-in-focus image restored by Stage I',subject:'Rendered with the focus on the face',background:'Rendered with the focus on the background'};
+  function ptShow(){ ptImg.src='assets/pt_'+ptScene+'_'+ptView+'.jpg'; ptImg.alt=ptAlt[ptView]; }
+  tabs('data-pt', function(k){ ptScene=k; ptShow(); });
+  tabs('data-pv', function(k){ ptView=k; ptShow(); });
+  var pkScene='21', pkImg=document.getElementById('pkImg'), pkRange=document.getElementById('pkRange'), pkLab=document.getElementById('pkLab'), pkK=[25,50,75,100];
+  function pkShow(){ var k=pkK[+pkRange.value]; pkImg.src='assets/pt_'+pkScene+'_k'+k+'.jpg'; pkLab.textContent='strength '+(k/100); pkImg.alt='Portrait with the focus on the face at strength '+(k/100); }
+  tabs('data-pk', function(k){ pkScene=k; pkShow(); });
+  pkRange.addEventListener('input', pkShow);
+  // warm the cache once the portraits come into view, so switching views is instant
+  function warm(){
+    ['20','21','09','18'].forEach(function(sc){ ['input','aif','subject','background'].forEach(function(v){ new Image().src='assets/pt_'+sc+'_'+v+'.jpg'; }); });
+    ['21','09'].forEach(function(sc){ pkK.forEach(function(k){ new Image().src='assets/pt_'+sc+'_k'+k+'.jpg'; }); });
+  }
+  if('IntersectionObserver' in window){
+    var wio=new IntersectionObserver(function(es){ if(es.some(function(e){return e.isIntersecting;})){ warm(); wio.disconnect(); } }, {rootMargin:'600px'});
+    wio.observe(ptImg);
+  } else { warm(); }
   tabs('data-dual', function(k){
     document.querySelectorAll('#dualGrid img').forEach(function(im){ im.src='assets/dual_'+k+'_'+im.getAttribute('data-k')+'.jpg'; });
     document.getElementById('dualCapA').textContent='Focus on A ('+dualNames[k][0]+')';
