@@ -147,6 +147,20 @@ fixed input size, but may pick different convolution algorithms between runs, ch
 Outputs of compared methods are produced with their own code (under `baselines/`, `FLASHREFOCUS_BASELINES`) and
 scored with the same scripts.
 
+## Citation
+
+If you find FlashReFocus useful, please cite:
+
+```bibtex
+@misc{cheng2026flashrefocus,
+  title  = {FlashReFocus: Interactive Image Refocusing in Seconds},
+  author = {Cheng, Ching-Heng and Lee, Chia-Ming and Chang, Ming-Ching and
+            Li, Xin and Liu, Yu-Lun and Hsu, Chih-Chung},
+  year   = {2026},
+  url    = {https://ming053l.github.io/FlashReFocus/}
+}
+```
+
 ## Acknowledgements
 
 The code builds on [PiSA-SR](https://github.com/csslc/PiSA-SR), [Bokehlicious](https://github.com/TimSeizinger/Bokehlicious),
