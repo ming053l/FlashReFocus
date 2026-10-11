@@ -78,8 +78,8 @@ def main():
         orig_aif = a.work / f"{tag}_aif_orig.png"
         rd.set_image(orig_aif)
         rd.render(768, 768, 0.5, a.work / f"{tag}_bokeh_fast.png")
-        rd.eng.infer_image(orig_aif, a.work / f"{tag}_bokeh_orig.png", focus_x=768, focus_y=768, bokeh_embedding=0.5,
-                           marked_output=a.work / f"{tag}_marker.png", focus_map_type=rd.bc.focus_map_type)
+        rd.eng.amp = True
+        rd.eng.infer_image(orig_aif, a.work / f"{tag}_bokeh_orig.png", 768, 768, 0.5, marked_output=a.work / f"{tag}_marker.png")
         res[f"render_{tag}_psnr_maxdiff"] = psnr(a.work / f"{tag}_bokeh_fast.png", a.work / f"{tag}_bokeh_orig.png")
 
     # timing: every call reads its input and writes its PNG

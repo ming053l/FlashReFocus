@@ -38,18 +38,12 @@ def pearson(x, y):
 
 
 def flashrefocus_backend():
-    from infer_single_focus import BokehliciousFocusEngine, parse_args
-    b = parse_args(["--input", "x.png", "--output", "y.png", "--focus-x", "0", "--focus-y", "0", "--bokeh-strength", "0.5"]
-                   + (["--amp"] if os.environ.get("RENDER_BF16", "1") == "1" else []))   # bf16 autocast by default
-    eng = BokehliciousFocusEngine(checkpoint=b.checkpoint, size=b.size, attn_version=b.attn_version, da2_root=b.da2_root,
-                                  da2_checkpoint=b.da2_checkpoint, da2_encoder=b.da2_encoder, da2_input_size=b.da2_input_size,
-                                  no_da2_amp=b.no_da2_amp, da2_amp_dtype=b.da2_amp_dtype, device=b.device, amp=b.amp)
+    from infer_single_focus import RenderEngine
+    eng = RenderEngine(amp=os.environ.get("RENDER_BF16", "1") == "1")   # bf16 autocast by default
     tmp = OUT / f"tmp_flashrefocus_{os.getpid()}.png"
 
     def render(path, fx, fy, k):
-        eng.infer_image(path, tmp, focus_x=fx, focus_y=fy, bokeh_embedding=k / 100.0, marked_output=None,
-                        resize_size=None, resize_short=False, coords_after_resize=False,
-                        focus_map_type=b.focus_map_type, mark_size=b.mark_size)
+        eng.infer_image(path, tmp, fx, fy, k / 100.0, marked_output=OUT / f"tmp_flashrefocus_{os.getpid()}_m.png")
         return cv2.cvtColor(cv2.imread(str(tmp)), cv2.COLOR_BGR2RGB)
     return render, list(np.linspace(10, 100, 10))
 

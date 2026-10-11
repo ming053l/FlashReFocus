@@ -1,488 +1,146 @@
-import torch
-from torch.nn import Module, LayerNorm
-from torch import nn, Tensor
-import torch.nn.functional as F
-from typing import List
+"""Stage II renderer R_psi (Sec. 3.2, Fig. 3): a NAF U-Net whose bottleneck stacks defocus residual groups (DRGs).
 
+Inputs, with the notation of the paper: the all-in-focus image I_AiF, the blur strength K in [0, 1], the depth
+D in [0, 1] (1 = far; inverted, min-max normalized Depth Anything V2 output) and the focal depth D_f = D(p_f).
+The condition maps M_C (Eq. 6) are the signed defocus M^s = D - D_f (Eq. 5), the mask M^fg = 1[M^s <= 0] of the focal
+plane and what lies before it (dilated by a 5x5 max filter) and the constant map K; every NAF block and every DRG
+reads M_C at its resolution, and the defocus-bias attention reads the magnitude M = |M^s|. The output is
+I_bokeh = I_AiF + Delta I."""
+import torch
+import torch.nn.functional as F
+from torch import nn
 from torch.nn.init import trunc_normal_
 
-from method.blocks import BlockMod, ResidualBlock
-from method.nn_util import PatchEmbedIR, PatchUnEmbedIR, IdentityMod, SkipConnection
+from method.blocks import NAFBlock, DefocusResidualGroup
+
+COND_CHANNELS = 3   # M_C = [M^s, M^fg, K]
+RGB_MEAN = (0.4488, 0.4371, 0.4040)
 
 
-class Bokehlicious(Module):
-
-    def __init__(
-        self,
-        # General Args
-        in_chans=3,
-        img_range=1.0,
-        dynamic_conv_k=4,
-        # In Stage Args
-        in_stage_use_pos_map: bool = True,
-        in_stage_use_bokeh_strength_map: bool = False,
-        # UNet Args
-        u_width=32,
-        u_depth=2,
-        u_block_config=None,
-        u_skip_connections=None,
-        # Enc Args
-        enc_blk_nums: List[int] = None,
-        enc_blks_use_pos_map: List[bool] = None,
-        # Deep Feature Extractor args
-        embed_dims=None,
-        depths=None,
-        num_heads=None,
-        init_values=None,
-        heads_ranges=None,
-        mlp_ratios=None,
-        drop_path_rate=0.1,
-        norm_layer=LayerNorm,
-        patch_norm=True,
-        use_checkpoints=None,
-        chunkwise_recurrents=None,
-        layerscales=None,
-        layer_init_values=1e-6,
-        positional_dfe=False,
-        use_dfe_norm_layer=True,
-        positional_conv_last=False,
-        # Dec Args
-        dec_blk_nums: List[int] = None,
-        dec_blks_use_pos_map: List[bool] = None,
-        # Out Stage Args
-        out_stage_use_pos_map: bool = True,
-    ):
+class Renderer(nn.Module):
+    def __init__(self, u_width=16, u_depth=2, embed_dim=96, num_groups=3, group_depth=3, num_heads=3, mlp_ratio=2,
+                 drop_path_rate=0.1, noise_level=0.05):
         super().__init__()
-
-        self.in_chans = in_chans
-        self.img_range = img_range
-
-        # In Stage Args
-        self.in_stage_use_pos_map = in_stage_use_pos_map
-        self.in_stage_use_bokeh_strength_map = in_stage_use_bokeh_strength_map
-
-        self.u_width = u_width
         self.u_depth = u_depth
-        self.u_block_config = u_block_config or {
-            "dw_expand": 1.0,
-            "ffn_expand": 2.0,
-            "drop_out_rate": 0,
-            "attention_type": "CA",
-            "activation_type": "GELU",
-            "kernel_size": 3,
-            "inverted_conv": True,
-        }
+        self.noise_level = noise_level
+        self.register_buffer("mean", torch.tensor(RGB_MEAN).view(1, 3, 1, 1), persistent=False)
 
-        self.u_skip_connections = u_skip_connections or [True for _ in range(u_depth)]
-
-        self.enc_blk_nums = enc_blk_nums or [1 for _ in range(u_depth)]
-        self.enc_blks_use_pos_map = enc_blks_use_pos_map or [
-            True for _ in range(u_depth)
-        ]
-
-        # Deep Feature Extractor args
-        self.num_blocks = len(embed_dims)
-        self.embed_dims = embed_dims or [192 for _ in range(self.num_blocks)]
-        self.depths = depths or [6 for _ in range(self.num_blocks)]
-        self.num_heads = num_heads or [6 for _ in range(self.num_blocks)]
-        self.init_values = init_values or [2 for _ in range(self.num_blocks)]
-        self.heads_ranges = heads_ranges or [6 for _ in range(self.num_blocks)]
-        self.mlp_ratios = mlp_ratios or [2 for _ in range(self.num_blocks)]
-        self.drop_path_rate = drop_path_rate
-        self.chunkwise_recurrents = chunkwise_recurrents or [
-            True for _ in range(self.num_blocks)
-        ]
-        self.layerscales = layerscales or [False for _ in range(self.num_blocks)]
-        self.use_checkpoints = use_checkpoints or [
-            False for _ in range(self.num_blocks)
-        ]
-        self.positional_dfe = positional_dfe
-        self.layer_init_values = layer_init_values
-        self.patch_norm = patch_norm
-        self.norm_layer = norm_layer
-        self.use_dfe_norm_layer = use_dfe_norm_layer
-        self.positional_conv_last = positional_conv_last
-
-        # Dec Args
-        self.dec_blk_nums = dec_blk_nums or [1 for _ in range(u_depth)]
-        self.dec_blks_use_pos_map = dec_blks_use_pos_map or [
-            True for _ in range(u_depth)
-        ]
-
-        # Out Stage Args
-        self.out_stage_use_pos_map = out_stage_use_pos_map
-
-        #####################################################################################################
-        ################################### 1, shallow feature extraction ###################################
-
-        extra_in_channels = 0
-        extra_in_channels += 2 if self.in_stage_use_pos_map else 0
-        extra_in_channels += 1 if self.in_stage_use_bokeh_strength_map else 0
-
-        self.in_stage = nn.Conv2d(
-            in_channels=self.in_chans + extra_in_channels,
-            out_channels=self.u_width,
-            kernel_size=3,
-            padding=1,
-            stride=1,
-            groups=1,
-            bias=True,
-        )
-
-        self.in_stage_2 = nn.Conv2d(
-            in_channels=self.u_width,
-            out_channels=self.u_width,
-            kernel_size=3,
-            padding=1,
-            stride=1,
-            groups=1,
-            bias=True,
-        )
-
-        self.encoders = nn.ModuleList()
-        self.downs = nn.ModuleList()
-
-        chan = self.u_width
-        u_depths = range(0, self.u_depth)
-        for num, depth, use_pos_map in zip(
-            self.enc_blk_nums, u_depths, self.enc_blks_use_pos_map
-        ):
-            self.encoders.append(
-                nn.ModuleList(
-                    [
-                        BlockMod(
-                            chan,
-                            **self.u_block_config,
-                            depth=depth,
-                            use_pos_map=use_pos_map
-                        )
-                        for _ in range(num)
-                    ]
-                )
-            )
+        # input: I_AiF, M_C and the K map once more
+        self.in_stage = nn.Conv2d(3 + COND_CHANNELS + 1, u_width, 3, 1, 1)
+        self.in_stage_2 = nn.Conv2d(u_width, u_width, 3, 1, 1)
+        self.encoders, self.downs = nn.ModuleList(), nn.ModuleList()
+        chan = u_width
+        for _ in range(u_depth):
+            self.encoders.append(nn.ModuleList([NAFBlock(chan, COND_CHANNELS)]))
             self.downs.append(nn.Conv2d(chan, chan * 2, 2, 2))
-            chan = chan * 2
+            chan *= 2
 
-        #####################################################################################################
-        ################################### 2, deep feature extraction ######################################
-        self.conv_prep = nn.Conv2d(chan, self.embed_dims[0], 3, 1, 1)
-        if in_chans == 3:
-            rgb_mean = (0.4488, 0.4371, 0.4040)
-            self.mean = torch.Tensor(rgb_mean).view(1, 3, 1, 1)
-        else:
-            self.mean = torch.zeros(1, 1, 1, 1)
+        # bottleneck: DRGs on channels-last tokens (parameter names follow the released checkpoint)
+        self.conv_prep = nn.Conv2d(chan, embed_dim, 3, 1, 1)
+        self.defocus_fuse = nn.Conv2d(embed_dim + COND_CHANNELS, embed_dim, 3, 1, 1)
+        self.patch_embed = nn.Module()
+        self.patch_embed.norm = nn.LayerNorm(embed_dim)
+        dpr = [x.item() for x in torch.linspace(0, drop_path_rate, num_groups * group_depth)]
+        self.blocks = nn.ModuleList([                                       # the DRGs
+            DefocusResidualGroup(embed_dim, COND_CHANNELS, group_depth, num_heads, mlp_ratio * embed_dim,
+                                 dpr[i * group_depth:(i + 1) * group_depth]) for i in range(num_groups)])
+        self.norm = nn.LayerNorm(embed_dim, eps=1e-6)
+        self.conv_after_body = nn.Conv2d(embed_dim, embed_dim, 3, 1, 1)
+        self.conv_last = nn.Conv2d(embed_dim + COND_CHANNELS, chan, 3, 1, 1)
 
-        self.patch_embed = PatchEmbedIR(
-            embed_dim=self.embed_dims[0],
-            norm_layer=self.norm_layer if self.patch_norm else None,
-        )
-
-        self.patch_unembed = PatchUnEmbedIR(embed_dim=self.embed_dims[-1])
-
-        # stochastic depth
-        dpr = [
-            x.item() for x in torch.linspace(0, self.drop_path_rate, sum(self.depths))
-        ]  # stochastic depth decay rule
-
-        # build layers
-        self.blocks = nn.ModuleList()
-        for i_block in range(self.num_blocks):
-            self.blocks.append(
-                ResidualBlock(
-                    embed_dim=self.embed_dims[i_block],
-                    embed_dim_next=(
-                        self.embed_dims[i_block + 1]
-                        if i_block < self.num_blocks - 1
-                        else self.embed_dims[i_block]
-                    ),
-                    depth=self.depths[i_block],
-                    num_heads=self.num_heads[i_block],
-                    init_value=self.init_values[i_block],
-                    heads_range=self.heads_ranges[i_block],
-                    ffn_dim=int(self.mlp_ratios[i_block] * self.embed_dims[i_block]),
-                    drop_path=dpr[
-                        sum(self.depths[:i_block]) : sum(self.depths[: i_block + 1])
-                    ],
-                    norm_layer=self.norm_layer,
-                    use_checkpoint=self.use_checkpoints[i_block],
-                    layerscale=self.layerscales[i_block],
-                    layer_init_values=self.layer_init_values,
-                    use_pos_map=self.positional_dfe,
-                )
-            )
-
-        self.norm = (
-            nn.LayerNorm(self.embed_dims[-1], eps=1e-6)
-            if self.use_dfe_norm_layer
-            else IdentityMod()
-        )
-
-        self.conv_after_body = nn.Conv2d(
-            self.embed_dims[-1], self.embed_dims[0], 3, 1, 1
-        )
-
-        #####################################################################################################
-        ################################ 3, bokeh image reconstruction ######################################
-        conv_last_extra_channels = 0
-        conv_last_extra_channels += 2 if self.positional_conv_last else 0
-        self.conv_last = nn.Conv2d(
-            self.embed_dims[0] + conv_last_extra_channels, chan, 3, 1, 1
-        )
-
-        self.decoders = nn.ModuleList()
-        self.skips = nn.ModuleList()
-        self.ups = nn.ModuleList()
-
-        for num, use_pos_map, skip_connection, depth in zip(
-            self.dec_blk_nums,
-            self.dec_blks_use_pos_map,
-            self.u_skip_connections,
-            u_depths.__reversed__(),
-        ):
-            self.ups.append(
-                nn.Sequential(
-                    # Expand channels
-                    nn.Conv2d(
-                        in_channels=chan,
-                        out_channels=2 * chan,
-                        kernel_size=1,
-                        bias=False,
-                    ),
-                    # Upsample
-                    nn.PixelShuffle(2),
-                )
-            )
-            self.skips.append(SkipConnection() if skip_connection else IdentityMod())
-            chan = chan // 2
-            self.decoders.append(
-                nn.ModuleList(
-                    [
-                        BlockMod(
-                            chan,
-                            **self.u_block_config,
-                            use_pos_map=use_pos_map,
-                            depth=depth
-                        )
-                        for x in range(num)
-                    ]
-                )
-            )
-
-        extra_out_channels = 0
-        extra_out_channels += 2 if self.out_stage_use_pos_map else 0
-        self.out_stage = nn.Conv2d(
-            in_channels=u_width + extra_out_channels,
-            out_channels=in_chans,
-            kernel_size=3,
-            padding=1,
-            stride=1,
-            groups=1,
-            bias=True,
-        )
-
+        self.ups, self.decoders = nn.ModuleList(), nn.ModuleList()
+        for level in range(u_depth):
+            self.ups.append(nn.Sequential(nn.Conv2d(chan, 2 * chan, 1, bias=False), nn.PixelShuffle(2)))
+            chan //= 2
+            n = 4 if level == u_depth - 1 else 2
+            self.decoders.append(nn.ModuleList([NAFBlock(chan, COND_CHANNELS) for _ in range(n)]))
+        self.out_stage = nn.Conv2d(u_width + COND_CHANNELS, 3, 3, 1, 1)
         self.apply(self._init_weights)
 
-    def _init_weights(self, m):
+    @staticmethod
+    def _init_weights(m):
         if isinstance(m, nn.Linear):
             trunc_normal_(m.weight, std=0.02)
-            if isinstance(m, nn.Linear) and m.bias is not None:
+            if m.bias is not None:
                 nn.init.constant_(m.bias, 0)
         elif isinstance(m, nn.LayerNorm):
-            try:
-                nn.init.constant_(m.bias, 0)
-                nn.init.constant_(m.weight, 1.0)
-            except:
-                pass
+            nn.init.constant_(m.bias, 0)
+            nn.init.constant_(m.weight, 1.0)
 
-    @torch.jit.ignore
-    def no_weight_decay(self):
-        return {"absolute_pos_embed"}
-
-    @torch.jit.ignore
-    def no_weight_decay_keywords(self):
-        return {"relative_position_bias_table"}
-
-    def _spatial_pad_multiple(self):
-        return 2**self.u_depth
+    def _noise(self, x):
+        return x + torch.randn_like(x) * self.noise_level if self.training and self.noise_level > 0 else x
 
     @staticmethod
-    def _pad_spatial_to_multiple(x, multiple):
-        if x is None:
-            return None, (0, 0)
-        _, _, h, w = x.size()
-        pad_h = (multiple - h % multiple) % multiple
-        pad_w = (multiple - w % multiple) % multiple
-        if pad_h == 0 and pad_w == 0:
-            return x, (0, 0)
-
-        pad_mode = "reflect" if pad_h < h and pad_w < w else "replicate"
-        return F.pad(x, (0, pad_w, 0, pad_h), pad_mode), (pad_h, pad_w)
-
-    def _pad_forward_inputs(
-        self,
-        source,
-        pos_map=None,
-        bokeh_strength_map=None,
-        depth_map=None,
-    ):
-        multiple = self._spatial_pad_multiple()
-        source, padding = self._pad_spatial_to_multiple(source, multiple)
-        pad_h, pad_w = padding
-        if pad_h == 0 and pad_w == 0:
-            return source, pos_map, bokeh_strength_map, depth_map, padding
-
-        pos_map, _ = self._pad_spatial_to_multiple(pos_map, multiple)
-        bokeh_strength_map, _ = self._pad_spatial_to_multiple(
-            bokeh_strength_map,
-            multiple,
-        )
-        depth_map, _ = self._pad_spatial_to_multiple(depth_map, multiple)
-        return source, pos_map, bokeh_strength_map, depth_map, padding
+    def _pad(x, multiple):
+        h, w = x.shape[-2:]
+        ph, pw = (multiple - h % multiple) % multiple, (multiple - w % multiple) % multiple
+        if ph == 0 and pw == 0:
+            return x
+        return F.pad(x, (0, pw, 0, ph), "reflect" if ph < h and pw < w else "replicate")
 
     @staticmethod
-    def _crop_forward_output(x, padding):
-        pad_h, pad_w = padding
-        if pad_h > 0:
-            x = x[:, :, :-pad_h, :]
-        if pad_w > 0:
-            x = x[:, :, :, :-pad_w]
-        return x
+    def _resize(x, size):
+        return F.interpolate(x, size=size, mode="bilinear", align_corners=False)
 
-    def check_image_size(self, x):
-        x, _ = self._pad_spatial_to_multiple(x, self._spatial_pad_multiple())
-        return x
+    @staticmethod
+    def _constant_map(x, strength):
+        """K as a constant map of the size of x."""
+        return strength.to(device=x.device, dtype=x.dtype).view(x.size(0), 1, 1, 1).expand(-1, -1, *x.shape[-2:])
 
-    def forward_features(self, x, pos_map=None, bokeh_strength=None):
-        x_size = (x.shape[2], x.shape[3])
+    @staticmethod
+    def _cond_at(cond, level):
+        """M_C at U-Net level `level` (resolution 1 / 2^level)."""
+        return F.interpolate(cond, scale_factor=1 / 2 ** level, mode="bilinear", align_corners=False)
 
-        # print(f"  X shape before patch_embed: {x.shape}")
+    def forward(self, image, strength, depth, focal_depth):
+        """image I_AiF (b, 3, h, w) in [0, 1]; strength K (b, 1); depth D (b, 1, h, w); focal_depth D_f (b, 1).
+        Returns I_bokeh (b, 3, h, w)."""
+        h, w = image.shape[-2:]
+        strength = strength.view(-1, 1)
+        multiple = 2 ** self.u_depth
+        image, depth = self._pad(image, multiple), self._pad(depth.to(image), multiple)
+        x = image - self.mean
 
-        x = self.patch_embed(x)
+        signed_defocus = depth - focal_depth.to(image).view(-1, 1, 1, 1)                                  # M^s
+        front_mask = F.max_pool2d((signed_defocus < 1e-3).to(signed_defocus.dtype), 5, stride=1, padding=2)  # M^fg
+        cond = torch.cat((self._resize(signed_defocus, x.shape[-2:]), front_mask, self._constant_map(x, strength)),
+                         dim=1)                                                                            # M_C
 
-        for block_num, block in enumerate(self.blocks):
-            x = block(x, x_size, pos_map=pos_map, att_range_factor=bokeh_strength)
-
-        # print(f"  X shape after layers: {x.shape}")
-        x = self.norm(
-            x
-        )  # can be deactivated to a IdentityMod() if necessary via self.dfe_norm_layer = False
-
-        x = self.patch_unembed(x, x_size)
-        # print(f"  X shape after unembed: {x.shape}")
-        return x
-
-    def forward(
-        self,
-        source: Tensor,
-        bokeh_strength: Tensor = None,
-        pos_map: Tensor = None,
-        bokeh_strength_map: Tensor = None,
-        **kwargs
-    ):
-        source, pos_map, bokeh_strength_map, _, padding = self._pad_forward_inputs(
-            source=source,
-            pos_map=pos_map,
-            bokeh_strength_map=bokeh_strength_map,
-        )
-
-        self.mean = self.mean.type_as(source)
-        source_mean = (source - self.mean) * self.img_range
-
-        #####################################################################################################
-        ################################### 1, shallow feature extraction ###################################
-
-        x = (
-            torch.cat((source_mean, pos_map), dim=1)
-            if self.in_stage_use_pos_map
-            else source
-        )
-        x = (
-            torch.cat((x, bokeh_strength_map), dim=1)
-            if self.in_stage_use_bokeh_strength_map
-            else x
-        )
-
-        x = self.in_stage(x)
-        x = self.in_stage_2(x)  # Having two convolutions as in stage has better results
-
-        # print(f"X shape after in_stage: {x.shape}")
-
-        encs = []
-        for encoder, down, use_pos_map, depth in zip(
-            self.encoders, self.downs, self.enc_blks_use_pos_map, range(0, self.u_depth)
-        ):
-            if pos_map is not None:
-                pos_map_e = F.interpolate(
-                    pos_map,
-                    scale_factor=1 / 2**depth,
-                    mode="bilinear",
-                    align_corners=False,
-                )
-            else:
-                pos_map_e = None
-            for blk in encoder:
-                x = blk(x, pos_map=pos_map_e)
-            encs.append(x)
+        x = self.in_stage_2(self.in_stage(torch.cat((x, cond, self._constant_map(x, strength)), dim=1)))
+        skips = []
+        for level, (encoder, down) in enumerate(zip(self.encoders, self.downs)):
+            for block in encoder:
+                x = block(x, self._cond_at(cond, level))
+            skips.append(x)
             x = down(x)
 
-        #####################################################################################################
-        ################################### 2, deep feature extraction ######################################
+        feat = self.conv_prep(self._noise(x))
+        defocus = self._resize(signed_defocus.abs().to(feat.dtype), feat.shape[-2:]).clamp(0.0, 1.0)      # M
+        cond_bottleneck = self._cond_at(cond, self.u_depth)
+        feat = self.defocus_fuse(torch.cat((feat, cond_bottleneck), dim=1))
+        tokens = self.patch_embed.norm(feat.permute(0, 2, 3, 1))                                           # b, h, w, c
+        for drg in self.blocks:
+            tokens = drg(tokens, cond_bottleneck, defocus, strength)
+        feat = self.conv_after_body(self.norm(tokens).permute(0, 3, 1, 2)) + feat
+        x = self._noise(x + self.conv_last(torch.cat((feat, cond_bottleneck), dim=1)))
 
-        # print(f"X shape before Deep Feature Extraction: {x.shape} <---------------------- Deep Feature Extractor Start")
-        x_prep = self.conv_prep(x)
-        # print(f" X shape before RRTB blocks: {x_prep.shape}")
-        pos_map_t = (
-            F.interpolate(
-                pos_map,
-                scale_factor=1 / 2**self.u_depth,
-                mode="bilinear",
-                align_corners=False,
-            )
-            if self.positional_dfe or self.positional_conv_last
-            else None
-        )
-        x_after_body = self.forward_features(
-            x_prep, bokeh_strength=bokeh_strength, pos_map=pos_map_t
-        )
-        # print(f" X shape after RRTB blocks: {x_after_body.shape}")
-        res = self.conv_after_body(x_after_body) + x_prep
+        for i, (decoder, up, skip) in enumerate(zip(self.decoders, self.ups, skips[::-1])):
+            x = up(x) + skip
+            for block in decoder:
+                x = block(x, self._cond_at(cond, self.u_depth - 1 - i))
+        residual = self.out_stage(torch.cat((x, cond), dim=1)) + self.mean                                # Delta I
+        return (residual + image)[:, :, :h, :w]
 
-        # res = self.dfe_apply_weights2(res, bokeh_strength)
 
-        #####################################################################################################
-        ################################ 3, bokeh image reconstruction ######################################
+def load_state(model, path):
+    """Load a training checkpoint ({"model": state_dict}) or a bare state_dict strictly. Older checkpoints also store
+    the table of a relative-position bias ("Relpos") that the defocus-bias attention does not use."""
+    state = torch.load(path, map_location="cpu")
+    state = state.get("model", state)
+    state = {k.removeprefix("module."): v for k, v in state.items() if ".Relpos." not in k}
+    model.load_state_dict(state, strict=True)
+    return model
 
-        res = torch.cat((res, pos_map_t), dim=1) if self.positional_conv_last else res
-        x = x + self.conv_last(res)
 
-        # print(f"X shape after conv_last: {x.shape}  <-------------------------------------- Deep Feature Extractor End")
-
-        for decoder, up, skip, enc_skip, use_pos_map_d, depth in zip(
-            self.decoders,
-            self.ups,
-            self.skips,
-            encs[::-1],
-            self.dec_blks_use_pos_map,
-            range(0, self.u_depth).__reversed__(),
-        ):
-            pos_map_d = (
-                F.interpolate(
-                    pos_map,
-                    scale_factor=1 / 2**depth,
-                    mode="bilinear",
-                    align_corners=False,
-                )
-                if use_pos_map_d
-                else None
-            )
-            x = up(x)
-            x = skip(x, enc_skip)
-            for blk in decoder:
-                x = blk(x, pos_map=pos_map_d)
-
-        x = torch.cat((x, pos_map), dim=1) if self.out_stage_use_pos_map else x
-        x = self.out_stage(x)
-
-        x = x / self.img_range + self.mean
-
-        return self._crop_forward_output(x + source, padding)
+def load_renderer(path, device="cuda"):
+    return load_state(Renderer(), path).to(device).eval()

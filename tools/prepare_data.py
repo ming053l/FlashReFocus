@@ -32,7 +32,7 @@ EXPECTED = {
     "RealBokeh": (["train/in", "train/gt", "validation/in", "validation/gt"], "RealBokeh_3MP"),
     "EBB": (["train/original", "train/bokeh", "validation/original", "validation/bokeh"], "EBB!"),
     "3CReal": (["validation/original", "validation/bokeh"], "3CReal"),
-    "MODEST": ([], "MODEST (aperture ladders, optional)"),
+    "MODEST": ([], "MODEST (aperture series, optional)"),
     "Hypersim_processed": ([], "Hypersim with rendered bokeh targets (renderer pre-training only)"),
 }
 

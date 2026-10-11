@@ -1,413 +1,228 @@
-from functools import partial
-
-from torch import nn, Tensor
-import torch
+"""Building blocks of the Stage II renderer: NAF blocks with condition maps for the U-Net, and the defocus-bias
+attention of the transformer bottleneck (axial attention biased by defocus differences, scaled by the strength K)."""
 from math import floor
 
+import torch
 import torch.nn.functional as F
-
-from typing import Literal
-
-from torch.utils import checkpoint
-
-from method.nn_util import (
-    IdentityMod,
-    ConcatTensors,
-    InvertedConvolution,
-    LayerNorm2d,
-    DynRelPos2d,
-    ApertureAwareAttention,
-    DWConv2d,
-    PatchEmbedIR,
-    PatchUnEmbedIR,
-    ChannelEmbeddingCompression,
-)
-from method.util import get_activation, get_cnn_attention
 from timm.layers import DropPath
+from torch import nn
+from torch.autograd import Function
 
 
-class ResidualBlock(nn.Module):
-    """
+class LayerNormFunction(Function):
+    """Channel LayerNorm of NCHW tensors with an explicit backward (as in NAFNet)."""
 
-    Args:
-        depth (int): Number of blocks.
-        num_heads (int): Number of attention heads.
-        drop_path (float | tuple[float], optional): Stochastic depth rate. Default: 0.0
-        norm_layer (nn.Module, optional): Normalization layer. Default: nn.LayerNorm
-        use_checkpoint (bool): Whether to use checkpointing to save memory. Default: False.
-        resi_connection: The convolutional block before residual connection.
-    """
+    @staticmethod
+    def forward(ctx, x, weight, bias, eps):
+        ctx.eps = eps
+        _, C, _, _ = x.size()
+        mu = x.mean(1, keepdim=True)
+        var = (x - mu).pow(2).mean(1, keepdim=True)
+        y = (x - mu) / (var + eps).sqrt()
+        ctx.save_for_backward(y, var, weight)
+        return weight.view(1, C, 1, 1) * y + bias.view(1, C, 1, 1)
 
-    def __init__(
-        self,
-        embed_dim,
-        embed_dim_next,
-        depth,
-        num_heads,
-        heads_range,
-        init_value,
-        ffn_dim=96,
-        layerscale=False,
-        layer_init_values=1e-5,
-        drop_path=0.0,
-        norm_layer=nn.LayerNorm,
-        use_checkpoint=False,
-        resi_connection="1conv",
-        use_pos_map=False,
-        pos_map_channels=2,
-    ):
-        super(ResidualBlock, self).__init__()
-
-        self.embed_dim = embed_dim
-
-        self.residual_group = BasicLayer(
-            embed_dim=embed_dim,
-            depth=depth,
-            num_heads=num_heads,
-            heads_range=heads_range,
-            init_value=init_value,
-            drop_path=drop_path,
-            ffn_dim=ffn_dim,
-            norm_layer=norm_layer,
-            use_checkpoint=use_checkpoint,
-            layerscale=layerscale,
-            layer_init_values=layer_init_values,
-        )
-
-        embed_dim_conv_in = embed_dim + pos_map_channels if use_pos_map else embed_dim
-        if resi_connection == "1conv":
-            self.conv = nn.Conv2d(embed_dim_conv_in, embed_dim, 3, 1, 1)
-        elif resi_connection == "3conv":
-            # to save parameters and memory
-            self.conv = nn.Sequential(
-                nn.Conv2d(embed_dim_conv_in, embed_dim // 4, 3, 1, 1),
-                nn.LeakyReLU(negative_slope=0.2, inplace=True),
-                nn.Conv2d(embed_dim // 4, embed_dim // 4, 1, 1, 0),
-                nn.LeakyReLU(negative_slope=0.2, inplace=True),
-                nn.Conv2d(embed_dim // 4, embed_dim, 3, 1, 1),
-            )
-
-        self.patch_embed = PatchEmbedIR(embed_dim=embed_dim)
-
-        self.patch_unembed = PatchUnEmbedIR(embed_dim=embed_dim)
-
-        self.final_op = (
-            ChannelEmbeddingCompression(embed_dim, embed_dim_next)
-            if (embed_dim != embed_dim_next)
-            else IdentityMod()
-        )
-
-        self.use_pos_map = use_pos_map
-        self.pos_map_channels = pos_map_channels
-
-    def forward(self, x, x_size, pos_map=None, att_range_factor=None, **kwargs):
-
-        rb_stl_out = self.residual_group(x, att_range_factor)
-
-        rb_unembed = self.patch_unembed(rb_stl_out, x_size)
-
-        rb_unembed = (
-            torch.cat((rb_unembed, pos_map), dim=1) if self.use_pos_map else rb_unembed
-        )
-        rb_last_conv = self.conv(rb_unembed)
-
-        rb_re_enbed = self.patch_embed(rb_last_conv)
-
-        rb_res = rb_re_enbed + x
-
-        return self.final_op(rb_res, x_size)
+    @staticmethod
+    def backward(ctx, grad_output):
+        eps = ctx.eps
+        _, C, _, _ = grad_output.size()
+        y, var, weight = ctx.saved_tensors
+        g = grad_output * weight.view(1, C, 1, 1)
+        mean_g = g.mean(dim=1, keepdim=True)
+        mean_gy = (g * y).mean(dim=1, keepdim=True)
+        gx = 1.0 / torch.sqrt(var + eps) * (g - y * mean_gy - mean_g)
+        # reduce over W, H, then N, in this order (it fixes the floating-point summation order)
+        return gx, (grad_output * y).sum(dim=3).sum(dim=2).sum(dim=0), grad_output.sum(dim=3).sum(dim=2).sum(dim=0), None
 
 
-class BasicLayer(nn.Module):
-    def __init__(
-        self,
-        embed_dim,
-        depth,
-        num_heads,
-        init_value: float,
-        heads_range: float,
-        ffn_dim=96,
-        drop_path=0.0,
-        norm_layer=nn.LayerNorm,
-        use_checkpoint=False,
-        layerscale=False,
-        layer_init_values=1e-5,
-    ):
-
+class LayerNorm2d(nn.Module):
+    def __init__(self, channels, eps=1e-6):
         super().__init__()
-        self.embed_dim = embed_dim
-        self.depth = depth
-        self.use_checkpoint = use_checkpoint
+        self.weight = nn.Parameter(torch.ones(channels))
+        self.bias = nn.Parameter(torch.zeros(channels))
+        self.eps = eps
 
-        self.Relpos = DynRelPos2d(embed_dim, num_heads, init_value, heads_range)
-
-        # build blocks
-        self.blocks = nn.ModuleList(
-            [
-                ApertureAttentionBlock(
-                    embed_dim=embed_dim,
-                    num_heads=num_heads,
-                    ffn_dim=ffn_dim,
-                    layerscale=layerscale,
-                    norm_layer=norm_layer,
-                    layer_init_values=layer_init_values,
-                    drop_path=(
-                        drop_path[i] if isinstance(drop_path, list) else drop_path
-                    ),
-                )
-                for i in range(depth)
-            ]
-        )
-
-    def forward(self, x, att_range_factor=None):
-        b, h, w, d = x.size()
-
-        rel_pos = self.Relpos((h, w), range_factor=att_range_factor)
-
-        for blk in self.blocks:
-            if self.use_checkpoint:
-                tmp_blk = partial(blk, attention_rel_pos=rel_pos)
-                x = checkpoint.checkpoint(tmp_blk, x)
-            else:
-                x = blk(x, attention_rel_pos=rel_pos)
-
-        return x
+    def forward(self, x):
+        return LayerNormFunction.apply(x, self.weight, self.bias, self.eps)
 
 
-class ApertureAttentionBlock(nn.Module):
+class InvertedConvolution(nn.Module):
+    """1x1 convolution followed by a depthwise k x k convolution."""
 
-    def __init__(
-        self,
-        embed_dim: int,
-        num_heads: int,
-        ffn_dim: int,
-        drop_path=0.0,
-        layerscale=False,
-        norm_layer=nn.LayerNorm,
-        layer_init_values=1e-5,
-    ):
+    def __init__(self, in_channels, out_channels, kernel_size):
         super().__init__()
-        self.layerscale = layerscale
-        self.embed_dim = embed_dim
-        self.attention_layer_norm = norm_layer(self.embed_dim, eps=1e-6)
-        self.attention = ApertureAwareAttention(embed_dim, num_heads)
-        self.drop_path = DropPath(drop_path)
-        self.final_layer_norm = norm_layer(self.embed_dim, eps=1e-6)
-        self.ffn = FeedForwardNetwork(embed_dim, ffn_dim)
-        self.pos = DWConv2d(embed_dim, 3, 1, 1)
+        self.conv1 = nn.Conv2d(in_channels, out_channels, 1)
+        self.conv2 = nn.Conv2d(out_channels, out_channels, kernel_size, padding="same", groups=out_channels)
 
-        if layerscale:
-            self.gamma_1 = nn.Parameter(
-                layer_init_values * torch.ones(1, 1, 1, embed_dim), requires_grad=True
-            )
-            self.gamma_2 = nn.Parameter(
-                layer_init_values * torch.ones(1, 1, 1, embed_dim), requires_grad=True
-            )
-
-    def forward(self, x: torch.Tensor, attention_rel_pos=None):
-        x = x + self.pos(x)  # InitiaL 3 X 3 dwconv
-        if self.layerscale:
-            x = x + self.drop_path(
-                self.gamma_1
-                * self.attention(self.attention_layer_norm(x), attention_rel_pos)
-            )
-            x = x + self.drop_path(self.gamma_2 * self.ffn(self.final_layer_norm(x)))
-        else:
-            x = x + self.drop_path(
-                self.attention(self.attention_layer_norm(x), attention_rel_pos)
-            )
-            x = x + self.drop_path(self.ffn(self.final_layer_norm(x)))
-        return x
+    def forward(self, x):
+        return self.conv2(self.conv1(x))
 
 
-class BlockMod(nn.Module):
-    def __init__(
-        self,
-        channels: int,
-        dw_expand: float = 1.0,
-        ffn_expand: int = 2,
-        drop_out_rate: float = 0.0,
-        attention_type: Literal["CA", "SCA"] = "CA",
-        activation_type: Literal[
-            "GELU", "SG", "Identity", "ReLU", "LReLU", "Tanh", "Sigmoid"
-        ] = "GELU",
-        inverted_conv: bool = True,
-        kernel_size: int = 3,
-        use_pos_map: bool = False,
-        pos_map_channels: int = 2,
-        depth: int = None,
-    ):
-        """
-        Modified block from NAFNet with optional CoordConv on th first convolution.
-        Args:
-            channels: Number of input channels
-            dw_expand: Expansion factor for sub block 1
-            ffn_expand: Expansion factor for sub block 2
-            drop_out_rate: Dropout rate
-            attention_type: Type of attention to use
-            activation_type: Type of activation to use
-            inverted_conv: Whether to use inverted convolution
-            kernel_size: size of all convolution kernels
-            use_pos_map: Whether coordconv is used
-            depth: Depth of the block in the network, used for positional map scaling
-        """
+class ChannelAttention(nn.Module):
+    def __init__(self, channels):
         super().__init__()
-        dw_channel = (
-            int(channels * dw_expand)
-            if int(channels * dw_expand) % 2 == 0
-            else int(channels * dw_expand) + 1
+        self.model = nn.Sequential(
+            nn.AdaptiveAvgPool2d(1),
+            nn.Conv2d(channels, channels // 2, 1),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(channels // 2, channels, 1),
+            nn.Sigmoid(),
         )
 
-        self.cat = ConcatTensors() if use_pos_map else IdentityMod()
+    def forward(self, x):
+        return self.model(x)
 
-        if inverted_conv:
-            self.conv1 = InvertedConvolution(
-                in_channels=channels + pos_map_channels if use_pos_map else channels,
-                out_channels=dw_channel,
-                kernel_size=kernel_size,
-                padding="same",
-                bias=True,
-            )
-        else:
-            self.conv1 = nn.Conv2d(
-                in_channels=channels + pos_map_channels if use_pos_map else channels,
-                out_channels=dw_channel,
-                kernel_size=kernel_size,
-                padding="same",
-                stride=1,
-                bias=True,
-            )
 
-        # Activation
-        self.activation = get_activation(activation_type)
+class NAFBlock(nn.Module):
+    """NAFNet block whose first convolution also reads the condition maps M_C (resized to the block's resolution)."""
 
-        # Channel Attention
-        self.attention = get_cnn_attention(attention_type)(
-            dw_channel // 2 if activation_type == "SG" else dw_channel
-        )
-
-        self.conv2 = nn.Conv2d(
-            in_channels=dw_channel // 2 if activation_type == "SG" else dw_channel,
-            out_channels=channels,
-            kernel_size=1,
-            padding=0,
-            stride=1,
-            groups=1,
-            bias=True,
-        )
-
-        # sub block 1 done
-        ffn_channel = floor(ffn_expand * channels)
-        self.conv3 = nn.Conv2d(
-            in_channels=channels,
-            out_channels=ffn_channel,
-            kernel_size=1,
-            padding=0,
-            stride=1,
-            groups=1,
-            bias=True,
-        )
-        # second activation call
-        self.conv4 = nn.Conv2d(
-            in_channels=ffn_channel // 2 if activation_type == "SG" else ffn_channel,
-            out_channels=channels,
-            kernel_size=1,
-            padding=0,
-            stride=1,
-            groups=1,
-            bias=True,
-        )
-
-        # sub block 2 done
-
+    def __init__(self, channels, cond_channels, ffn_expand=2.0, kernel_size=3):
+        super().__init__()
         self.norm1 = LayerNorm2d(channels)
+        self.conv1 = InvertedConvolution(channels + cond_channels, channels, kernel_size)
+        self.activation = nn.GELU()
+        self.attention = ChannelAttention(channels)
+        self.conv2 = nn.Conv2d(channels, channels, 1)
+        ffn_channels = floor(ffn_expand * channels)
         self.norm2 = LayerNorm2d(channels)
+        self.conv3 = nn.Conv2d(channels, ffn_channels, 1)
+        self.conv4 = nn.Conv2d(ffn_channels, channels, 1)
+        self.beta = nn.Parameter(torch.zeros((1, channels, 1, 1)))
+        self.gamma = nn.Parameter(torch.zeros((1, channels, 1, 1)))
 
-        self.dropout1 = (
-            nn.Dropout(drop_out_rate) if drop_out_rate > 0.0 else nn.Identity()
-        )
-        self.dropout2 = (
-            nn.Dropout(drop_out_rate) if drop_out_rate > 0.0 else nn.Identity()
-        )
+    def forward(self, x, cond):
+        y = self.activation(self.conv1(torch.cat((self.norm1(x), cond), dim=1)))
+        y = x + self.conv2(y * self.attention(y)) * self.beta
+        return y + self.conv4(self.activation(self.conv3(self.norm2(y)))) * self.gamma
 
-        self.beta = nn.Parameter(torch.zeros((1, channels, 1, 1)), requires_grad=True)
-        self.gamma = nn.Parameter(torch.zeros((1, channels, 1, 1)), requires_grad=True)
 
-        # save use_pos_map and depth metadata for forward
-        self.use_pos_map = use_pos_map
-        self.pos_map_channels = pos_map_channels
-        self.depth = depth
+class DWConv2d(nn.Module):
+    """Depthwise convolution on channels-last (b, h, w, c) tensors."""
 
-    def forward(self, source: Tensor, pos_map: Tensor = None) -> Tensor:
-        x = source
+    def __init__(self, dim, kernel_size, padding):
+        super().__init__()
+        self.conv = nn.Conv2d(dim, dim, kernel_size, 1, padding, groups=dim)
 
-        x = self.norm1(x)
-
-        x = self.cat(x, pos_map)
-        x = self.conv1(x)
-        x = self.activation(x)
-
-        att = self.attention(x)
-
-        x = x * att
-        x = self.conv2(x)
-
-        x = self.dropout1(x)
-
-        y = source + x * self.beta
-
-        x = self.conv3(self.norm2(y))
-        x = self.activation(x)
-        x = self.conv4(x)
-
-        x = self.dropout2(x)
-
-        ret = y + x * self.gamma
-
-        return ret
+    def forward(self, x):
+        return self.conv(x.permute(0, 3, 1, 2)).permute(0, 2, 3, 1)
 
 
 class FeedForwardNetwork(nn.Module):
-    def __init__(
-        self,
-        embed_dim,
-        ffn_dim,
-        activation_fn=F.gelu,
-        dropout=0.0,
-        activation_dropout=0.0,
-        layernorm_eps=1e-6,
-        subln=False,
-        subconv=False,
-    ):
+    def __init__(self, embed_dim, ffn_dim):
         super().__init__()
-        self.embed_dim = embed_dim
-        self.activation_fn = activation_fn
-        self.activation_dropout_module = torch.nn.Dropout(activation_dropout)
-        self.dropout_module = torch.nn.Dropout(dropout)
-        self.fc1 = nn.Linear(self.embed_dim, ffn_dim)
-        self.fc2 = nn.Linear(ffn_dim, self.embed_dim)
-        self.ffn_layernorm = nn.LayerNorm(ffn_dim, eps=layernorm_eps) if subln else None
-        self.dwconv = DWConv2d(ffn_dim, 3, 1, 1) if subconv else None
+        self.fc1 = nn.Linear(embed_dim, ffn_dim)
+        self.fc2 = nn.Linear(ffn_dim, embed_dim)
 
-    def reset_parameters(self):
-        self.fc1.reset_parameters()
-        self.fc2.reset_parameters()
-        if self.ffn_layernorm is not None:
-            self.ffn_layernorm.reset_parameters()
+    def forward(self, x):
+        return self.fc2(F.gelu(self.fc1(x)))
 
-    def forward(self, x: torch.Tensor):
-        """
-        x: (b h w c)
-        """
-        x = self.fc1(x)
-        x = self.activation_fn(x)
-        x = self.activation_dropout_module(x)
-        if self.dwconv is not None:
-            residual = x
-            x = self.dwconv(x)
-            x = x + residual
-        if self.ffn_layernorm is not None:
-            x = self.ffn_layernorm(x)
-        x = self.fc2(x)
-        x = self.dropout_module(x)
+
+class DefocusBiasAttention(nn.Module):
+    """Defocus-bias attention (Sec. 3.2, Appendix C.1), axial: along each row, then along each column.
+
+    A_ij = softmax_j(q_i^T k_j / sqrt(d) + gamma_b * alpha * B_ij),  B_ij = -|T_D,i - T_D,j|,  T_D = phi_D(M),
+    where phi_D maps the defocus magnitude M to fixed log features at several scales and then, with a learned linear
+    layer (defocus_head_proj), to one value per head; alpha (defocus_alpha) is learned per head and
+    gamma_b = exp(clip(w_b K + c_b, -4, 4)) (aperture_scale_proj); gamma_K = gamma_b * alpha in the main paper.
+    The output is W_o(sum_j A_ij v_j + LePE(V)_i), with LePE a depthwise 5x5 convolution of the values."""
+
+    def __init__(self, embed_dim, num_heads):
+        super().__init__()
+        self.num_heads = num_heads
+        self.key_dim = embed_dim // num_heads                                 # d
+        self.scaling = self.key_dim ** -0.5
+        self.q_proj = nn.Linear(embed_dim, embed_dim)                         # W_q
+        self.k_proj = nn.Linear(embed_dim, embed_dim)                         # W_k
+        self.v_proj = nn.Linear(embed_dim, embed_dim)                         # W_v
+        self.lepe = DWConv2d(embed_dim, 5, 2)
+        self.out_proj = nn.Linear(embed_dim, embed_dim)                       # W_o
+        self.num_log_features = max(embed_dim // 4, 1)
+        self.defocus_head_proj = nn.Linear(self.num_log_features, num_heads)  # linear layer of phi_D
+        self.defocus_alpha = nn.Parameter(torch.ones(num_heads))              # alpha
+        self.aperture_scale_proj = nn.Linear(1, num_heads)                    # w_b, c_b
+
+    def _log_features(self, defocus):
+        """M (b, 1, h, w) -> (b, h, w, n) features log(1 + M / s) / log(1 + 1 / s), scales s from 1/n to 1."""
+        n = self.num_log_features
+        min_scale = 1.0 / max(float(n), 16.0)
+        scales = torch.logspace(torch.log10(defocus.new_tensor(min_scale)), torch.log10(defocus.new_tensor(1.0)),
+                                steps=n, dtype=defocus.dtype, device=defocus.device).view(1, n, 1, 1)
+        features = torch.log1p(defocus.clamp(0.0, 1.0) / scales) / torch.log1p(1.0 / scales)
+        return features.permute(0, 2, 3, 1).contiguous()
+
+    def _defocus_bias(self, defocus):
+        """B along rows (b, h, heads, w, w) and along columns (b, w, heads, h, h)."""
+        t_d = self.defocus_head_proj(self._log_features(defocus))           # T_D = phi_D(M): b, h, w, heads
+        t_rows = t_d.permute(0, 1, 3, 2).contiguous()                         # b, h, heads, w
+        t_cols = t_d.permute(0, 2, 3, 1).contiguous()                         # b, w, heads, h
+        return (-torch.abs(t_rows.unsqueeze(-1) - t_rows.unsqueeze(-2)),
+                -torch.abs(t_cols.unsqueeze(-1) - t_cols.unsqueeze(-2)))
+
+    def _gamma_b(self, x, strength):
+        raw = self.aperture_scale_proj(strength.to(device=x.device, dtype=x.dtype))
+        return torch.exp(torch.clamp(raw, min=-4.0, max=4.0)).view(x.size(0), 1, self.num_heads, 1, 1)
+
+    def forward(self, x, defocus, strength):
+        b, h, w, _ = x.size()
+        q = self.q_proj(x)
+        k = self.k_proj(x) * self.scaling
+        v = self.v_proj(x)
+        lepe = self.lepe(v)
+        q = q.view(b, h, w, self.num_heads, self.key_dim).permute(0, 3, 1, 2, 4)   # b, heads, h, w, d
+        k = k.view(b, h, w, self.num_heads, self.key_dim).permute(0, 3, 1, 2, 4)
+
+        bias_rows, bias_cols = self._defocus_bias(defocus)
+        scale = self._gamma_b(x, strength) * self.defocus_alpha.view(1, 1, self.num_heads, 1, 1)   # gamma_b * alpha
+
+        v = v.reshape(b, h, w, self.num_heads, -1).permute(0, 1, 3, 2, 4)            # b, h, heads, w, d
+        attn = torch.softmax(q.transpose(1, 2) @ k.transpose(1, 2).transpose(-1, -2) + scale * bias_rows, dim=-1)
+        v = (attn @ v).permute(0, 3, 2, 1, 4)                                         # b, w, heads, h, d
+        attn = torch.softmax(q.permute(0, 3, 1, 2, 4) @ k.permute(0, 3, 1, 2, 4).transpose(-1, -2)
+                             + scale * bias_cols, dim=-1)
+        out = (attn @ v).permute(0, 3, 1, 2, 4).flatten(-2, -1)                       # b, h, w, c
+        return self.out_proj(out + lepe)
+
+
+class DefocusAwareAttentionBlock(nn.Module):
+    """Defocus-aware attention block (DAAB, Fig. 3C): depthwise positional convolution, defocus-bias attention, FFN."""
+
+    def __init__(self, embed_dim, num_heads, ffn_dim, drop_path=0.0):
+        super().__init__()
+        self.pos = DWConv2d(embed_dim, 3, 1)
+        self.attention_layer_norm = nn.LayerNorm(embed_dim, eps=1e-6)
+        self.attention = DefocusBiasAttention(embed_dim, num_heads)
+        self.final_layer_norm = nn.LayerNorm(embed_dim, eps=1e-6)
+        self.ffn = FeedForwardNetwork(embed_dim, ffn_dim)
+        self.drop_path = DropPath(drop_path)
+
+    def forward(self, x, defocus, strength):
+        x = x + self.pos(x)
+        x = x + self.drop_path(self.attention(self.attention_layer_norm(x), defocus, strength))
+        return x + self.drop_path(self.ffn(self.final_layer_norm(x)))
+
+
+class DAABStack(nn.Module):
+    def __init__(self, embed_dim, depth, num_heads, ffn_dim, drop_path):
+        super().__init__()
+        self.blocks = nn.ModuleList(
+            [DefocusAwareAttentionBlock(embed_dim, num_heads, ffn_dim, drop_path[i]) for i in range(depth)])
+
+    def forward(self, x, defocus, strength):
+        defocus = F.interpolate(defocus.to(x.dtype), size=x.shape[1:3], mode="bilinear", align_corners=False)
+        for daab in self.blocks:
+            x = daab(x, defocus, strength)
         return x
+
+
+class DefocusResidualGroup(nn.Module):
+    """Defocus residual group (DRG, Fig. 3B): N DAABs, then a 3x3 convolution over the features and M_C, with a
+    residual connection."""
+
+    def __init__(self, embed_dim, cond_channels, depth, num_heads, ffn_dim, drop_path):
+        super().__init__()
+        self.residual_group = DAABStack(embed_dim, depth, num_heads, ffn_dim, drop_path)
+        self.conv = nn.Conv2d(embed_dim + cond_channels, embed_dim, 3, 1, 1)
+
+    def forward(self, x, cond, defocus, strength):
+        y = self.residual_group(x, defocus, strength).permute(0, 3, 1, 2)
+        return self.conv(torch.cat((y, cond), dim=1)).permute(0, 2, 3, 1) + x

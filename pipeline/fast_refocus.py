@@ -9,7 +9,7 @@
 
 Compared with the reference scripts (deblur/deblur.py, renderer/infer_single_focus.py) only the code around
 the models changes, so the outputs are the same up to floating point: the empty-prompt text embedding is computed once,
-Depth Anything V2 pre- and post-processing and the focus map run on the GPU, the depth of an image is reused by every
+Depth Anything V2 pre- and post-processing run on the GPU, the depth of an image is reused by every
 edit, and PNGs are written with a fast zlib level. Options: cuDNN autotuning, channels_last, fp16 refiner, renderer
 autocast (bf16 by default) and torch.compile."""
 import sys
@@ -87,22 +87,15 @@ class FastStageI:
 
 class FastRenderer:
     def __init__(self, sdpa_da2=True, channels_last=False, amp_dtype=torch.bfloat16, compile_=False, compile_mode=None):
-        # bf16 autocast by default, as in the bokeh-rendering evaluation (test_focal_depth_k_search_p.py --amp);
-        # amp_dtype=None renders in fp32
-        from infer_single_focus import BokehliciousFocusEngine, parse_args as parse_bokeh_args
-        bc = parse_bokeh_args(["--input", "a", "--output", "b", "--focus-x", "0", "--focus-y", "0", "--bokeh-strength", "0.5"])
-        self.bc = bc
-        eng = BokehliciousFocusEngine(checkpoint=bc.checkpoint, size=bc.size, attn_version=bc.attn_version, da2_root=bc.da2_root,
-                                      da2_checkpoint=bc.da2_checkpoint, da2_encoder=bc.da2_encoder,
-                                      da2_input_size=bc.da2_input_size, no_da2_amp=bc.no_da2_amp,
-                                      da2_amp_dtype=bc.da2_amp_dtype, device="cuda", amp=bc.amp)
+        # bf16 autocast by default, as in all reported results; amp_dtype=None renders in fp32
+        from infer_single_focus import RenderEngine
+        eng = RenderEngine(amp=False)
         if sdpa_da2:
             import sdpa_patch
-            sdpa_patch.apply(da2=True, renderer=False)
+            sdpa_patch.apply()
         from depth_anything_v2.util.transform import Resize
-        from dataset.util import make_point_focus_map
         self.da2, self.model, self.eng = eng.da2_model, eng.model, eng
-        self.Resize, self.make_point_focus_map = Resize, make_point_focus_map
+        self.Resize = Resize
         self.mean = torch.tensor([0.485, 0.456, 0.406], device="cuda").view(1, 3, 1, 1)
         self.std = torch.tensor([0.229, 0.224, 0.225], device="cuda").view(1, 3, 1, 1)
         self.params = sum(p.numel() for p in self.da2.parameters()) + sum(p.numel() for p in self.model.parameters())
@@ -123,13 +116,13 @@ class FastRenderer:
                              resize_method="lower_bound").get_size(w, h)
         x = F.interpolate(src, (th, tw), mode="bicubic", align_corners=False)
         x = (x - self.mean) / self.std
-        with torch.autocast("cuda", dtype=torch.float16, enabled=self.eng.da2_amp):
+        with torch.autocast("cuda", dtype=torch.float16):
             d = self.da2(x)
         d = F.interpolate(d[:, None].float(), (h, w), mode="bilinear", align_corners=True)[0]
         d = torch.nan_to_num(d, nan=0.0, posinf=0.0, neginf=0.0)
         lo, hi = d.min(), d.max()
         d = (d - lo) / (hi - lo) if float(hi - lo) > 1e-12 else torch.zeros_like(d)
-        self.src, self.depth = src, (1.0 - d).clamp(0, 1)            # 1 x H x W, as process_da2_depth_like_dataset
+        self.src, self.depth = src, (1.0 - d).clamp(0, 1)            # 1 x H x W, as infer_single_focus.process_da2_depth
 
     @torch.no_grad()
     def render(self, focus_x, focus_y, strength, dst=None, depth=None):
@@ -139,11 +132,9 @@ class FastRenderer:
         _, h, w = depth.shape
         x = max(0, min(w - 1, int(round(focus_x)))); y = max(0, min(h - 1, int(round(focus_y))))
         disp = depth[0, y, x].reshape(1, 1)
-        fm = self.make_point_focus_map(w, h, x, y, radius=max(h, w), map_type=self.bc.focus_map_type, device="cuda")[None].float()
         src = self.src.contiguous(memory_format=torch.channels_last) if self.channels_last else self.src
         with torch.autocast("cuda", dtype=self.amp_dtype or torch.float32, enabled=self.amp_dtype is not None):
-            pred = self.model(source=src, bokeh_strength=torch.tensor([[strength]], device="cuda"), focus_map=fm,
-                              depth_map=depth[None], disp_focus=disp)
+            pred = self.model(src, torch.tensor([[strength]], device="cuda"), depth[None], disp)
         if dst is not None:
             write_rgb(pred.float(), dst)
         return pred

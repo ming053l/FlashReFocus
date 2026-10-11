@@ -1,7 +1,7 @@
 #!/usr/bin/env python
-"""Strength controllability on MODEST aperture ladders: for each method, the per-image best strength (in the method's
-own unit) found against the f/16, 9, 5 and 2.8 targets is compared with 1/N: the share of ladders whose best strength
-never decreases as the aperture opens, the mean Spearman rank correlation per ladder, and the Pearson correlation of the
+"""Strength controllability on MODEST aperture series: for each method, the per-image best strength (in the method's
+own unit) found against the f/16, 9, 5 and 2.8 targets is compared with 1/N: the share of series whose best strength
+never decreases as the aperture opens, the mean Spearman rank correlation per series, and the Pearson correlation of the
 mean strength with 1/N; plus the mean SSIM per aperture. Reads <work>/rbval_out/modest_*; writes modest_summary.json."""
 import csv
 import json

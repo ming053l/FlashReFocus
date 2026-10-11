@@ -18,10 +18,10 @@ explicit 1.3M-parameter network that leaves in-focus content untouched.
 ```
 paths.py      locations of weights, data and outputs (environment variables, see below)
 pipeline/     refocusing pipeline (fast_refocus.py), two focal planes, tilt-shift, cost benchmark
-deblur/       Stage I model (model.py), inference, training, decoder-refiner training, data configuration, test pairs
+deblur/       Stage I model (model.py), inference, training data (deblur_data.py), Stage I and decoder-refiner training
 refiner/      decoder refiner (VAEMultiScaleFusionDecoder)
-renderer/     Stage II renderer: model, data loaders, training, inference, evaluation
-eval/         evaluation: bokeh-rendering tables, LVCorr, focus-sweep consistency, MODEST aperture ladders
+renderer/     Stage II renderer: model (method/), training data (render_data.py), training, reference inference
+eval/         evaluation: bokeh-rendering tables, LVCorr, focus-sweep consistency, MODEST aperture series
 annotations/  our focal-point annotations and evaluation subsets (EBB!, RealBokeh, 3CReal, LFDOF)
 tools/        data preparation
 third_party/  base one-step diffusion code, Depth Anything V2, RAM++ (git submodules)
@@ -75,7 +75,7 @@ Refocusing your own photos needs no dataset. For training and evaluation, downlo
 | `RealBokeh/` (`train/`, `validation/`, `test/`) | RealBokeh_3MP | Stage I and renderer training, evaluation | `huggingface-cli download timseizinger/RealBokeh_3MP --repo-type dataset --local-dir data/RealBokeh` |
 | `EBB/` (`train/`, `validation/`) | EBB! | bokeh-rendering evaluation | [aiff22.github.io/pynet-bokeh.html](https://aiff22.github.io/pynet-bokeh.html#dataset) |
 | `3CReal/validation/` (`original/`, `bokeh/`) | 3CReal (ours, 89 pairs) | bokeh-rendering evaluation | released with the paper |
-| `MODEST/` | MODEST | aperture-ladder evaluation (optional) | `huggingface-cli download independent-vision-lab/MODEST --repo-type dataset --local-dir data/MODEST` |
+| `MODEST/` | MODEST | aperture-series evaluation (optional) | `huggingface-cli download independent-vision-lab/MODEST --repo-type dataset --local-dir data/MODEST` |
 | `Hypersim_processed/` | Hypersim scenes with rendered bokeh targets | renderer pre-training | scenes from [github.com/apple/ml-hypersim](https://github.com/apple/ml-hypersim); target rendering script to be released |
 
 Stage I trains on 4,179 RealBokeh pairs of the top-1000 scenes (`deblur/configs/deblur_train_realbokeh_top1000_laplacian.csv`);
@@ -86,7 +86,7 @@ builds the evaluation folders:
 ```bash
 python tools/prepare_data.py check   # which datasets are in place
 python tools/prepare_data.py all     # EBB_Val176/, RealBokeh_val_f2.0/, work/lfdof_refocus/, RealBokeh and 3CReal focal points
-python renderer/generate_da2_depth.py --help   # cache Depth Anything V2 depth for renderer training (da2_depth/)
+python renderer/generate_da2_depth.py          # cache Depth Anything V2 depth of RealBokeh for renderer training
 ```
 
 Evaluation outputs go into `work/` (`FLASHREFOCUS_WORK`); `paths.py` lists every location.
@@ -132,10 +132,10 @@ fixed input size, but may pick different convolution algorithms between runs, ch
 | Result | Scripts |
 |---|---|
 | Defocus deblurring (DPDD, RealDOF) | `deblur/deblur.py --pairs deblur/pairs/<set>_test.json`, `eval/score_folders.py` |
-| Bokeh rendering (EBB! Val176, 3CReal, RealBokeh val.) | `eval/rbval_ours.py`, `renderer/test_focal_depth_k_search_p.py`, `eval/eval_bokeh_table.py`, `eval/score_folders.py` |
+| Bokeh rendering (EBB! Val176, 3CReal, RealBokeh val.) | `eval/rbval_ours.py`, `eval/eval_bokeh_table.py`, `eval/score_folders.py` |
 | Strength control (LVCorr) | `eval/lvcorr.py` |
 | Focus-sweep consistency | `eval/rack_ours.py`, `eval/rack_genrefocus.py`, `eval/rack_match_blur*.py`, `eval/rack_analyze.py`, `eval/rack_metrics_kmatch.py` |
-| MODEST aperture ladders | `eval/build_modest_ladder.py`, `eval/modest_analyze.py` |
+| MODEST aperture series | `eval/build_modest_series.py`, `eval/modest_analyze.py` |
 | Cost | `deblur/cost_stage1.py`, `pipeline/bench_fast_refocus.py` |
 
 Outputs of compared methods are produced with their own code (under `baselines/`, `FLASHREFOCUS_BASELINES`) and

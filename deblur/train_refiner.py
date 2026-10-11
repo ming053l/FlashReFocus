@@ -7,7 +7,7 @@ share the VAE encoder and quant_conv, so it decodes the latents of the SD2.1-bas
 frozen Stage I one-step outputs z - UNet(z) (encoder posterior mode, empty prompt) at the inference weight
 omega = --lambda_sem; --stage1_ckpt with several checkpoints and --lambda_sem_choices draw one per step.
 
-Loss: MSE + 0.2 PAL + 0.1 LPIPS(VGG); bf16, lr 5e-5 with 500 warm-up steps and cosine decay, 512 crops of the Stage I
+Loss: L_ref = MSE + lambda_struct L_struct + lambda_LPIPS^ref LPIPS(VGG), lambda_struct = 0.2, lambda_LPIPS^ref = 0.1; bf16, lr 5e-5 with 500 warm-up steps and cosine decay, 512 crops of the Stage I
 training mixture. Trainable: decoder and fusion modules (the refiner's own encoder is frozen); --freeze_decoder trains
 the fusion modules only, --decoder_lora_rank trains LoRA adapters on the decoder instead of its weights.
 Validation: held-out DPDD val_c and LFDOF test images, PSNR and sharpness on the full image and LPIPS on the central
@@ -68,7 +68,7 @@ def parse_args():
     p.add_argument("--learning_rate", type=float, default=5e-5)
     p.add_argument("--lr_warmup_steps", type=int, default=500)
     p.add_argument("--mse_weight", type=float, default=1.0)
-    p.add_argument("--pal_weight", type=float, default=0.2)
+    p.add_argument("--struct_weight", type=float, default=0.2, help="lambda_struct")
     p.add_argument("--lpips_weight", type=float, default=0.1)
     p.add_argument("--val_every", type=int, default=1000)
     p.add_argument("--checkpoint_every", type=int, default=2500)
@@ -121,12 +121,26 @@ class Stage1Latents:
         return self.d.latent(x).float()
 
 
+def struct_loss(pred, target, eps=1e-3):
+    """L_struct: l1 error after fitting, per image, the affine color map (3x3 matrix and offset) that best maps pred to
+    target in the least-squares sense (ridge eps); the fit is not differentiated. Ignores global color shifts and
+    penalizes structural errors."""
+    b, c, h, w = pred.shape
+    with torch.autocast(device_type=pred.device.type, enabled=False):
+        pred, target = pred.float(), target.float()
+        x = torch.cat([pred.permute(0, 2, 3, 1).reshape(b, -1, c), torch.ones((b, h * w, 1), device=pred.device)], -1)
+        xtx = torch.bmm(x.transpose(1, 2), x).float()
+        xty = torch.bmm(x.transpose(1, 2), target.permute(0, 2, 3, 1).reshape(b, -1, c)).float()
+        eye = torch.eye(c + 1, device=pred.device).unsqueeze(0)
+        fit = torch.linalg.solve(xtx + eps * eye, xty).transpose(1, 2).detach()
+        pred_aug = torch.cat([pred.reshape(b, c, -1), torch.ones((b, 1, h * w), device=pred.device)], dim=1)
+        return F.l1_loss(torch.bmm(fit, pred_aug).reshape(b, c, h, w), target)
+
+
 def main():
     args = parse_args()
-    from dpdd_dataset import build_training_dataset
+    from deblur_data import build_training_dataset
     from refiner.vae_refiner_wo_d import VAEMultiScaleFusionDecoder
-    from train_options import parse_args as parse_data_args
-    from train_utils import PALLoss
     from torchmetrics.image.lpip import LearnedPerceptualImagePatchSimilarity
 
     acc = Accelerator(gradient_accumulation_steps=args.gradient_accumulation_steps, mixed_precision="bf16")
@@ -170,12 +184,10 @@ def main():
     opt = torch.optim.AdamW(params, lr=args.learning_rate)
     sched = get_scheduler("cosine", optimizer=opt, num_warmup_steps=args.lr_warmup_steps * acc.num_processes,
                           num_training_steps=args.max_train_steps * acc.num_processes)
-    pal = PALLoss(alpha=1.0, eps=1e-3).to(acc.device)
     lpips_vgg = LearnedPerceptualImagePatchSimilarity(net_type="vgg", normalize=True, reduction="mean").to(acc.device).eval()
     lpips_vgg.requires_grad_(False)
 
-    dataset = build_training_dataset(parse_data_args(["--config", args.data_config]), split="train",
-                                        image_size=args.resolution, use_augmentation=True)
+    dataset = build_training_dataset(args.data_config, args.resolution)
     dl = torch.utils.data.DataLoader(dataset, batch_size=args.train_batch_size, shuffle=True, drop_last=True,
                                      num_workers=args.num_workers, pin_memory=True, persistent_workers=True,
                                      collate_fn=collate_pair)
@@ -199,10 +211,10 @@ def main():
                     pred = refiner(x, latent=lat, sample_posterior=False)
                 pred = pred.float()
                 l_mse = F.mse_loss(pred, y.float()) * args.mse_weight
-                l_pal = pal(pred, y.float()) * args.pal_weight
+                l_struct = struct_loss(pred, y.float()) * args.struct_weight
                 with torch.autocast(device_type="cuda", enabled=False):
                     l_lp = lpips_vgg(to01(pred), to01(y)) * args.lpips_weight
-                loss = l_mse + l_pal + l_lp
+                loss = l_mse + l_struct + l_lp
                 acc.backward(loss)
                 if acc.sync_gradients:
                     acc.clip_grad_norm_(params, 1.0)
@@ -213,12 +225,12 @@ def main():
             if main_proc:
                 tb.add_scalar("loss/total", loss.item(), step)
                 tb.add_scalar("loss/mse", l_mse.item(), step)
-                tb.add_scalar("loss/pal", l_pal.item(), step)
+                tb.add_scalar("loss/struct", l_struct.item(), step)
                 tb.add_scalar("loss/lpips", l_lp.item(), step)
                 tb.add_scalar("train/lr", sched.get_last_lr()[0], step)
                 if step % 50 == 0:
                     dt = (time.time() - t_last) / 50; t_last = time.time()
-                    print(f"step {step} loss {loss.item():.4f} mse {l_mse.item():.4f} pal {l_pal.item():.4f} "
+                    print(f"step {step} loss {loss.item():.4f} mse {l_mse.item():.4f} struct {l_struct.item():.4f} "
                           f"lpips {l_lp.item():.4f} {dt:.2f}s/step eta {dt * (args.max_train_steps - step) / 3600:.1f}h", flush=True)
                 if step % args.checkpoint_every == 0 or step == args.max_train_steps:
                     save(acc.unwrap_model(refiner), args.output_dir / "checkpoints" / f"refiner_{step}.pt")

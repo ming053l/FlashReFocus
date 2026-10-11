@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """Restore the held-out model-selection sets with a Stage I checkpoint: DPDD val_c (74 pairs) and LFDOF test (50 scenes,
 one focal slice each), both at full resolution and used in neither training nor the reported results. Outputs are named
-like the ground truth, for eval/score_folders.py and sharpness.py. Inference as deblur.py without the refiner."""
+like the ground truth, for eval/score_folders.py. Inference as deblur.py without the refiner."""
 import os
 import argparse
 import sys

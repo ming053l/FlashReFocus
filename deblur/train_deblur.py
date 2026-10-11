@@ -3,7 +3,7 @@
 deblurring. The model and CSD loss code come from third_party/PiSA-SR and are used unchanged; the LoRAs are initialised
 from its pretrained one-step weights (--init_pkl).
   * data: paired defocus mixture of DPDD (0.3), RealBokeh (0.2), LFDOF (0.3) and synthetic spatially varying blur on
-    DIV2K (0.2), see common/dpdd_dataset.py and configs/stage1_data.yaml;
+    DIV2K (0.2), see data.py and configs/stage1_data.yaml;
   * CSD teacher prompts: RAM++ tags of the sharp target;
   * CSD negative prompt without "over-smooth" (it penalises naturally smooth regions such as sky) and with defocus
     terms, so CSD pushes away from defocus blur rather than from smoothness.
@@ -52,9 +52,8 @@ from torch.utils.tensorboard import SummaryWriter  # noqa: E402
 import torchvision.transforms.functional as TF  # noqa: E402
 
 from pisasr import CSDLoss, PiSASR  # noqa: E402
-from dpdd_dataset import build_training_dataset  # noqa: E402
+from deblur_data import build_training_dataset  # noqa: E402
 from ram_plus_tagger import RamPlusTagger  # noqa: E402
-from train_options import parse_args as parse_data_args  # noqa: E402
 
 OFFICIAL_NEG = ("painting, oil painting, illustration, drawing, art, sketch, oil painting, cartoon, CG Style, 3D render, "
                 "unreal engine, blurring, dirty, messy, worst quality, low quality, frames, watermark, signature, "
@@ -369,9 +368,8 @@ def main():
     opt = torch.optim.AdamW(params, lr=args.learning_rate, betas=(0.9, 0.999), weight_decay=1e-2, eps=1e-8)
     sched = get_scheduler("constant_with_warmup", optimizer=opt, num_warmup_steps=args.lr_warmup_steps * acc.num_processes)
 
-    # ---- data: DPDD, RealBokeh, LFDOF and synthetic DIV2K mixture (common/dpdd_dataset.py)
-    dargs = parse_data_args(["--config", args.data_config])
-    dataset = build_training_dataset(dargs, split="train", image_size=args.resolution, use_augmentation=True)
+    # ---- data: DPDD, RealBokeh, LFDOF and synthetic DIV2K mixture (data.py)
+    dataset = build_training_dataset(args.data_config, args.resolution)
     dl = torch.utils.data.DataLoader(dataset, batch_size=args.train_batch_size, shuffle=True, drop_last=True,
                                      num_workers=args.num_workers, pin_memory=True, persistent_workers=True,
                                      collate_fn=collate_pair)
