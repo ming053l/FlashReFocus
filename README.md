@@ -1,5 +1,7 @@
 # FlashReFocus: Interactive Image Refocusing in Seconds
 
+[Paper](https://ming053l.github.io/FlashReFocus/assets/FlashReFocus.pdf) · [Project page](https://ming053l.github.io/FlashReFocus/) · [Demo](https://huggingface.co/spaces/ming0531/FlashReFocus) · [Video](https://youtu.be/g032M7moWQ4)
+
 Single-image refocusing moves the focal plane and changes the depth of field of a photograph after capture. FlashReFocus
 splits it by what each part needs: deblurring has to recover lost detail, so it uses a one-step diffusion model, run
 **once** per photograph; rendering new blur is determined by depth and the focal plane, so every edit is rendered by an
