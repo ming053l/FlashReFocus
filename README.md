@@ -139,6 +139,7 @@ fixed input size, but may pick different convolution algorithms between runs, ch
 | Effect of the defocus bias on attention (Appendix C.1) | `eval/attention_bias.py` |
 | Renderer residual, defocus embedding and strength scale (Appendix C.1) | `eval/renderer_internals.py` |
 | Where the detail branch acts (Appendix F) | `eval/detail_branch.py` |
+| Depth source: DA-V2 S/B/L and Depth Pro (Appendix G) | `eval/depth_source.py` |
 | Cost | `deblur/cost_stage1.py`, `pipeline/bench_fast_refocus.py` |
 
 Outputs of compared methods are produced with their own code (under `baselines/`, `FLASHREFOCUS_BASELINES`) and
