@@ -5,22 +5,19 @@ phase-correlation shift is taken, and the f/22 frame whose set aligns best is ke
 are targets. Images are resized to a long side of 1536. The focal point is chosen automatically as the textured f/22 block
 where the aligned f/2.8 and f/22 high-pass images correlate best (exposure-normalised), since MODEST has no focus annotation.
 Writes modest_series/{original,bokeh_F16.0,bokeh_F9.0,bokeh_F5.0,bokeh_F2.8}/<scene>.jpg and focus_point.json."""
-import sys
 import glob
 import json
 import re
 from pathlib import Path
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # repository root
-import paths  # noqa: E402
-paths.add_to_path()
-DATA_ROOT, WORK_ROOT = paths.DATA, paths.WORK
 
 import numpy as np
 from PIL import Image
 from scipy import ndimage
 
-SRC = (DATA_ROOT / "MODEST")
-OUT = (WORK_ROOT / "modest_series")
+from flashrefocus import paths
+
+SRC = paths.DATA / "MODEST"
+OUT = paths.WORK / "modest_series"
 APS = ["F22.0", "F16.0", "F9.0", "F5.0", "F2.8"]
 LONG = 1536
 MAX_VIEWS = 5

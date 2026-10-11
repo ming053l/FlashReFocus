@@ -8,14 +8,16 @@ DA-V2 S/B checkpoints: huggingface.co/depth-anything/Depth-Anything-V2-{Small,Ba
 import argparse
 import csv
 import json
-import sys
 from pathlib import Path
 
 import numpy as np
 import torch
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # repository root
-import paths  # noqa: E402
+from flashrefocus import Refocuser
+from flashrefocus.image_io import read_image, save_image
+from flashrefocus.rendering.depth import DepthEstimator, disparity_to_depth, load_depth_anything_v2
+from flashrefocus.rendering.depth_edits import depth_at
+from bokeh_strength_search import annotated_focal_point, search_strength
 
 
 def dump_depthpro(root, out):
@@ -35,58 +37,39 @@ def dump_depthpro(root, out):
 
 
 def evaluate(source, root, out, depthpro_dir, da2_checkpoint):
-    paths.add_to_path()
-    import fast_refocus as FR
-    from infer_single_focus import load_da2_model
     from torchmetrics.functional.image import peak_signal_noise_ratio as psnr
     from torchmetrics.functional.image import structural_similarity_index_measure as ssim
     from torchmetrics.image.dists import DeepImageStructureAndTextureSimilarity
     from torchmetrics.image.lpip import LearnedPerceptualImagePatchSimilarity
     (out / "images").mkdir(parents=True, exist_ok=True)
-    FR.setup_backend(False)
-    rd = FR.FastRenderer()
+    torch.backends.cudnn.benchmark = False
+    rf = Refocuser.from_pretrained(deblurring=False)
     if source in ("vitb", "vits"):
-        rd.da2 = load_da2_model(source, da2_checkpoint, torch.device("cuda"))
+        rf.depth_estimator = DepthEstimator(load_depth_anything_v2(source, da2_checkpoint)).cuda()
     lpips = LearnedPerceptualImagePatchSimilarity(net_type="alex", normalize=True).cuda().eval()
     dists = DeepImageStructureAndTextureSimilarity().cuda().eval()
-    ann = json.loads((root / "focus_point.json").read_text())["annotations"]
+    annotations = json.loads((root / "focus_point.json").read_text())["annotations"]
     rows = []
-    for key in sorted(ann, key=int):
-        rd.set_image(root / "original" / f"{key}.jpg")
-        h, w = rd.src.shape[-2:]
-        depth = None
-        if source == "depthpro":   # D = 1 - min-max(inverse depth), as for DA-V2
-            disp = torch.from_numpy(np.load(depthpro_dir / f"{key}.npy")).cuda()[None]
-            depth = (1.0 - (disp - disp.min()) / (disp.max() - disp.min())).clamp(0, 1)
-        fx, fy = ann[key]["x"] * w / ann[key]["width"], ann[key]["y"] * h / ann[key]["height"]
-        gt = FR.read_rgb(root / "bokeh" / f"{key}.jpg", "cuda")
-        cache = {}
-
-        def score(k):
-            if k not in cache:
-                with torch.no_grad():
-                    p = rd.render(fx, fy, k / 100.0, None, depth=depth).float().clamp(0, 1)
-                    p = (p * 255.0).to(torch.uint8).float() / 255.0
-                    cache[k] = (float(ssim(p, gt, data_range=1.0)), p)
-            return cache[k][0]
-
-        lo, hi = 1, 100
-        while lo < hi:
-            mid = (lo + hi) // 2
-            lo, hi = (mid + 1, hi) if score(mid) < score(mid + 1) else (lo, mid)
-        score(lo)
-        p = cache[lo][1]
-        if p.shape != gt.shape:
-            p = torch.nn.functional.interpolate(p, gt.shape[-2:], mode="bilinear", align_corners=False)
+    for key in sorted(annotations, key=int):
+        scene = rf.scene_from_file(root / "original" / f"{key}.jpg")
+        depth = scene.depth
+        if source == "depthpro":   # D = 1 - minmax(inverse depth), as for DA-V2
+            depth = disparity_to_depth(torch.from_numpy(np.load(depthpro_dir / f"{key}.npy")).cuda()[None])
+        x, y = annotated_focal_point(annotations[key], *scene.image.shape[-2:])
+        focal_depth = float(depth_at(depth, x, y))
+        target = read_image(root / "bokeh" / f"{key}.jpg", "cuda")
+        k, _, bokeh, _ = search_strength(rf, scene, focal_depth, target, depth=depth)
+        if bokeh.shape != target.shape:
+            bokeh = torch.nn.functional.interpolate(bokeh, target.shape[-2:], mode="bilinear", align_corners=False)
         with torch.no_grad():
-            rows.append({"key": key, "k": lo, "psnr": float(psnr(p, gt, data_range=1.0)),
-                         "ssim": float(ssim(p, gt, data_range=1.0)), "lpips": float(lpips(p, gt)),
-                         "dists": float(dists(p, gt))})
-        FR.write_rgb(p, out / "images" / f"{key}.png")
+            rows.append({"key": key, "k": k, "psnr": float(psnr(bokeh, target, data_range=1.0)),
+                         "ssim": float(ssim(bokeh, target, data_range=1.0)), "lpips": float(lpips(bokeh, target)),
+                         "dists": float(dists(bokeh, target))})
+        save_image(bokeh, out / "images" / f"{key}.png")
     with open(out / "results.csv", "w", newline="") as f:
-        wr = csv.DictWriter(f, fieldnames=list(rows[0]))
-        wr.writeheader()
-        wr.writerows(rows)
+        writer = csv.DictWriter(f, fieldnames=list(rows[0]))
+        writer.writeheader()
+        writer.writerows(rows)
     print(source, {k: round(float(np.mean([r[k] for r in rows])), 4) for k in ("psnr", "ssim", "lpips", "dists")})
 
 

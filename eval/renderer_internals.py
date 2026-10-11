@@ -7,24 +7,21 @@
 Both write .npz files under <work>/renderer_internals/."""
 import argparse
 import json
-import sys
 from pathlib import Path
 
 import numpy as np
 import torch
 from PIL import Image
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # repository root
-import paths  # noqa: E402
-paths.add_to_path()
-from method.blocks import DefocusBiasAttention  # noqa: E402
+from flashrefocus import Refocuser, paths
+from flashrefocus.rendering.defocus_bias_attention import DefocusBiasAttention
+from flashrefocus.rendering.renderer import load_renderer
 
 OUT = paths.WORK / "renderer_internals"
 
 
 @torch.no_grad()
 def curves():
-    from method.model import load_renderer
     model = load_renderer(paths.RENDERER)
     m = torch.linspace(0, 1, 201, device="cuda").view(1, 1, 1, -1)
     k = torch.linspace(0, 1, 101, device="cuda").view(-1, 1)
@@ -38,10 +35,9 @@ def curves():
 
 @torch.no_grad()
 def residual(root):
-    import fast_refocus as FR
     ann = json.loads((root / "focus_point.json").read_text())["annotations"]
-    FR.setup_backend(False)
-    rd = FR.FastRenderer()
+    torch.backends.cudnn.benchmark = False
+    rf = Refocuser.from_pretrained(deblurring=False)
     strengths, edges = [0.25, 0.5, 0.75, 1.0], np.linspace(0, 1, 21)
     sums, count = np.zeros((len(strengths), 20)), np.zeros(20)
     tmp = OUT / "input.png"
@@ -51,13 +47,12 @@ def residual(root):
         s = 1024 / max(im.size)
         w, h = int(im.size[0] * s) // 16 * 16, int(im.size[1] * s) // 16 * 16
         im.resize((w, h), Image.BICUBIC).save(tmp)
-        rd.set_image(tmp)
-        fx, fy = a["x"] * w / a["width"], a["y"] * h / a["height"]
-        x, y = max(0, min(w - 1, int(round(fx)))), max(0, min(h - 1, int(round(fy))))
-        bins = np.clip(np.digitize((rd.depth[0] - rd.depth[0, y, x]).abs().cpu().numpy(), edges) - 1, 0, 19).ravel()
+        scene = rf.scene_from_file(tmp)
+        focal_depth = scene.focal_depth_at(a["x"] * w / a["width"], a["y"] * h / a["height"])
+        bins = np.clip(np.digitize((scene.depth[0] - focal_depth).abs().cpu().numpy(), edges) - 1, 0, 19).ravel()
         count += np.bincount(bins, minlength=20)
         for i, k in enumerate(strengths):
-            delta = (rd.render(fx, fy, k).float().clamp(0, 1) - rd.src).abs().mean(1)[0].cpu().numpy() * 255
+            delta = (rf.render(scene, k, focal_depth).clamp(0, 1) - scene.image).abs().mean(1)[0].cpu().numpy() * 255
             sums[i] += np.bincount(bins, weights=delta.ravel(), minlength=20)
     np.savez(OUT / "residual.npz", edges=edges, mean=sums / np.maximum(count, 1), count=count, K=np.array(strengths))
     print("mean |Delta I| (/255) for M < 0.05:", np.round(sums[:, 0] / max(count[0], 1), 2))

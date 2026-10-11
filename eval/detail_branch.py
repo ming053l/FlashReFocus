@@ -2,19 +2,16 @@
 """Where the Stage I detail branch acts (Appendix F, Fig. F.4): on the DPDD test pairs, the difference between the
 outputs at omega = 1.25 and omega = 0 (pixel branch only), its share on the 20% of pixels with the most texture in the
 sharp target (local Sobel energy, 7x7 mean) and the error to the target on those pixels and on the smoothest half."""
+import argparse
 import json
-import sys
-from pathlib import Path
 
 import numpy as np
 import torch
 import torch.nn.functional as F
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # repository root
-import paths  # noqa: E402
-paths.add_to_path()
-import fast_refocus as FR  # noqa: E402
-from model import read_image  # noqa: E402
+from flashrefocus import paths
+from flashrefocus.deblurring import Deblurrer
+from flashrefocus.image_io import read_image, to_signed, to_unit_range
 
 SOBEL = torch.tensor([[-1.0, 0, 1], [-2, 0, 2], [-1, 0, 1]])
 
@@ -29,17 +26,18 @@ def texture(img):
 
 @torch.no_grad()
 def main():
-    pairs = json.loads((paths.REPO / "deblur" / "pairs" / "dpdd_test.json").read_text())
-    FR.setup_backend(False)
-    s1 = FR.FastStageI()
+    argparse.ArgumentParser(description=__doc__).parse_args()
+    pairs = json.loads((paths.REPO / "annotations" / "deblurring_pairs" / "dpdd_test.json").read_text())
+    torch.backends.cudnn.benchmark = False
+    deblurrer = Deblurrer.from_pretrained()
     rows = []
     for p in pairs:
-        x = read_image(paths.DATA / p["source"]).cuda()
-        target = read_image(paths.DATA / p["target"]).cuda()[0] * 0.5 + 0.5
+        x = to_signed(read_image(paths.DATA / p["source"], "cuda", multiple=8))
+        target = read_image(paths.DATA / p["target"], "cuda", multiple=8)[0]
         out = {}
         for omega in (0.0, 1.25):
-            s1.omega = omega
-            out[omega] = s1.run_tensor(x).float().clamp(-1, 1)[0] * 0.5 + 0.5
+            deblurrer.detail_weight = omega
+            out[omega] = to_unit_range(deblurrer(x).float().clamp(-1, 1))[0]
         diff = (out[1.25] - out[0.0]).abs().mean(0)
         t = texture(target)
         textured, smooth = t >= torch.quantile(t.flatten()[::7], 0.8), t <= torch.quantile(t.flatten()[::7], 0.5)

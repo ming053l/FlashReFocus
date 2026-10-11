@@ -12,7 +12,6 @@ stats: 3CReal resized to a long side of 1024, rendered at the annotated focal po
 image; reports the share of each query's attention on tokens whose defocus M differs from the query's by < 0.1."""
 import argparse
 import json
-import sys
 from pathlib import Path
 
 import numpy as np
@@ -20,28 +19,27 @@ import torch
 import torch.nn.functional as F
 from PIL import Image
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # repository root
-import paths  # noqa: E402
-paths.add_to_path()
-import fast_refocus as FR  # noqa: E402
-from method.blocks import DefocusBiasAttention  # noqa: E402
+from flashrefocus import Refocuser, paths
+from flashrefocus.rendering.defocus_bias_attention import DefocusBiasAttention
 
 
 class AttentionProbe:
-    """Renders with the fast renderer in fp32 and keeps the inputs (x, M, K) of every defocus-bias attention block."""
+    """Renders in fp32 and keeps the inputs (x, M, K) of every defocus-bias attention block."""
 
     def __init__(self):
-        FR.setup_backend(False)
-        self.renderer = FR.FastRenderer(amp_dtype=None)
+        torch.backends.cudnn.benchmark = False
+        self.refocuser = Refocuser.from_pretrained(render_dtype=None, deblurring=False)
         self.calls = []
-        for m in self.renderer.model.modules():
+        for m in self.refocuser.renderer.modules():
             if isinstance(m, DefocusBiasAttention):
                 m.register_forward_hook(lambda mod, i, o: self.calls.append((mod, i[0].detach(), i[1].detach(), i[2])))
 
-    def render(self, image, focal_x, focal_y, strength):
-        self.renderer.set_image(image)
+    def render(self, image_path, focal_x, focal_y, strength):
+        """Returns the image size (h, w)."""
+        scene = self.refocuser.scene_from_file(image_path)
         self.calls.clear()
-        return self.renderer.render(focal_x, focal_y, strength)
+        self.refocuser.render(scene, strength, scene.focal_depth_at(focal_x, focal_y))
+        return scene.image.shape[-2:]
 
 
 @torch.no_grad()
@@ -71,8 +69,7 @@ def to_tokens(xy, image_hw, token_hw):
 
 def cmd_maps(a):
     probe = AttentionProbe()
-    probe.render(a.image, a.focal_x, a.focal_y, a.strength)
-    image_hw = probe.renderer.src.shape[-2:]
+    image_hw = probe.render(a.image, a.focal_x, a.focal_y, a.strength)
     result = {}
     for block, (mod, x, defocus, strength) in enumerate(probe.calls):
         token_hw = x.shape[1:3]

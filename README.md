@@ -18,15 +18,16 @@ explicit 1.3M-parameter network that leaves in-focus content untouched.
 ## Repository layout
 
 ```
-paths.py      locations of weights, data and outputs (environment variables, see below)
-pipeline/     refocusing pipeline (fast_refocus.py), two focal planes, tilt-shift, cost benchmark
-deblur/       Stage I model (model.py), inference, training data (deblur_data.py), Stage I and decoder-refiner training
-refiner/      decoder refiner (VAEMultiScaleFusionDecoder)
-renderer/     Stage II renderer: model (method/), training data (render_data.py), training, reference inference
-eval/         evaluation: bokeh-rendering tables, LVCorr, focus-sweep consistency, MODEST aperture series
-annotations/  our focal-point annotations and evaluation subsets (EBB!, RealBokeh, 3CReal, LFDOF)
-tools/        data preparation
-third_party/  base one-step diffusion code, Depth Anything V2, RAM++ (git submodules)
+flashrefocus/        the package (pip install -e .)
+  deblurring/          Stage I: one-step diffusion (pixel and detail LoRAs, detail weight ω), decoder refiner
+  rendering/           Stage II: renderer with defocus-bias attention, depth estimation, depth edits
+  pipeline.py          Refocuser: deblur and estimate depth once per image (a Scene), render every focal edit
+  image_io.py, layers.py, paths.py
+scripts/             command-line tools: refocus a photo, Stage I on a test set, cost benchmark, data preparation
+training/            Stage I, decoder-refiner and renderer training, with their data pipelines and configurations
+eval/                the paper's evaluations (tables, LVCorr, focal-edit consistency, analyses of Appendices C-H)
+annotations/         our focal-point annotations, evaluation subsets and deblurring test lists
+third_party/         PiSA-SR (Stage I base code), Depth Anything V2, RAM++ (git submodules)
 ```
 
 ## Setup
@@ -36,6 +37,7 @@ git clone --recursive <this repository> FlashReFocus && cd FlashReFocus
 conda create -n flashrefocus python=3.10 && conda activate flashrefocus
 pip install torch==2.7.1 torchvision==0.22.1 --index-url https://download.pytorch.org/whl/cu128
 pip install -r requirements.txt
+pip install -e .
 ```
 
 ### Weights
@@ -80,69 +82,81 @@ Refocusing your own photos needs no dataset. For training and evaluation, downlo
 | `MODEST/` | MODEST | aperture-series evaluation (optional) | `huggingface-cli download independent-vision-lab/MODEST --repo-type dataset --local-dir data/MODEST` |
 | `Hypersim_processed/` | Hypersim scenes with rendered bokeh targets | renderer pre-training | scenes from [github.com/apple/ml-hypersim](https://github.com/apple/ml-hypersim); target rendering script to be released |
 
-Stage I trains on 4,179 RealBokeh pairs of the top-1000 scenes (`deblur/configs/deblur_train_realbokeh_top1000_laplacian.csv`);
-these manifests and the test pairs in `deblur/pairs/` store paths relative to `data/`. Our focal-point annotations for
-EBB!, RealBokeh, 3CReal and LFDOF are in `annotations/`; `tools/prepare_data.py` copies them next to the images and
+Stage I trains on 4,179 RealBokeh pairs of the top-1000 scenes (`training/configs/realbokeh_deblurring_top1000.csv`);
+this manifest and the test pairs in `annotations/deblurring_pairs/` store paths relative to `data/`. Our focal-point annotations for
+EBB!, RealBokeh, 3CReal and LFDOF are in `annotations/`; `scripts/prepare_data.py` copies them next to the images and
 builds the evaluation folders:
 
 ```bash
-python tools/prepare_data.py check   # which datasets are in place
-python tools/prepare_data.py all     # EBB_Val176/, RealBokeh_val_f2.0/, work/lfdof_refocus/, RealBokeh and 3CReal focal points
-python renderer/generate_da2_depth.py          # cache Depth Anything V2 depth of RealBokeh for renderer training
+python scripts/prepare_data.py check   # which datasets are in place
+python scripts/prepare_data.py all     # EBB_Val176/, RealBokeh_val_f2.0/, work/lfdof_refocus/, RealBokeh and 3CReal focal points
+python scripts/cache_depth.py          # cache Depth Anything V2 depth of RealBokeh for renderer training
 ```
 
-Evaluation outputs go into `work/` (`FLASHREFOCUS_WORK`); `paths.py` lists every location.
+Evaluation outputs go into `work/` (`FLASHREFOCUS_WORK`); `flashrefocus/paths.py` lists every location.
 
 ## Refocusing
 
-```python
-import sys; sys.path.insert(0, "pipeline")
-import fast_refocus as FR
-
-s1 = FR.FastStageI()                       # Stage I with the refiner, omega = 1.25 (s1.omega = ... to change)
-s1("photo.png", "aif.png")                 # restore the all-in-focus image once
-rd = FR.FastRenderer()                     # Stage II
-rd.set_image("aif.png")                    # depth is estimated once and reused
-rd.render(x, y, 0.5, "refocused.png")      # every edit: focal point (x, y), strength in [0, 1]
-```
-
-Image sides should be multiples of 16. Two focal planes and tilt-shift edit the depth map given to the renderer
-(`rd.render(x, y, s, depth=rd.two_plane_depth(a, b))`, `rd.tilt_shift_depth(row)`), also as scripts:
-
 ```bash
-python pipeline/dual_focus.py aif.png xA yA xB yB 0.8 out/dual
-python pipeline/tiltshift.py photo.png out/tilt --row 0.3 --strength 0.6
+python scripts/refocus.py photo.jpg out/photo --focus 640 360 --strength 0.5         # focal point (x, y)
+python scripts/refocus.py photo.jpg out/photo --two-planes 300 400 900 200 --strength 0.8
+python scripts/refocus.py photo.jpg out/photo --tilt-shift 0.3 --strength 0.6
 ```
 
-For scripts and notebooks, `deblur/model.py` exposes the restoration directly:
-`Deblurrer(load_stage1(omega=1.25), load_refiner())(read_image("photo.png"))`.
+In Python, an image is deblurred and its depth estimated once (a `Scene`); every edit then runs only the renderer:
 
-Outputs are bit-reproducible with `FR.setup_backend(False)`; `setup_backend(True)` (cuDNN autotuning) is faster for a
-fixed input size, but may pick different convolution algorithms between runs, changing outputs by a few 1/255.
-`FastStageI(merge_vae_lora=True)` merges the VAE-encoder LoRA for a ~20% faster encoder (outputs ~60 dB from the exact ones).
+```python
+from flashrefocus import Refocuser
+from flashrefocus.image_io import read_image, save_image
+from flashrefocus.rendering import depth_edits
+
+refocuser = Refocuser.from_pretrained()                     # Stage I with the refiner at ω = 1.25, depth, renderer
+scene = refocuser.prepare(read_image("photo.png", "cuda"))   # once per image; sides multiples of 16
+focal_depth = scene.focal_depth_at(x, y)                     # D_f of a focal point
+save_image(refocuser.render(scene, 0.5, focal_depth), "refocused.png")   # every edit: strength K in [0, 1]
+
+two_planes = depth_edits.two_focal_planes(scene.depth, focal_depth, scene.focal_depth_at(x2, y2))
+save_image(refocuser.render(scene, 0.8, focal_depth, depth=two_planes), "two_planes.png")
+```
+
+`render` takes the focal depth rather than a pixel, so a video can be processed as one `Scene` per frame with D_f
+and K chosen per frame (for example smoothed over time). The stages are also usable alone:
+`flashrefocus.deblurring.Deblurrer.from_pretrained()(x)` restores an image in [-1, 1], and
+`Refocuser.from_pretrained(deblurring=False)` loads only the depth estimator and the renderer.
+
+Outputs are bit-reproducible with `torch.backends.cudnn.benchmark = False`; cuDNN autotuning is faster for a fixed input
+size but may pick different convolution algorithms between runs, changing outputs by a few 1/255.
+`Refocuser.from_pretrained(merge_vae_lora=True)` merges the VAE-encoder LoRA for a ~20% faster encoder (outputs ~60 dB
+from the exact ones).
 
 ## Training
 
+Run from the repository root:
+
 | Stage | Script | Data |
 |---|---|---|
-| Stage I | `deblur/train_deblur.sh` (pixel stage, then detail stage) | DPDD, RealBokeh (`deblur/configs/*.csv`), LFDOF, DIV2K |
-| Decoder refiner | `deblur/train_refiner.sh` | same mixture, Stage I latents at ω = 1.25 |
-| Renderer | `renderer/train_renderer.sh` (Hypersim pre-training, RealBokeh adaptation) | Hypersim with BokehMe targets, RealBokeh |
+| Stage I | `training/train_deblurring.sh` (pixel phase, then detail phase) | DPDD, RealBokeh, LFDOF, DIV2K (`training/configs/deblurring_data.yaml`) |
+| Decoder refiner | `training/train_decoder_refiner.sh` | same mixture, Stage I latents at ω = 1.25 |
+| Renderer | `training/train_renderer.sh` (Hypersim pre-training, RealBokeh adaptation) | Hypersim with BokehMe targets, RealBokeh |
 
 ## Evaluation
 
+Run from `eval/` (`cd eval`):
+
 | Result | Scripts |
 |---|---|
-| Defocus deblurring (DPDD, RealDOF) | `deblur/deblur.py --pairs deblur/pairs/<set>_test.json`, `eval/score_folders.py` |
-| Bokeh rendering (EBB! Val176, 3CReal, RealBokeh val.) | `eval/rbval_ours.py`, `eval/eval_bokeh_table.py`, `eval/score_folders.py` |
-| Strength control (LVCorr) | `eval/lvcorr.py` |
-| Focus-sweep consistency | `eval/rack_ours.py`, `eval/rack_genrefocus.py`, `eval/rack_match_blur*.py`, `eval/rack_analyze.py`, `eval/rack_metrics_kmatch.py` |
-| MODEST aperture series | `eval/build_modest_series.py`, `eval/modest_analyze.py` |
-| Effect of the defocus bias on attention (Appendix C.1) | `eval/attention_bias.py` |
-| Renderer residual, defocus embedding and strength scale (Appendix C.1) | `eval/renderer_internals.py` |
-| Where the detail branch acts (Appendix F) | `eval/detail_branch.py` |
-| Depth source: DA-V2 S/B/L and Depth Pro (Appendix G) | `eval/depth_source.py` |
-| Cost | `deblur/cost_stage1.py`, `pipeline/bench_fast_refocus.py` |
+| Defocus deblurring (DPDD, RealDOF; Table 1) | `scripts/deblur.py --pairs annotations/deblurring_pairs/<set>_test.json`, `score_folders.py` |
+| Bokeh rendering (EBB! Val176, 3CReal, RealBokeh val.; Tables 3, G.1) | `bokeh_strength_search.py`, `bokeh_table_metrics.py`, `score_folders.py` |
+| Strength control (LVCorr) | `lvcorr.py` |
+| Consistency across focal edits (Table H.2) | `focal_edits_render_ours.py`, `focal_edits_render_genrefocus.py`, `focal_edits_match_ours.py`, `focal_edits_match_genrefocus.py`, `focal_edits_metrics.py i` / `ii`, `focal_edits_figures.py` |
+| Two focal planes (Appendix H) | `two_focal_planes.py` |
+| MODEST aperture series (Appendix G) | `build_modest_series.py`, `modest_strength_analysis.py` |
+| Effect of the defocus bias on attention (Appendix C.1) | `attention_bias.py` |
+| Renderer residual, defocus embedding and strength scale (Appendix C.1) | `renderer_internals.py` |
+| Where the detail branch acts (Appendix F) | `detail_branch.py` |
+| Depth source: DA-V2 S/B/L and Depth Pro (Appendix G) | `depth_source.py` |
+| Held-out model selection of Stage I (Sec. 4.1) | `scripts/deblur_model_selection.py`, `score_folders.py` |
+| Inference cost (Tables 2, 6) | `scripts/benchmark_cost.py deblurring` / `refocusing` |
 
 Outputs of compared methods are produced with their own code (under `baselines/`, `FLASHREFOCUS_BASELINES`) and
 scored with the same scripts.
