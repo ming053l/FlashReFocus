@@ -2,6 +2,20 @@
 <h1 align="center">FlashReFocus</h1>
 <p align="center"><b>Interactive Image Refocusing in Seconds</b></p>
 <p align="center">
+  Ching-Heng Cheng<sup>1*</sup> &nbsp;
+  <a href="https://ming053l.github.io/">Chia-Ming Lee</a><sup>2,3*</sup> &nbsp;
+  <a href="https://www.albany.edu/faculty/mchang2/">Ming-Ching Chang</a><sup>2</sup> &nbsp;
+  <a href="https://scholar.google.com/citations?user=gMBvzGoAAAAJ&hl=en">Xin Li</a><sup>2</sup> &nbsp;
+  <a href="https://yulunalexliu.github.io/">Yu-Lun Liu</a><sup>3</sup> &nbsp;
+  <a href="https://cchsu.info/">Chih-Chung Hsu</a><sup>1,3&dagger;</sup>
+</p>
+<p align="center">
+  <sup>1</sup>National Cheng Kung University &nbsp;
+  <sup>2</sup>State University of New York at Albany &nbsp;
+  <sup>3</sup>National Yang Ming Chiao Tung University<br>
+  <sub>* Equal contribution &nbsp;·&nbsp; &dagger; Corresponding author</sub>
+</p>
+<p align="center">
   <a href="https://ming053l.github.io/FlashReFocus/assets/FlashReFocus.pdf"><img src="https://img.shields.io/badge/Paper-PDF-b31b1b" alt="Paper"></a>
   <a href="https://ming053l.github.io/FlashReFocus/"><img src="https://img.shields.io/badge/Project-Page-48A43F" alt="Project page"></a>
   <a href="https://huggingface.co/spaces/ming0531/FlashReFocus"><img src="https://img.shields.io/badge/%F0%9F%A4%97%20Demo-Hugging%20Face-ffcc4d" alt="Hugging Face demo"></a>
