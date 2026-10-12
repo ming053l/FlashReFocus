@@ -36,7 +36,7 @@ def main():
     ap.add_argument("--video_frames", type=int, default=60)
     a = ap.parse_args()
     OUT.mkdir(parents=True, exist_ok=True)
-    torch.backends.cudnn.benchmark = True
+    torch.backends.cudnn.benchmark = True    # fastest per-edit time, which this script reports
     rf = Refocuser.from_pretrained(deblurring=False)
 
     spread = {}

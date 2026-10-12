@@ -24,7 +24,7 @@ MAX_STRENGTH = 2.0
 
 def main():
     argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter).parse_args()
-    torch.backends.cudnn.benchmark = True
+    torch.backends.cudnn.benchmark = False   # reproducible: autotuning may pick other algorithms between runs
     rf = Refocuser.from_pretrained(deblurring=False)
     result = {}
     for scene_dir in scene_dirs():

@@ -56,7 +56,7 @@ def deblurring_cost(a):
 
 
 def refocusing_cost(a):
-    torch.backends.cudnn.benchmark = True
+    torch.backends.cudnn.benchmark = True    # fastest per-edit time, which this script reports
     a.work.mkdir(parents=True, exist_ok=True)
     src, aif, bokeh = a.work / "input.png", a.work / "aif.png", a.work / "bokeh.png"
     h, w = a.size

@@ -47,7 +47,7 @@ def main():
     ap.add_argument("--k_max", type=int, default=100)
     a = ap.parse_args()
     (a.out / "images").mkdir(parents=True, exist_ok=True)
-    torch.backends.cudnn.benchmark = True
+    torch.backends.cudnn.benchmark = False   # reproducible: autotuning may pick other algorithms between runs
     rf = Refocuser.from_pretrained(deblurring=False)
     annotations = json.loads((a.root / "focus_point.json").read_text())["annotations"]
     rows = []

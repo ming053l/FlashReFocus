@@ -11,11 +11,12 @@ def depth_at(depth, x, y):
 
 def two_focal_planes(depth, focal_depth_a, focal_depth_b):
     """D' = D_A + min(|D - D_A|, |D - D_B|): every pixel is blurred by its distance to the nearer of two focal planes.
-    Render D' with focal depth D_A. When D_A > 0.5 the distance is subtracted instead, so that D' stays within [0, 1]
-    (adding it to a far plane would clip everything to 1, i.e. nothing blurred)."""
+    Render D' with focal depth D_A. If adding the distance would clip more pixels at 1 than subtracting it would clip at
+    0 (a far plane A), it is subtracted instead: adding it to D_A = 1 would make the whole image sharp."""
     da, db = float(focal_depth_a), float(focal_depth_b)
     distance = torch.minimum((depth - da).abs(), (depth - db).abs())
-    return (da - distance if da > 0.5 else da + distance).clamp(0, 1)
+    subtract = int((da - distance < 0).sum()) < int((da + distance > 1).sum())
+    return (da - distance if subtract else da + distance).clamp(0, 1)
 
 
 def tilt_shift(height, width, row, slope=3.0, band=0.06, device="cpu"):
