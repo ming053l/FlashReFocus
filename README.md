@@ -1,45 +1,66 @@
-# FlashReFocus: Interactive Image Refocusing in Seconds
+<p align="center"><img src="docs/logo.svg" width="88" alt="FlashReFocus logo"></p>
+<h1 align="center">FlashReFocus</h1>
+<p align="center"><b>Interactive Image Refocusing in Seconds</b></p>
+<p align="center">
+  <a href="https://ming053l.github.io/FlashReFocus/assets/FlashReFocus.pdf"><img src="https://img.shields.io/badge/Paper-PDF-b31b1b" alt="Paper"></a>
+  <a href="https://ming053l.github.io/FlashReFocus/"><img src="https://img.shields.io/badge/Project-Page-48A43F" alt="Project page"></a>
+  <a href="https://huggingface.co/spaces/ming0531/FlashReFocus"><img src="https://img.shields.io/badge/%F0%9F%A4%97%20Demo-Hugging%20Face-ffcc4d" alt="Hugging Face demo"></a>
+  <a href="https://youtu.be/g032M7moWQ4"><img src="https://img.shields.io/badge/Video-YouTube-ff0000" alt="Video"></a>
+</p>
+<p align="center"><img src="docs/teaser.jpg" width="900" alt="Pull focus, open the aperture, tilt-shift and two focal planes, all from one restored photograph"></p>
 
-[Paper](https://ming053l.github.io/FlashReFocus/assets/FlashReFocus.pdf) · [Project page](https://ming053l.github.io/FlashReFocus/) · [Demo](https://huggingface.co/spaces/ming0531/FlashReFocus) · [Video](https://youtu.be/g032M7moWQ4)
+Refocus a photograph after it was taken: click where it should be sharp, open or close the aperture, keep two subjects
+at different distances sharp at once, or make a tilt-shift miniature. FlashReFocus restores the all-in-focus image
+**once** with one-step diffusion; every edit after that runs only a 1.3M-parameter renderer, in about half a second.
 
-Single-image refocusing moves the focal plane and changes the depth of field of a photograph after capture. FlashReFocus
-splits it by what each part needs: deblurring has to recover lost detail, so it uses a one-step diffusion model, run
-**once** per photograph; rendering new blur is determined by depth and the focal plane, so every edit is rendered by an
-explicit 1.3M-parameter network that leaves in-focus content untouched.
+| | |
+|---|---|
+| 📍 **Click to refocus** | any focal point, including regions that were out of focus |
+| 🔆 **Aperture after capture** | blur strength from pinhole to wide open; the subject stays sharp |
+| 👥 **Two focal planes** | two subjects at different depths sharp at once, beyond a physical lens |
+| 🏙️ **Tilt-shift and depth edits** | the renderer reads an explicit depth map, so editing it changes the focus without retraining |
 
-- **Stage I, deblurring.** One-step diffusion on Stable Diffusion 2.1 with a pixel LoRA for fidelity and a
-  detail LoRA weighted by ω at inference, trained on a mixture of real and synthetic defocus pairs, plus a decoder
-  refiner that reinjects structure of the blurred input lost in VAE decoding.
-- **Stage II, rendering.** A residual encoder–decoder conditioned on a defocus map from Depth Anything V2 depth, the
-  focal point and the blur strength. Defocus-bias attention relates pixels by how similarly they are defocused rather
-  than by their distance in the image. Pre-trained on synthetic multi-focal Hypersim scenes, adapted to RealBokeh pairs.
-- **Edits without retraining.** Focal point, blur strength, two focal planes and tilt-shift, all from one restored image.
+## Quick start
 
-## Repository layout
-
+```bash
+git clone --recursive https://github.com/ming053l/FlashReFocus && cd FlashReFocus
+conda create -n flashrefocus python=3.10 && conda activate flashrefocus
+pip install torch==2.7.1 torchvision==0.22.1 --index-url https://download.pytorch.org/whl/cu128
+pip install -r requirements.txt && pip install -e .
+# weights: see "Setup" below
+python scripts/refocus.py photo.jpg out/photo --focus 640 360 --strength 0.5
 ```
-flashrefocus/        the package (pip install -e .)
-  deblurring/          Stage I: one-step diffusion (pixel and detail LoRAs, detail weight ω), decoder refiner
-  rendering/           Stage II: renderer with defocus-bias attention, depth estimation, depth edits
-  pipeline.py          Refocuser: deblur and estimate depth once per image (a Scene), render every focal edit
-  image_io.py, layers.py, paths.py
-scripts/             command-line tools: refocus a photo, Stage I on a test set, cost benchmark, data preparation
-training/            Stage I, decoder-refiner and renderer training, with their data pipelines and configurations
-eval/                the paper's evaluations (tables, LVCorr, focal-edit consistency, analyses of Appendices C-H)
-tests/               unit tests (CPU) and end-to-end regression tests against pinned outputs (GPU and weights)
-annotations/         our focal-point annotations, evaluation subsets and deblurring test lists
-third_party/         PiSA-SR (Stage I base code), Depth Anything V2, RAM++ (git submodules)
-```
+
+`out/photo_aif.png` is the restored all-in-focus image, `_depth.png` its depth and `_bokeh.png` the refocused result.
+The photo is resized to a long side of 1024 (`--long-side`), and coordinates refer to that size (it is printed);
+`--two-planes xA yA xB yB` and `--tilt-shift ROW` select the other edits. No GPU at hand? Try the
+[Hugging Face demo](https://huggingface.co/spaces/ming0531/FlashReFocus).
+
+## How it works
+
+<p align="center"><img src="docs/overview.jpg" width="900" alt="Method overview"></p>
+
+- **Stage I, one-step diffusion deblurring** (run once per photograph). Stable Diffusion 2.1 with a pixel LoRA for
+  fidelity and a detail LoRA weighted by ω, trained on real and synthetic defocus pairs, and a decoder refiner that
+  reinjects structure of the blurred input lost in VAE decoding.
+- **Stage II, defocus-aware bokeh rendering** (run per edit). A residual encoder–decoder conditioned on the defocus map
+  from Depth Anything V2 depth, the focal point and the blur strength; its defocus-bias attention relates pixels by how
+  similarly they are defocused rather than by their distance in the image.
+
+## Results at a glance
+
+| | FlashReFocus | GenRefocus | DiffCamera |
+|---|---|---|---|
+| Complete refocus at 1536×1536 | **2.5 s** | 371 s (148×) | 136 s (55×) |
+| Each further focal edit | **0.47 s** | 217 s | 136 s |
+| In-focus regions kept (PSNR to the input, 3CReal) | **44.4 dB** | 29.0 dB | – |
+
+Bokeh rendering: best LPIPS, LPIPS-VGG, DISTS, MS-SSIM and CLIP-I on EBB! Val176 and on our 3CReal benchmark of
+unseen cameras (Table 3 of the paper); timings on one NVIDIA RTX PRO 6000 (Table 6).
 
 ## Setup
 
-```bash
-git clone --recursive <this repository> FlashReFocus && cd FlashReFocus
-conda create -n flashrefocus python=3.10 && conda activate flashrefocus
-pip install torch==2.7.1 torchvision==0.22.1 --index-url https://download.pytorch.org/whl/cu128
-pip install -r requirements.txt
-pip install -e .
-```
+Install as in [Quick start](#quick-start).
 
 ### Weights
 
@@ -96,15 +117,9 @@ python scripts/cache_depth.py          # cache Depth Anything V2 depth of RealBo
 
 Evaluation outputs go into `work/` (`FLASHREFOCUS_WORK`); `flashrefocus/paths.py` lists every location.
 
-## Refocusing
+## Python API
 
-```bash
-python scripts/refocus.py photo.jpg out/photo --focus 640 360 --strength 0.5         # focal point (x, y)
-python scripts/refocus.py photo.jpg out/photo --two-planes 300 400 900 200 --strength 0.8
-python scripts/refocus.py photo.jpg out/photo --tilt-shift 0.3 --strength 0.6
-```
-
-In Python, an image is deblurred and its depth estimated once (a `Scene`); every edit then runs only the renderer:
+An image is deblurred and its depth estimated once (a `Scene`); every edit then runs only the renderer:
 
 ```python
 from flashrefocus import Refocuser
@@ -175,6 +190,22 @@ Run from `eval/` (`cd eval`):
 
 Outputs of compared methods are produced with their own code (under `baselines/`, `FLASHREFOCUS_BASELINES`) and
 scored with the same scripts.
+
+## Repository layout
+
+```
+flashrefocus/        the package (pip install -e .)
+  deblurring/          Stage I: one-step diffusion (pixel and detail LoRAs, detail weight ω), decoder refiner
+  rendering/           Stage II: renderer with defocus-bias attention, depth estimation, depth edits
+  pipeline.py          Refocuser: deblur and estimate depth once per image (a Scene), render every focal edit
+  image_io.py, layers.py, paths.py
+scripts/             command-line tools: refocus a photo, Stage I on a test set, cost benchmark, data preparation
+training/            Stage I, decoder-refiner and renderer training, with their data pipelines and configurations
+eval/                the paper's evaluations (tables, LVCorr, focal-edit consistency, analyses of Appendices C-H)
+tests/               unit tests (CPU) and end-to-end regression tests against pinned outputs (GPU and weights)
+annotations/         our focal-point annotations, evaluation subsets and deblurring test lists
+third_party/         PiSA-SR (Stage I base code), Depth Anything V2, RAM++ (git submodules)
+```
 
 ## Citation
 
