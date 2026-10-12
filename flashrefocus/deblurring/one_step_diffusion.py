@@ -7,12 +7,20 @@ timestep 1 and an empty prompt, and
 where eps_pix uses the pixel LoRA alone, eps_pix+det both LoRAs and omega is the detail weight. omega = 1 is a single
 U-Net pass with both LoRAs merged; any other omega needs both predictions (two passes).
 
+With separate_unets=True the two predictions come from two U-Nets (pixel; pixel + detail) instead of one U-Net whose
+weights are swapped in place between the passes: twice the U-Net memory, the same output, and every model is an
+ordinary module, as needed to move it between devices (e.g. Hugging Face ZeroGPU) or to wrap it.
+
 PiSA-SR names the detail LoRA "sem" (semantic) and omega "lambda_sem"; these names remain in its checkpoint keys."""
 import argparse
+import copy
 
 import torch
 
 from .. import paths
+from .._compat import patch_huggingface_hub
+
+patch_huggingface_hub()   # before diffusers is imported
 
 NO_TILING = 100000   # tile sizes above any input: the whole image is processed at once
 
@@ -71,11 +79,27 @@ class OneStepDiffusion(_pisa_sr_eval_class()):
 
     def predict_noise(self, z, prompt_embeds):
         """eps for the latent z (whole latent, no tiling)."""
-        return self._predict_no_tiling(z, prompt_embeds, self.uses_single_pass)
+        if not getattr(self, "separate_unets", False):
+            return self._predict_no_tiling(z, prompt_embeds, self.uses_single_pass)
+        t = torch.ones(1, dtype=torch.long, device=z.device)           # timestep 1
+        eps = self.unet(z, t, encoder_hidden_states=prompt_embeds).sample
+        if self.uses_single_pass:
+            return eps
+        eps_pixel = self.unet_pixel(z, t, encoder_hidden_states=prompt_embeds).sample
+        eps -= eps_pixel                                                  # same operations as PiSA-SR's two passes
+        return self.lambda_pix.to(z.device) * eps_pixel + self.lambda_sem.to(z.device) * eps
+
+    def use_separate_unets(self):
+        """Second U-Net with the pixel LoRA only (unet keeps pixel + detail); drops the weight tables of the swap."""
+        self.unet_pixel = copy.deepcopy(self.unet)
+        for name, p in self.unet_pixel.named_parameters():
+            p.data = self.ori_unet_weight[name].clone()
+        del self.ori_unet_weight, self.lora_deltas_sem, self._merged_weight
+        self.separate_unets = True
 
 
 def load_one_step_diffusion(checkpoint=paths.STAGE1, sd21=paths.SD21, detail_weight=1.0, precision="fp16",
-                            merge_vae_lora=False):
+                            merge_vae_lora=False, separate_unets=False):
     """Stage I in eval mode. detail_weight != 1 selects the two-pass mode, in which it can be changed later; 1 merges
     the detail LoRA into a single pass.
     merge_vae_lora folds the VAE-encoder LoRA into the encoder weights: the encoder runs ~20% faster, but the output is
@@ -93,6 +117,8 @@ def load_one_step_diffusion(checkpoint=paths.STAGE1, sd21=paths.SD21, detail_wei
         # peft's own merge differs from them in the last bits, which made the first image restored differ slightly
         # (up to 2/255) from later ones.
         model._apply_lora_delta()
+        if separate_unets:
+            model.use_separate_unets()
     if merge_vae_lora:
         from peft.tuners.lora import LoraLayer
         for mod in model.vae.modules():

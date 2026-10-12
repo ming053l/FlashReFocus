@@ -12,7 +12,10 @@ from torch import nn
 from torchvision.transforms.functional import gaussian_blur
 
 from .. import paths
+from .._compat import patch_huggingface_hub
 from ..layers import NAFBlock
+
+patch_huggingface_hub()   # before diffusers is imported
 
 
 def high_frequency_residual(image, kernel_size=5, sigma=1.0):

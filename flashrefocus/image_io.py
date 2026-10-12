@@ -11,7 +11,7 @@ def image_to_tensor(image, multiple=1):
     """PIL image (or HxWx3 uint8 array) -> 1x3xHxW float in [0, 1] on the CPU, cropped (bottom/right) to a multiple."""
     arr = np.asarray(image.convert("RGB") if isinstance(image, Image.Image) else image)
     h, w = arr.shape[0] - arr.shape[0] % multiple, arr.shape[1] - arr.shape[1] % multiple
-    return torch.from_numpy(np.ascontiguousarray(arr[:h, :w])).permute(2, 0, 1).contiguous().float().div(255)[None]
+    return torch.from_numpy(np.array(arr[:h, :w])).permute(2, 0, 1).contiguous().float().div(255)[None]
 
 
 def read_image(path, device="cpu", multiple=1):

@@ -1,21 +1,27 @@
-# Tested with Python 3.10, CUDA 12.8. Install torch and torchvision for your CUDA version first, e.g.
+# Tested with Python 3.10 and CUDA 12.8 in two setups:
+#   reported results: torch 2.7.1, torchvision 0.22.1, transformers 4.46.0, peft 0.9.0, huggingface_hub 0.23
+#   Hugging Face demo: torch 2.8.0, torchvision 0.23.0, transformers 4.46.3, peft 0.13.2, huggingface_hub 0.36
+# Install torch and torchvision for your CUDA version first, e.g.
 #   pip install torch==2.7.1 torchvision==0.22.1 --index-url https://download.pytorch.org/whl/cu128
-diffusers==0.25.0
-transformers==4.46.0
-accelerate==1.13.0
-peft==0.9.0
+diffusers==0.25.0          # PiSA-SR's model code (third_party) needs this version
+transformers>=4.46,<4.47
+peft>=0.9,<0.14
+accelerate
 huggingface_hub
-timm==1.0.24
-torchmetrics==1.8.2
+timm>=1.0
+torchmetrics>=1.8
+einops
 lpips
 opencv-python
 scipy
-numpy<2
+numpy
 pillow
 pyyaml
 tqdm
 tensorboard
 # Stage I training only (RAM++ tagger)
 fairscale
+# tests
+pytest
 # evaluation only (score_folders.py: CLIP-IQA, MUSIQ, MANIQA)
 # pyiqa

@@ -15,10 +15,21 @@ class Deblurrer:
 
     @classmethod
     def from_pretrained(cls, checkpoint=paths.STAGE1, refiner=paths.REFINER, detail_weight=1.25,
-                        refiner_dtype=torch.bfloat16, merge_vae_lora=False):
-        """The released Stage I; refiner=None decodes with the SD2.1 VAE decoder instead."""
-        model = load_one_step_diffusion(checkpoint, detail_weight=detail_weight, merge_vae_lora=merge_vae_lora)
-        return cls(model, load_decoder_refiner(refiner, dtype=refiner_dtype) if refiner is not None else None)
+                        refiner_dtype=torch.bfloat16, merge_vae_lora=False, separate_unets=False, device="cuda"):
+        """The released Stage I; refiner=None decodes with the SD2.1 VAE decoder instead. See one_step_diffusion for
+        separate_unets. The one-step model is built on the device PiSA-SR builds on (cuda, see its code)."""
+        model = load_one_step_diffusion(checkpoint, detail_weight=detail_weight, merge_vae_lora=merge_vae_lora,
+                                        separate_unets=separate_unets)
+        refiner = load_decoder_refiner(refiner, dtype=refiner_dtype, device=device) if refiner is not None else None
+        return cls(model, refiner)
+
+    def to(self, device):
+        """Move the modules that run (VAE, U-Net(s), refiner) and the prompt embedding; the text encoder stays."""
+        for module in (self.model.vae, self.model.unet, getattr(self.model, "unet_pixel", None), self.refiner):
+            if module is not None:
+                module.to(device)
+        self.prompt_embedding = self.prompt_embedding.to(device)
+        return self
 
     @property
     def detail_weight(self):

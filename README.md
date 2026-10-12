@@ -26,6 +26,7 @@ flashrefocus/        the package (pip install -e .)
 scripts/             command-line tools: refocus a photo, Stage I on a test set, cost benchmark, data preparation
 training/            Stage I, decoder-refiner and renderer training, with their data pipelines and configurations
 eval/                the paper's evaluations (tables, LVCorr, focal-edit consistency, analyses of Appendices C-H)
+tests/               unit tests (CPU) and end-to-end regression tests against pinned outputs (GPU and weights)
 annotations/         our focal-point annotations, evaluation subsets and deblurring test lists
 third_party/         PiSA-SR (Stage I base code), Depth Anything V2, RAM++ (git submodules)
 ```
@@ -123,11 +124,25 @@ save_image(refocuser.render(scene, 0.8, focal_depth, depth=two_planes), "two_pla
 and K chosen per frame (for example smoothed over time). The stages are also usable alone:
 `flashrefocus.deblurring.Deblurrer.from_pretrained()(x)` restores an image in [-1, 1], and
 `Refocuser.from_pretrained(deblurring=False)` loads only the depth estimator and the renderer.
+`Deblurrer.from_pretrained(separate_unets=True)` keeps the pixel and pixel + detail U-Nets as two modules instead of
+swapping weights in place (same output, twice the U-Net memory), as the Hugging Face demo does on ZeroGPU.
 
 Outputs are bit-reproducible with `torch.backends.cudnn.benchmark = False`; cuDNN autotuning is faster for a fixed input
 size but may pick different convolution algorithms between runs, changing outputs by a few 1/255.
 `Refocuser.from_pretrained(merge_vae_lora=True)` merges the VAE-encoder LoRA for a ~20% faster encoder (outputs ~60 dB
 from the exact ones).
+
+## Tests
+
+```bash
+pytest tests/test_units.py      # CPU only, no weights: image I/O, depth edits, condition maps, refiner tiling, ...
+pytest tests                    # also the end-to-end regression (GPU and the released weights)
+```
+
+The regression test restores two small photographs in `tests/data/` and compares the restored image, depth, refocused
+image, two focal planes and tilt-shift with `tests/reference/`: bit-identical on the machine that made the references,
+PSNR >= 45 dB elsewhere (floating-point differences between GPUs and library versions). Regenerate the references with
+`python tests/regression_cases.py` only when an output changes on purpose.
 
 ## Training
 
