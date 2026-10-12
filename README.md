@@ -13,7 +13,7 @@ Refocus a photograph after it was taken: click where it should be sharp, open or
 at different distances sharp at once, or make a tilt-shift miniature. FlashReFocus restores the all-in-focus image
 **once** with one-step diffusion; every edit after that runs only a 1.3M-parameter renderer, in about half a second.
 
-| | |
+| Edit | What it does |
 |---|---|
 | 📍 **Click to refocus** | any focal point, including regions that were out of focus |
 | 🔆 **Aperture after capture** | blur strength from pinhole to wide open; the subject stays sharp |
