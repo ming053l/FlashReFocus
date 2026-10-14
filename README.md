@@ -4,7 +4,7 @@
 <p align="center">
   Ching-Heng Cheng<sup>1*</sup> &nbsp;
   <a href="https://ming053l.github.io/">Chia-Ming Lee</a><sup>2,3*</sup> &nbsp;
-  <a href="https://www.albany.edu/faculty/mchang2/">Ming-Ching Chang</a><sup>2</sup> &nbsp;
+  <a href="https://mingching.github.io/">Ming-Ching Chang</a><sup>2</sup> &nbsp;
   <a href="https://scholar.google.com/citations?user=gMBvzGoAAAAJ&hl=en">Xin Li</a><sup>2</sup> &nbsp;
   <a href="https://yulunalexliu.github.io/">Yu-Lun Liu</a><sup>3</sup> &nbsp;
   <a href="https://cchsu.info/">Chih-Chung Hsu</a><sup>1,3&dagger;</sup>
