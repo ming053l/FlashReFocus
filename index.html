@@ -164,13 +164,13 @@ footer{text-align:center;font-size:14px;color:var(--soft);background:var(--band)
 </section>
 
 <section aria-labelledby="paradigm">
-  <p class="lead"><b id="paradigm">Refocusing paradigms and inference time.</b> (a) Single-stage diffusion and (b) two-stage generative refocusing run a large diffusion model for every focal edit. (c) FlashReFocus restores the all-in-focus image once and renders each new focal setting explicitly. (d) Seconds per refocus at 1536&times;1536 on one NVIDIA RTX PRO 6000: FlashReFocus is 148.3&times; faster than GenRefocus and 54.5&times; faster than DiffCamera.</p>
-  <div class="fig narrow"><img src="assets/paradigm.jpg" alt="Three refocusing paradigms and a bar chart of inference seconds for GenRefocus, DiffCamera, MagicBokeh and FlashReFocus"></div>
+  <p class="lead"><b id="paradigm">Refocusing paradigms and inference time.</b> (a) Single-stage diffusion and (b) two-stage generative refocusing run a large diffusion model for every focal edit. (c) FlashReFocus restores the all-in-focus image once and renders each new focal setting explicitly. (d) Seconds at 1536&times;1536 on one NVIDIA RTX PRO 6000: FlashReFocus refocuses 148.3&times; faster than GenRefocus and 54.5&times; faster than DiffCamera, and each further edit takes 0.47&nbsp;s against 183&nbsp;s for AnyBokeh.</p>
+  <div class="fig narrow"><img src="assets/paradigm.jpg" alt="Three refocusing paradigms and a bar chart of inference seconds for GenRefocus, AnyBokeh, DiffCamera, MagicBokeh and FlashReFocus"></div>
 </section>
 
 <section aria-labelledby="abs">
   <h2 id="abs">Abstract</h2>
-  <p class="lead">Single-image refocusing changes the focal plane and depth of field of a photograph after capture. Users try many focal points and blur strengths on one image, so each edit should be fast and change only the blur, yet recent generative methods rerun large diffusion models for every edit. The two parts of the task differ: deblurring must recover lost detail, whereas rendering new blur is determined by depth and the focal plane. We therefore propose FlashReFocus, which runs diffusion once to restore an all-in-focus image and renders every edit with a lightweight network. For restoration, a one-step diffusion deblurrer is paired with a decoder refiner that recovers fine structures lost in VAE decoding. For rendering, a network conditioned on a defocus map from depth and the chosen focal point uses defocus-bias attention, which lets pixels with similar defocus exchange information wherever they lie; focal point and blur strength are controlled directly, and in-focus content is left untouched. Editing the map also yields tilt-shift and two focal planes without retraining. We also introduce 3CReal, a three-camera benchmark of 89 pairs. FlashReFocus achieves the best perceptual fidelity for zero-shot bokeh rendering on EBB! and 3CReal and refocuses 148.3&times; faster than GenRefocus, taking about half a second for each additional edit.</p>
+  <p class="lead">Single-image refocusing changes the focal plane and depth of field of a photograph after capture. It is inherently interactive: users try many focal points and blur strengths on one image, so each edit should be fast and change only the blur. Recent generative methods, however, rerun large diffusion models for every edit. We observe that the two sub-problems differ in kind: recovering the all-in-focus image is ill-posed and needs a generative prior, whereas rendering blur is largely determined by depth and the focal plane. We therefore propose FlashReFocus, which runs diffusion once per photograph and renders every edit with a lightweight network. To address the ill-posed restoration, a one-step diffusion deblurrer with a decoder refiner recovers fine detail efficiently while balancing fidelity and perceptual quality. For precise control, the renderer is conditioned on an explicit defocus map and uses defocus-bias attention, which lets pixels at similar defocus share information without interference from pixels at other depths; in-focus content stays unchanged, and editing the map yields tilt-shift and two focal planes. To further test generalization to unseen cameras, we collect 3CReal, a three-camera benchmark of 89 pairs. FlashReFocus achieves the best perceptual fidelity for zero-shot bokeh rendering on EBB! and 3CReal, refocuses 148.3&times; faster than GenRefocus, and takes about half a second per further edit, 462&times; faster.</p>
 </section>
 
 <section aria-labelledby="method">
@@ -179,7 +179,7 @@ footer{text-align:center;font-size:14px;color:var(--soft);background:var(--band)
   <div class="fig"><img src="assets/overview.jpg" alt="Overview of FlashReFocus: Stage I one-step diffusion deblurring with a decoder refiner, Stage II defocus-aware bokeh renderer" loading="lazy"></div>
   <p class="lead"><b>Decoder refiner.</b> VAE decoding loses fine structure of the input. The refiner reinjects multi-scale encoder features and a high-frequency map of the blurry input into each decoder block, which recovers edges and text without another diffusion pass.</p>
   <div class="fig"><img src="assets/refiner.jpg" alt="Decoder refiner: encoder features, high-frequency guidance and a structure prior fused into each VAE decoder block" loading="lazy"></div>
-  <p class="lead"><b>Defocus-aware renderer.</b> Depth and the focal point give a signed defocus map; with the blur strength it conditions a residual network. Its defocus-bias attention relates pixels by how similarly defocused they are, not by how close they are in the image, so the renderer adds blur and leaves focused content as restored.</p>
+  <p class="lead"><b>Defocus-aware renderer.</b> Depth and the focal point give a signed defocus map; with the blur strength it conditions a residual network. Its defocus-bias attention lets pixels at similar defocus share information, so blur changes sharply at depth boundaries without interference from pixels at other depths, and the renderer adds blur while leaving focused content as restored.</p>
   <div class="fig"><img src="assets/rendering.jpg" alt="Stage II: from depth to defocus conditions, the bokeh rendering network and the defocus-aware attention block" loading="lazy"></div>
 </section>
 
@@ -217,7 +217,7 @@ footer{text-align:center;font-size:14px;color:var(--soft);background:var(--band)
 
 <section aria-labelledby="strength">
   <h2 id="strength">Aperture as a dial</h2>
-  <p class="lead">With the focal point fixed, the strength behaves like an aperture: the background blur grows while the subject stays sharp. Strength controllability (LVCorr) is 0.857 on LFDOF and 0.839 on 3CReal, against 0.690 and 0.666 for GenRefocus. The renderer is trained for strengths 0 to 1; values from 1 to 2 extrapolate past training.</p>
+  <p class="lead">With the focal point fixed, the strength behaves like an aperture: the background blur grows while the subject stays sharp. Strength controllability (LVCorr) is 0.857 on LFDOF and 0.839 on 3CReal, against 0.690 and 0.666 for GenRefocus and 0.672 and 0.672 for AnyBokeh (both on the first 20 scenes of each set). The renderer is trained for strengths 0 to 1; values from 1 to 2 extrapolate past training.</p>
   <div class="tabs" role="group" aria-label="Strength scene">
     <button type="button" data-str="04" aria-pressed="true">Stone gate</button>
     <button type="button" data-str="59" aria-pressed="false">Brick wall</button>
@@ -288,7 +288,7 @@ footer{text-align:center;font-size:14px;color:var(--soft);background:var(--band)
 
 <section aria-labelledby="tilt">
   <h2 id="tilt">Tilt-shift</h2>
-  <p class="lead">Replacing the depth given to the renderer with a vertical ramp keeps a horizontal band sharp regardless of scene depth, the miniature look of a tilted lens, again without retraining.</p>
+  <p class="lead">Replacing the depth given to the renderer with a vertical ramp keeps a horizontal band sharp regardless of scene depth, the miniature look of a tilted lens, an effect beyond a single physical lens.</p>
   <div class="dual two">
     <figure><img data-k="face" src="assets/tilt_face.jpg" alt="Sharp band at the height of the face" loading="lazy"><figcaption>Sharp band at the face</figcaption></figure>
     <figure><img data-k="valley" src="assets/tilt_valley.jpg" alt="Sharp band at the valley; the subject in front blurs" loading="lazy"><figcaption>Sharp band at the valley</figcaption></figure>
@@ -297,7 +297,7 @@ footer{text-align:center;font-size:14px;color:var(--soft);background:var(--band)
 
 <section aria-labelledby="dual">
   <h2 id="dual">Two focal planes</h2>
-  <p class="lead">A physical lens has one focal plane. Because the renderer reads an explicit depth map, FlashReFocus can keep two subjects at different depths sharp while the space around them stays blurred: each pixel is blurred by its distance to the nearer of the two planes, with no retraining.</p>
+  <p class="lead">A physical lens has one focal plane. Because the renderer reads an explicit depth map, FlashReFocus can keep two subjects at different depths sharp while the space around them stays blurred: each pixel is blurred by its distance to the nearer of the two planes.</p>
   <div class="tabs" role="group" aria-label="Two-focal-plane scene">
     <button type="button" data-dual="21" aria-pressed="true">Trunk and stump</button>
     <button type="button" data-dual="rb42" aria-pressed="false">Two birches</button>
@@ -319,6 +319,7 @@ footer{text-align:center;font-size:14px;color:var(--soft);background:var(--band)
     <tbody>
       <tr><td>DiffCamera</td><td>12.33</td><td>136.35</td><td>136.35</td><td>19,363</td><td>19,363</td><td>28.37</td></tr>
       <tr><td>GenRefocus</td><td>18.30</td><td>370.65</td><td>217.32</td><td>42,031</td><td>24,763</td><td>42.82</td></tr>
+      <tr><td>AnyBokeh</td><td>12.09</td><td>191.38</td><td>183.38</td><td>25,368</td><td>24,240</td><td>24.93</td></tr>
       <tr><td>BokehDiff&dagger;</td><td>3.83</td><td>&ndash;</td><td>3.43</td><td>&ndash;</td><td>73.4</td><td>11.82</td></tr>
       <tr><td>MagicBokeh&dagger;</td><td>1.73</td><td>&ndash;</td><td>6.13</td><td>&ndash;</td><td>113</td><td class="best">5.29</td></tr>
       <tr class="ours"><td>FlashReFocus</td><td class="best">1.70</td><td class="best">2.50</td><td class="best">0.47</td><td class="best">120</td><td class="best">0.85</td><td>16.94</td></tr>
@@ -330,10 +331,12 @@ footer{text-align:center;font-size:14px;color:var(--soft);background:var(--band)
       <tr class="group"><td colspan="6">EBB! Val176</td></tr>
       <tr><td>GenRefocus</td><td>23.80</td><td>0.868</td><td>0.2025</td><td>0.964</td><td>0.690</td></tr>
       <tr><td>MagicBokeh</td><td>23.14</td><td>0.844</td><td>0.2398</td><td>0.933</td><td>0.799</td></tr>
+      <tr><td>AnyBokeh</td><td>22.81</td><td>0.861</td><td>0.2291</td><td>0.942</td><td>0.672</td></tr>
       <tr class="ours"><td>FlashReFocus</td><td class="best">24.52</td><td class="best">0.892</td><td class="best">0.1805</td><td class="best">0.973</td><td class="best">0.857</td></tr>
       <tr class="group"><td colspan="6">3CReal</td></tr>
       <tr><td>GenRefocus</td><td>26.38</td><td>0.853</td><td>0.2426</td><td>0.972</td><td>0.666</td></tr>
       <tr><td>MagicBokeh</td><td>25.64</td><td>0.833</td><td>0.2543</td><td>0.943</td><td>0.759</td></tr>
+      <tr><td>AnyBokeh</td><td>24.74</td><td>0.839</td><td>0.2298</td><td>0.954</td><td>0.672</td></tr>
       <tr class="ours"><td>FlashReFocus</td><td class="best">27.98</td><td class="best">0.886</td><td class="best">0.2178</td><td class="best">0.981</td><td class="best">0.839</td></tr>
     </tbody></table></div>
   <div class="tbl"><table>
@@ -343,7 +346,7 @@ footer{text-align:center;font-size:14px;color:var(--soft);background:var(--band)
       <tr><td>GenRefocus</td><td>0.1686</td><td>0.2447</td></tr>
       <tr class="ours"><td>FlashReFocus + refiner</td><td class="best">0.1557</td><td class="best">0.2437</td></tr>
     </tbody></table></div>
-  <p class="note">Excerpts of the paper's tables; the full tables compare nine bokeh-rendering methods and add RealBokeh validation and MODEST.</p>
+  <p class="note">Excerpts of the paper's tables; the full tables compare nine bokeh-rendering methods and add RealBokeh validation and MODEST. LVCorr of GenRefocus and AnyBokeh, which need full diffusion passes per strength, uses the first 20 scenes of each set.</p>
 </section>
 
 <section aria-labelledby="rel">
@@ -351,6 +354,7 @@ footer{text-align:center;font-size:14px;color:var(--soft);background:var(--band)
   <p>FlashReFocus builds on and compares with these works on refocusing and bokeh rendering.</p>
   <ul class="related">
     <li><a href="https://arxiv.org/abs/2512.16923" target="_blank" rel="noopener">[arXiv 2025] Generative Refocusing: Flexible Defocus Control from a Single Image</a><p>Two-stage refocusing that restores and then renders bokeh with diffusion transformers.</p></li>
+    <li><a href="https://arxiv.org/abs/2606.31959" target="_blank" rel="noopener">[NeurIPS 2026] AnyBokeh: Physics-Guided Any-to-Any Bokeh Editing with Optical Fingerprint Transfer</a><p>Two-stage bokeh editing with a FLUX model that estimates defocus maps and re-renders the image.</p></li>
     <li><a href="https://arxiv.org/abs/2509.26599" target="_blank" rel="noopener">[SIGGRAPH Asia 2025] DiffCamera: Arbitrary Refocusing on Images</a><p>End-to-end refocusing with a single diffusion transformer.</p></li>
     <li><a href="https://arxiv.org/abs/2605.07429" target="_blank" rel="noopener">[CVPR 2026] MagicBokeh: Towards Photorealistic and Efficient Bokeh Rendering via Diffusion Framework</a><p>Restoration and bokeh rendering fused into one diffusion step.</p></li>
     <li><a href="https://arxiv.org/abs/2503.16067" target="_blank" rel="noopener">[ICCV 2025] Bokehlicious: Photorealistic Bokeh Rendering with Controllable Apertures</a><p>Feed-forward bokeh rendering with aperture-aware attention and the RealBokeh dataset.</p></li>
