@@ -16,7 +16,8 @@
   <sub>* Equal contribution &nbsp;·&nbsp; &dagger; Corresponding author</sub>
 </p>
 <p align="center">
-  <a href="https://ming053l.github.io/FlashReFocus/assets/FlashReFocus.pdf"><img src="https://img.shields.io/badge/Paper-PDF-b31b1b" alt="Paper"></a>
+  <a href="https://arxiv.org/pdf/2610.23297"><img src="https://img.shields.io/badge/Paper-PDF-b31b1b" alt="Paper PDF"></a>
+  <a href="https://arxiv.org/abs/2610.23297"><img src="https://img.shields.io/badge/arXiv-2610.23297-b31b1b" alt="arXiv:2610.23297"></a>
   <a href="https://ming053l.github.io/FlashReFocus/"><img src="https://img.shields.io/badge/Project-Page-48A43F" alt="Project page"></a>
   <a href="https://huggingface.co/spaces/ming0531/FlashReFocus"><img src="https://img.shields.io/badge/%F0%9F%A4%97%20Demo-Hugging%20Face-ffcc4d" alt="Hugging Face demo"></a>
   <a href="https://huggingface.co/datasets/ming0531/3CReal"><img src="https://img.shields.io/badge/%F0%9F%A4%97%20Dataset-3CReal-ffcc4d" alt="3CReal dataset"></a>
@@ -228,11 +229,14 @@ If you find FlashReFocus useful, please cite:
 
 ```bibtex
 @misc{cheng2026flashrefocus,
-  title  = {FlashReFocus: Interactive Image Refocusing in Seconds},
-  author = {Cheng, Ching-Heng and Lee, Chia-Ming and Chang, Ming-Ching and
-            Li, Xin and Liu, Yu-Lun and Hsu, Chih-Chung},
-  year   = {2026},
-  url    = {https://ming053l.github.io/FlashReFocus/}
+  title         = {FlashReFocus: Interactive Image Refocusing in Seconds},
+  author        = {Cheng, Ching-Heng and Lee, Chia-Ming and Chang, Ming-Ching and
+                   Li, Xin and Liu, Yu-Lun and Hsu, Chih-Chung},
+  year          = {2026},
+  eprint        = {2610.23297},
+  archivePrefix = {arXiv},
+  primaryClass  = {cs.CV},
+  url           = {https://arxiv.org/abs/2610.23297}
 }
 ```
 
