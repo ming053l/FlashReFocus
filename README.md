@@ -37,6 +37,11 @@ at different distances sharp at once, or make a tilt-shift miniature. FlashReFoc
 | 👥 **Two focal planes** | two subjects at different depths sharp at once, beyond a physical lens |
 | 🏙️ **Tilt-shift and depth edits** | the renderer reads an explicit depth map, so editing it changes the focus without retraining |
 
+### TODO
+
+- ✅ Release inference code and model weights
+- ✅ Release training code
+
 ## Quick start
 
 ```bash
