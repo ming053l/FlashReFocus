@@ -20,6 +20,7 @@
   <a href="https://arxiv.org/abs/2610.23297"><img src="https://img.shields.io/badge/arXiv-2610.23297-b31b1b" alt="arXiv:2610.23297"></a>
   <a href="https://ming053l.github.io/FlashReFocus/"><img src="https://img.shields.io/badge/Project-Page-48A43F" alt="Project page"></a>
   <a href="https://huggingface.co/spaces/ming0531/FlashReFocus"><img src="https://img.shields.io/badge/%F0%9F%A4%97%20Demo-Hugging%20Face-ffcc4d" alt="Hugging Face demo"></a>
+  <a href="https://huggingface.co/ming0531/FlashReFocus-weights"><img src="https://img.shields.io/badge/%F0%9F%A4%97%20Checkpoints-Hugging%20Face-ffcc4d" alt="Trained checkpoints"></a>
   <a href="https://huggingface.co/datasets/ming0531/3CReal"><img src="https://img.shields.io/badge/%F0%9F%A4%97%20Dataset-3CReal-ffcc4d" alt="3CReal dataset"></a>
   <a href="https://youtu.be/g032M7moWQ4"><img src="https://img.shields.io/badge/Video-YouTube-ff0000" alt="Video"></a>
 </p>
@@ -80,7 +81,7 @@ Install as in [Quick start](#quick-start).
 
 ### Weights
 
-Weights go into `weights/` (or set `FLASHREFOCUS_WEIGHTS`). The public ones download with `huggingface-cli`
+Weights go into `weights/` (or set `FLASHREFOCUS_WEIGHTS`). Download the backbone weights with `huggingface-cli`
 (`pip install huggingface_hub`):
 
 ```bash
@@ -92,7 +93,24 @@ huggingface-cli download xinyu1205/recognize-anything-plus-model ram_plus_swin_l
 ```
 
 The initial LoRAs for Stage I training (`pisa_sr.pkl`) go to `third_party/PiSA-SR/preset/models/PiSA-SR/`, as described in
-that repository. The FlashReFocus weights (`stage1.pkl`, `refiner.pt`, `renderer.pt`) will be released with the paper.
+that repository.
+
+Our trained checkpoints are publicly available at [ming0531/FlashReFocus-weights](https://huggingface.co/ming0531/FlashReFocus-weights):
+
+| Checkpoint | Component |
+|---|---|
+| [`stage1.pkl`](https://huggingface.co/ming0531/FlashReFocus-weights/resolve/main/stage1.pkl) | Stage I: trained pixel and detail LoRAs for one-step deblurring |
+| [`refiner.pt`](https://huggingface.co/ming0531/FlashReFocus-weights/resolve/main/refiner.pt) | Stage I: trained decoder refiner |
+| [`renderer.pt`](https://huggingface.co/ming0531/FlashReFocus-weights/resolve/main/renderer.pt) | Stage II: bokeh renderer after RealBokeh adaptation |
+
+Download all three checkpoints (no login required):
+
+```bash
+huggingface-cli download ming0531/FlashReFocus-weights stage1.pkl refiner.pt renderer.pt --local-dir weights
+```
+
+These are trained model checkpoints, not a complete training-resume snapshot for all stages. The backbone weights
+listed above are required separately; see [Training](#training) for the training scripts and datasets.
 
 ```
 weights/
