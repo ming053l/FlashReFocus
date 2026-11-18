@@ -26,7 +26,6 @@
 :root{--bg:#fbfcfd;--surface:#fff;--surface-2:#f2f5f7;--ink:#27323c;--ink-2:#4a5560;--muted:#65717b;--line:#dfe4e8;
   --accent:#48A43F;--accent-ink:#2F7A33;--accent-soft:#eef6ec;--on-accent:#fff;--warn:#c4513f;--bar:#cbd2d9;
   --shadow:0 1px 2px rgb(39 50 60/.05),0 8px 28px rgb(39 50 60/.07);--r:14px;color-scheme:light}
-@media (prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#101418;--surface:#171d23;--surface-2:#1f262d;--ink:#e8ecef;--ink-2:#c3ccd4;--muted:#98a3ad;--line:#2d363e;--accent:#5fbf55;--accent-ink:#a8dba0;--accent-soft:#1f3322;--on-accent:#0d1a0f;--warn:#e58b7b;--bar:#4a5560;--shadow:0 1px 2px rgb(0 0 0/.3),0 8px 28px rgb(0 0 0/.35);color-scheme:dark}}
 :root[data-theme=dark]{--bg:#101418;--surface:#171d23;--surface-2:#1f262d;--ink:#e8ecef;--ink-2:#c3ccd4;--muted:#98a3ad;--line:#2d363e;--accent:#5fbf55;--accent-ink:#a8dba0;--accent-soft:#1f3322;--on-accent:#0d1a0f;--warn:#e58b7b;--bar:#4a5560;--shadow:0 1px 2px rgb(0 0 0/.3),0 8px 28px rgb(0 0 0/.35);color-scheme:dark}
 
 *{box-sizing:border-box}
@@ -193,6 +192,79 @@ pre{margin:0;overflow-x:auto;background:var(--surface-2);border:1px solid var(--
 .yt iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
 footer{padding:36px 0 48px;text-align:center;color:var(--muted);font-size:13px;border-top:1px solid var(--line)}
 
+
+/* hero: full-bleed model animation on the right, fading into the page */
+.hero{position:relative;overflow:hidden;background:var(--bg);border-bottom:1px solid var(--line);padding:0}
+.hero::before{display:none}
+.stage{position:absolute;top:0;right:0;bottom:0;width:66%;overflow:hidden;background:var(--bg);
+  -webkit-mask-image:linear-gradient(to right,transparent 0,#000 24%);mask-image:linear-gradient(to right,transparent 0,#000 24%)}
+.hero h1{font-size:clamp(44px,5.4vw,76px)}
+.hero .lead{max-width:500px}
+.stage .ly{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity .55s ease}
+.stage .ly.on{opacity:1}
+.stage .ly.wipe{transition:none}
+.ov{position:absolute;inset:0;pointer-events:none}
+.ret{position:absolute;left:0;top:0;width:52px;height:52px;margin:-26px 0 0 -26px;opacity:0;transition:opacity .35s}
+.ret.on{opacity:1}
+.ret.lbl b{display:block}
+.ret::before{content:"";position:absolute;inset:0;border:2px solid #fff;border-radius:50%;box-shadow:0 0 0 1px rgb(0 0 0/.25),0 0 14px rgb(0 0 0/.25)}
+.ret::after{content:"";position:absolute;left:50%;top:50%;width:6px;height:6px;margin:-3px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 2px #fff}
+.ret b{display:none;position:absolute;left:50%;top:-24px;transform:translateX(-50%);font:700 11px/1 "JetBrains Mono",monospace;color:#fff;background:rgb(20 24 28/.72);padding:4px 6px;border-radius:5px;white-space:nowrap}
+.wipe-line{position:absolute;top:0;bottom:0;width:2px;margin-left:-1px;background:#fff;box-shadow:0 0 12px rgb(0 0 0/.35);opacity:0}
+.band{position:absolute;left:0;right:0;height:0;border-top:1.5px dashed rgb(255 255 255/.9);opacity:0;transition:opacity .35s;filter:drop-shadow(0 0 2px rgb(0 0 0/.5))}
+.band.on{opacity:1}
+.band span{position:absolute;right:16px;top:-22px;font:600 11px/1 "JetBrains Mono",monospace;color:#fff;background:rgb(20 24 28/.65);padding:4px 6px;border-radius:5px}
+.readout{position:absolute;top:18px;right:18px;display:flex;gap:8px;opacity:0;transition:opacity .35s}
+.readout.on{opacity:1}
+.readout span{font:600 13px/1 "JetBrains Mono",monospace;color:#fff;background:rgb(20 24 28/.72);padding:8px 10px;border-radius:8px;backdrop-filter:blur(6px)}
+.readout .ring{display:inline-block;width:14px;height:14px;border-radius:50%;border:2px solid #fff;vertical-align:-2px;margin-right:6px;position:relative}
+.readout .ring i{position:absolute;inset:var(--ap,4px);border-radius:50%;background:#fff}
+.hcap{position:absolute;right:18px;bottom:76px;max-width:340px;background:color-mix(in srgb,var(--surface) 88%,transparent);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid var(--line);border-radius:12px;padding:10px 14px;box-shadow:var(--shadow);transition:opacity .35s}
+.hcap .k{font:600 11px/1.2 "JetBrains Mono",monospace;letter-spacing:.06em;text-transform:uppercase;color:var(--accent-ink)}
+.hcap .t{margin-top:3px;font-weight:650;font-size:15px;color:var(--ink)}
+.hcap .d{margin-top:2px;font-size:12.5px;color:var(--muted);line-height:1.4}
+.hero-in{position:relative;z-index:2;max-width:1200px;margin:0 auto;padding:64px 24px 26px;min-height:600px;display:flex;flex-direction:column;justify-content:center}
+.hero-text{max-width:500px}
+.hero-text .authors,.hero-text .affil,.hero-text .lead,.hero-text .stats{text-shadow:0 0 14px var(--bg),0 0 4px var(--bg),0 0 1px var(--bg)}
+.hero-bar{position:relative;z-index:3;max-width:1200px;margin:0 auto;padding:0 24px 22px;display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap}
+.hero-bar button{position:relative;overflow:hidden;font:inherit;font-size:13px;font-weight:600;cursor:pointer;border:1px solid var(--line);background:color-mix(in srgb,var(--surface) 90%,transparent);backdrop-filter:blur(8px);color:var(--ink-2);border-radius:999px;padding:7px 14px}
+.hero-bar button[aria-pressed=true]{color:var(--ink);border-color:var(--accent)}
+.hero-bar button .p{position:absolute;left:0;bottom:0;height:2px;width:calc(var(--p,0)*100%);background:var(--accent)}
+.hero-bar .pause{padding:7px 11px}
+.marquee{overflow:hidden;border-bottom:1px solid var(--line);background:var(--surface);white-space:nowrap}
+.marquee div{display:inline-flex;gap:48px;padding:13px 0;animation:mq 38s linear infinite;font-size:14px;color:var(--ink-2)}
+.marquee span::after{content:"\2022";margin-left:48px;color:var(--accent)}
+@keyframes mq{to{transform:translateX(-50%)}}
+.head h2 em,.hl{font-style:normal;color:var(--accent-ink)}
+.eyebrow b{font-weight:500;color:var(--muted)}
+
+/* click-to-refocus */
+.clk{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:22px;align-items:start}
+.cv{position:relative;border-radius:12px;overflow:hidden;background:#0b0d0f;cursor:crosshair;margin:0 auto}
+.cv video,.cv img{display:block;width:100%;height:auto}
+.cv img.ovl{position:absolute;inset:0;width:100%;height:100%;opacity:0;transition:opacity .25s;pointer-events:none}
+.cv img.ovl.on{opacity:1}
+.cv .ret{transition:left .25s ease,top .25s ease,opacity .3s}
+.cv .hint{position:absolute;left:12px;bottom:12px;font-size:12px;font-weight:600;color:#fff;background:rgb(20 24 28/.7);padding:5px 9px;border-radius:7px;pointer-events:none;transition:opacity .4s}
+.lens{margin-top:6px}
+.lens .stops{display:grid;grid-template-columns:repeat(6,1fr);gap:4px;padding:6px;border-radius:14px;background:repeating-linear-gradient(90deg,var(--surface-2) 0 3px,var(--surface) 3px 6px);border:1px solid var(--line)}
+.lens button{font:600 13px "JetBrains Mono",monospace;padding:10px 0;border-radius:9px;border:1px solid transparent;background:transparent;color:var(--ink-2);cursor:pointer}
+.lens button[aria-pressed=true]{background:var(--ink);color:var(--bg)}
+.lens .ends{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-top:6px}
+.kv{margin-top:16px;display:grid;grid-template-columns:auto 1fr;gap:6px 14px;font-size:13.5px}
+.kv dt{color:var(--muted)}
+.kv dd{margin:0;font:500 13px "JetBrains Mono",monospace;color:var(--ink)}
+.ctl-h{font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);margin:16px 0 6px}
+@media (max-width:960px){
+  .stage{position:relative;width:100%;height:auto;aspect-ratio:3/2;-webkit-mask-image:linear-gradient(to bottom,#000 80%,transparent);mask-image:linear-gradient(to bottom,#000 80%,transparent)}
+  .hero-in{min-height:0;padding:40px 16px 8px}
+  .hero{display:flex;flex-direction:column}
+  .hero .stage{order:0}.hero .hero-bar{order:1;justify-content:flex-start;padding:10px 16px 4px}.hero .hero-in{order:2}
+  .hcap .d{display:none}.hcap{padding:7px 11px}.hcap .t{font-size:13.5px}
+  .readout{top:10px;right:10px}.readout span{font-size:11.5px;padding:6px 8px}
+  .hcap{left:10px;right:auto;bottom:10px;max-width:calc(100% - 20px)}
+  .clk{grid-template-columns:1fr}
+}
 @media (max-width:960px){
   .hero .wrap{grid-template-columns:1fr;gap:32px}
   .grid2,.cards{grid-template-columns:1fr}
@@ -231,8 +303,20 @@ footer{padding:36px 0 48px;text-align:center;color:var(--muted);font-size:13px;b
 
 <main id="main">
 <header class="hero" id="top">
-  <div class="wrap">
-    <div>
+  <div class="stage" id="stage" aria-label="Model outputs: refocusing edits rendered by FlashReFocus">
+    <img class="ly" id="lyA" alt="">
+    <video class="ly" id="lyV" muted playsinline preload="auto"></video>
+    <img class="ly" id="lyB" alt="">
+    <div class="ov">
+      <div class="wipe-line" id="wipeLine"></div>
+      <div class="band" id="bandT"><span>sharp band</span></div><div class="band" id="bandB"></div>
+      <div class="ret" id="retA"><b>A</b></div><div class="ret" id="retB"><b>B</b></div>
+      <div class="readout" id="readout"><span id="roA"></span><span id="roB"></span></div>
+      <div class="hcap" id="cap"><div class="k" id="capK"></div><div class="t" id="capT"></div><div class="d" id="capD"></div></div>
+    </div>
+  </div>
+  <div class="hero-in">
+    <div class="hero-text">
       <h1><svg class="logo" viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="30" fill="#FFFFFF" stroke="#2E7D32" stroke-width="3"/><g fill="#48A43F" stroke="#FFFFFF" stroke-width="1.6" stroke-linejoin="round"><path d="M32 4 A28 28 0 0 1 56.2 18 L40.6 27 Z" transform="rotate(0 32 32)"/><path d="M32 4 A28 28 0 0 1 56.2 18 L40.6 27 Z" transform="rotate(60 32 32)"/><path d="M32 4 A28 28 0 0 1 56.2 18 L40.6 27 Z" transform="rotate(120 32 32)"/><path d="M32 4 A28 28 0 0 1 56.2 18 L40.6 27 Z" transform="rotate(180 32 32)"/><path d="M32 4 A28 28 0 0 1 56.2 18 L40.6 27 Z" transform="rotate(240 32 32)"/><path d="M32 4 A28 28 0 0 1 56.2 18 L40.6 27 Z" transform="rotate(300 32 32)"/></g><path d="M35.5 19 L25.5 34 H31.5 L28.5 45 L39 29 H33 Z" fill="#FFD21E" stroke="#363636" stroke-width="1.4" stroke-linejoin="round"/></svg><span>Flash<i>Re</i>Focus</span></h1>
       <p class="tag">Interactive Image Refocusing in Seconds</p>
       <div class="authors">
@@ -243,7 +327,7 @@ footer{padding:36px 0 48px;text-align:center;color:var(--muted);font-size:13px;b
         <a href="https://cchsu.info/" target="_blank" rel="noopener">Chih-Chung Hsu<sup>1,3&dagger;</sup></a>
       </div>
       <div class="affil"><span><sup>1</sup>National Cheng Kung University</span><span><sup>2</sup>State University of New York at Albany</span><span><sup>3</sup>National Yang Ming Chiao Tung University</span><span>* Equal contribution &middot; &dagger; Corresponding author</span></div>
-      <p class="lead"><b>FlashReFocus</b> makes single-image refocusing interactive: click anywhere in a photograph to move the focal plane and turn the blur strength like an aperture ring. Diffusion runs once, to restore the all-in-focus image; every edit after that is one pass of a lightweight renderer, so in-focus content stays the same from edit to edit.</p>
+      <p class="lead"><b>FlashReFocus</b> makes single-image refocusing interactive: click anywhere in a photograph to move the focal plane and turn the blur strength like an aperture ring. Diffusion runs once, to restore the all-in-focus image; every focal point, aperture and depth edit after that is one pass of a lightweight renderer.</p>
       <div class="cta">
         <a class="btn primary" href="#results">See the results</a>
         <a class="btn" href="#numbers">See the numbers</a>
@@ -262,32 +346,15 @@ footer{padding:36px 0 48px;text-align:center;color:var(--muted);font-size:13px;b
         <div><b>1 step</b><span>of diffusion per photograph</span></div>
       </div>
     </div>
-    <div class="hero-media">
-      <div class="cmp" id="heroCmp">
-        <img src="assets/restore_real_sculpture_out.jpg" alt="Restored all-in-focus image of a sculpture in front of a tree trunk" width="1280" height="848">
-        <div class="top"><img src="assets/restore_real_sculpture_in.jpg" alt="The same photograph with defocus blur"></div>
-        <div class="line"></div><div class="knob" aria-hidden="true">&#8596;</div>
-        <span class="lab l">Defocused input</span><span class="lab r">FlashReFocus</span>
-        <input type="range" min="0" max="100" value="50" step="0.5" aria-label="Divider between the defocused input and the restored image">
-      </div>
-      <p class="note">Drag to compare. Our own capture, restored in one diffusion step (&omega; = 1.25, decoder refiner).</p>
-    </div>
+  </div>
+  <div class="hero-bar" id="heroBar" role="group" aria-label="Edit shown in the header">
+    <button type="button" class="pause" id="heroPause" aria-label="Pause the header animation">&#10074;&#10074;</button>
   </div>
 </header>
-
-<section id="race" aria-labelledby="race-h">
-  <div class="wrap">
-    <div class="head">
-      <p class="eyebrow">Real time</p>
-      <h2 id="race-h">Ten edits while GenRefocus is 5% into its first</h2>
-      <p>Both methods start on the same photograph. Each FlashReFocus result appears after its measured time; GenRefocus needs 370.65&nbsp;s for its first refocus.</p>
-    </div>
-    <div class="card">
-      <div class="frame"><video muted autoplay loop playsinline controls preload="metadata" poster="assets/demo_poster.jpg" src="assets/demo.mp4"></video></div>
-      <p class="note">Played in real time at 1536&times;1536 on one NVIDIA RTX PRO 6000. The scripted session was timed in an earlier run (2.50&nbsp;s for the first refocus and 0.47&nbsp;s per further edit); the paper reports 2.45&nbsp;s and 0.46&nbsp;s. Frames are model outputs shown at a long side of 1024.</p>
-    </div>
-  </div>
-</section>
+<div class="marquee" aria-hidden="true"><div>
+  <span>Restore once with one-step diffusion</span><span>Click anywhere to refocus</span><span>Aperture after capture</span><span>Tilt-shift and two focal planes</span><span>0.46 s per edit at 1536&times;1536</span><span>In-focus content stays put</span>
+  <span>Restore once with one-step diffusion</span><span>Click anywhere to refocus</span><span>Aperture after capture</span><span>Tilt-shift and two focal planes</span><span>0.46 s per edit at 1536&times;1536</span><span>In-focus content stays put</span>
+</div></div>
 
 <section id="video" class="alt" aria-labelledby="video-h">
   <div class="wrap">
@@ -304,8 +371,8 @@ footer{padding:36px 0 48px;text-align:center;color:var(--muted);font-size:13px;b
 <section id="results" aria-labelledby="results-h">
   <div class="wrap">
     <div class="head">
-      <p class="eyebrow">Results</p>
-      <h2 id="results-h">Defocused input and restored image, side by side</h2>
+      <p class="eyebrow">01 <b>/</b> Results</p>
+      <h2 id="results-h">Restored <em>once</em>, from a defocused photograph</h2>
       <p>Stage I recovers the all-in-focus image that every later edit reuses. Drag the divider on any card; the left side is the input and the right side is FlashReFocus.</p>
     </div>
     <div class="chips" role="group" aria-label="Filter by source">
@@ -322,9 +389,49 @@ footer{padding:36px 0 48px;text-align:center;color:var(--muted);font-size:13px;b
 <section id="interactive" class="alt" aria-labelledby="interactive-h">
   <div class="wrap">
     <div class="head">
-      <p class="eyebrow">Interactive</p>
-      <h2 id="interactive-h">One restored image, every focal edit</h2>
-      <p>Each frame below is one edit rendered from the same restored image (3CReal and RealBokeh inputs, long side 1024). Move the focal plane, or hold it and open the aperture.</p>
+      <p class="eyebrow">02 <b>/</b> Interactive</p>
+      <h2 id="interactive-h">One restored image, <em>every focal edit</em></h2>
+      <p>Click anywhere in the photograph to focus there, and turn the aperture ring to set the depth of field. Every frame is a renderer output from one restored image.</p>
+    </div>
+    <div class="card" id="clickCard" style="margin-bottom:22px">
+      <div class="bar-row">
+        <h3>Click anywhere to refocus</h3>
+        <div class="seg" role="group" aria-label="Photograph">
+          <button type="button" data-gscene="plants" aria-pressed="true">Potted plants</button>
+          <button type="button" data-gscene="horse" aria-pressed="false">Pony</button>
+        </div>
+      </div>
+      <div class="clk">
+        <div>
+          <div class="cv" id="gcv">
+            <video id="gVid" muted playsinline preload="none" aria-label="Refocused photograph; click to choose the focal point"></video>
+            <img class="ovl" id="gOvl" alt="">
+            <div class="ret on" id="gRet"></div>
+            <span class="hint" id="gHint">Click to focus</span>
+          </div>
+        </div>
+        <div>
+          <p class="ctl-h">Aperture ring</p>
+          <div class="lens">
+            <div class="stops" id="gStops" role="group" aria-label="Aperture"></div>
+            <div class="ends"><span>deep depth of field</span><span>shallow</span></div>
+          </div>
+          <p class="ctl-h">Show</p>
+          <div class="seg" role="group" aria-label="Layer shown">
+            <button type="button" data-gview="out" aria-pressed="true">Result</button>
+            <button type="button" data-gview="in" aria-pressed="false">Input</button>
+            <button type="button" data-gview="aif" aria-pressed="false">Restored</button>
+            <button type="button" data-gview="depth" aria-pressed="false">Depth</button>
+          </div>
+          <dl class="kv">
+            <dt>Focal point</dt><dd id="gPt">&ndash;</dd>
+            <dt>Focal depth D<sub>f</sub></dt><dd id="gDf">&ndash;</dd>
+            <dt>Aperture</dt><dd id="gAp">&ndash;</dd>
+            <dt>Strength K</dt><dd id="gK">&ndash;</dd>
+          </dl>
+          <p class="note" style="margin-top:14px">Precomputed renderer outputs from one restored image: 24 focal depths &times; 6 apertures, rendered at 1280 px and played back here. The aperture ring uses a thin-lens mapping K = 2.8 / N, so K = 1, the trained maximum, at f/2.8; on MODEST, strengths selected for real apertures rise with the aperture (Spearman &rho; = 0.985 against 1/N). Photographs from Unsplash.</p>
+        </div>
+      </div>
     </div>
     <div class="card" style="max-width:980px;margin:0 auto">
       <div class="bar-row">
@@ -395,11 +502,25 @@ footer{padding:36px 0 48px;text-align:center;color:var(--muted);font-size:13px;b
   </div>
 </section>
 
-<section id="consistency" aria-labelledby="consistency-h">
+<section id="race" aria-labelledby="race-h">
   <div class="wrap">
     <div class="head">
-      <p class="eyebrow">Consistency</p>
-      <h2 id="consistency-h">In-focus content stays put across edits</h2>
+      <p class="eyebrow">03 <b>/</b> Real time</p>
+      <h2 id="race-h">Ten edits while GenRefocus is <em>5% into its first</em></h2>
+      <p>Both methods start on the same photograph. Each FlashReFocus result appears after its measured time; GenRefocus needs 370.65&nbsp;s for its first refocus.</p>
+    </div>
+    <div class="card">
+      <div class="frame"><video muted autoplay loop playsinline controls preload="metadata" poster="assets/demo_poster.jpg" src="assets/demo.mp4"></video></div>
+      <p class="note">Played in real time at 1536&times;1536 on one NVIDIA RTX PRO 6000. The scripted session was timed in an earlier run (2.50&nbsp;s for the first refocus and 0.47&nbsp;s per further edit); the paper reports 2.45&nbsp;s and 0.46&nbsp;s. Frames are model outputs shown at a long side of 1024.</p>
+    </div>
+  </div>
+</section>
+
+<section id="consistency" class="alt" aria-labelledby="consistency-h">
+  <div class="wrap">
+    <div class="head">
+      <p class="eyebrow">04 <b>/</b> Consistency</p>
+      <h2 id="consistency-h">In-focus content <em>stays put</em> across edits</h2>
       <p>Both methods receive the same inputs and the same eight focal points, and our strength is set so that the background blur matches. FlashReFocus keeps in-focus regions close to the restored image; GenRefocus regenerates the whole image at every edit.</p>
     </div>
     <div class="stack" style="max-width:1040px;margin:0 auto">
@@ -429,11 +550,11 @@ footer{padding:36px 0 48px;text-align:center;color:var(--muted);font-size:13px;b
   </div>
 </section>
 
-<section id="beyond" class="alt" aria-labelledby="beyond-h">
+<section id="beyond" aria-labelledby="beyond-h">
   <div class="wrap">
     <div class="head">
-      <p class="eyebrow">Beyond one lens</p>
-      <h2 id="beyond-h">The defocus map is the control</h2>
+      <p class="eyebrow">05 <b>/</b> Beyond one lens</p>
+      <h2 id="beyond-h">The defocus map <em>is the control</em></h2>
       <p>The renderer reads an explicit depth-derived defocus map, so editing that map produces blur fields that a single physical lens cannot.</p>
     </div>
     <div class="stack" style="max-width:1040px;margin:0 auto">
@@ -464,11 +585,11 @@ footer{padding:36px 0 48px;text-align:center;color:var(--muted);font-size:13px;b
   </div>
 </section>
 
-<section id="method" aria-labelledby="method-h">
+<section id="method" class="alt" aria-labelledby="method-h">
   <div class="wrap">
     <div class="head">
-      <p class="eyebrow">Method</p>
-      <h2 id="method-h">Restore once, render every edit</h2>
+      <p class="eyebrow">06 <b>/</b> Method</p>
+      <h2 id="method-h">Restore once, <em>render every edit</em></h2>
     </div>
     <div class="prose">
       <p>Recovering an all-in-focus image from a defocused photograph is highly ill-posed and benefits from a generative prior, whereas rendering blur is largely determined by depth and the focal plane. FlashReFocus therefore splits refocusing into two stages with very different costs.</p>
@@ -514,10 +635,10 @@ footer{padding:36px 0 48px;text-align:center;color:var(--muted);font-size:13px;b
   </div>
 </section>
 
-<section id="numbers" class="alt" aria-labelledby="numbers-h">
+<section id="numbers" aria-labelledby="numbers-h">
   <div class="wrap">
     <div class="head">
-      <p class="eyebrow">Numbers</p>
+      <p class="eyebrow">07 <b>/</b> Numbers</p>
       <h2 id="numbers-h">Benchmarks</h2>
       <p>Excerpts of the paper's tables. The full tables compare seven deblurring and nine bokeh-rendering methods and add RealBokeh validation, LFDOF and MODEST.</p>
     </div>
@@ -584,10 +705,10 @@ footer{padding:36px 0 48px;text-align:center;color:var(--muted);font-size:13px;b
   </div>
 </section>
 
-<section id="faq" aria-labelledby="faq-h">
+<section id="faq" class="alt" aria-labelledby="faq-h">
   <div class="wrap">
     <div class="head">
-      <p class="eyebrow">FAQ</p>
+      <p class="eyebrow">08 <b>/</b> FAQ</p>
       <h2 id="faq-h">Questions</h2>
     </div>
     <div class="faq">
@@ -601,7 +722,7 @@ footer{padding:36px 0 48px;text-align:center;color:var(--muted);font-size:13px;b
   </div>
 </section>
 
-<section id="related" class="alt" aria-labelledby="related-h">
+<section id="related" aria-labelledby="related-h">
   <div class="wrap">
     <div class="head">
       <p class="eyebrow">Related work</p>
@@ -618,7 +739,7 @@ footer{padding:36px 0 48px;text-align:center;color:var(--muted);font-size:13px;b
   </div>
 </section>
 
-<section id="cite" aria-labelledby="cite-h">
+<section id="cite" class="alt" aria-labelledby="cite-h">
   <div class="wrap">
     <div class="head">
       <p class="eyebrow">Citation</p>
@@ -657,7 +778,7 @@ footer{padding:36px 0 48px;text-align:center;color:var(--muted);font-size:13px;b
   // theme
   $('#theme').addEventListener('click', function(){
     var root=document.documentElement, cur=root.getAttribute('data-theme');
-    if(!cur) cur = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    if(!cur) cur = 'light';
     var next = cur==='dark' ? 'light' : 'dark';
     root.setAttribute('data-theme', next);
     try{ localStorage.setItem('frf-theme', next); }catch(e){}
@@ -669,13 +790,118 @@ footer{padding:36px 0 48px;text-align:center;color:var(--muted);font-size:13px;b
     function set(){ el.style.setProperty('--pos', r.value+'%'); }
     r.addEventListener('input', set); set(); return r;
   }
-  var heroR=bindCmp($('#heroCmp'));
-  if(!reduce){
-    var t0=null, live=true;
-    ['pointerdown','keydown','input'].forEach(function(ev){ heroR.addEventListener(ev, function(){ live=false; }); });
-    function tick(ts){ if(!live) return; if(t0===null) t0=ts; heroR.value=50+32*Math.sin((ts-t0)/1400); $('#heroCmp').style.setProperty('--pos', heroR.value+'%'); requestAnimationFrame(tick); }
-    requestAnimationFrame(tick);
+
+  // ---------- header: a carousel of model animations, one edit mode per photograph ----------
+  var HM = {"cafe":{"x":[0.57,0.57,0.57,0.57,0.57,0.57,0.57,0.57,0.57,0.57,0.57,0.57,0.57,0.57,0.57,0.57,0.57,0.57,0.57,0.57,0.57,0.57,0.57,0.569,0.569,0.568,0.568,0.567,0.566,0.565,0.565,0.564,0.563,0.562,0.561,0.56,0.559,0.558,0.557,0.556,0.555,0.555,0.554,0.553,0.552,0.552,0.551,0.551,0.55,0.55,0.55,0.55,0.55,0.55,0.55,0.55,0.55,0.55,0.55,0.55,0.55,0.55,0.55,0.55,0.55,0.55,0.55,0.55,0.55,0.55,0.55,0.55,0.552,0.554,0.557,0.561,0.566,0.571,0.577,0.583,0.589,0.596,0.604,0.611,0.619,0.627,0.635,0.643,0.651,0.659,0.666,0.674,0.681,0.687,0.693,0.699,0.704,0.709,0.713,0.716,0.718,0.72,0.72,0.72,0.72,0.72,0.72,0.72,0.72,0.72,0.72,0.72,0.72,0.72,0.72,0.72,0.72,0.72,0.72,0.72,0.72,0.72,0.72,0.718,0.716,0.714,0.71,0.706,0.702,0.697,0.691,0.685,0.679,0.673,0.666,0.659,0.652,0.645,0.638,0.631,0.624,0.617,0.611,0.605,0.599,0.593,0.588,0.584,0.58,0.576,0.574,0.572,0.57],"y":[0.6,0.6,0.6,0.6,0.6,0.6,0.6,0.6,0.6,0.6,0.6,0.6,0.6,0.6,0.6,0.6,0.6,0.6,0.6,0.6,0.599,0.596,0.592,0.586,0.579,0.57,0.561,0.55,0.538,0.526,0.513,0.499,0.484,0.47,0.455,0.44,0.425,0.41,0.396,0.381,0.367,0.354,0.342,0.33,0.319,0.31,0.301,0.294,0.288,0.284,0.281,0.28,0.28,0.28,0.28,0.28,0.28,0.28,0.28,0.28,0.28,0.28,0.28,0.28,0.28,0.28,0.28,0.28,0.28,0.28,0.28,0.282,0.287,0.295,0.307,0.321,0.337,0.356,0.377,0.4,0.424,0.449,0.476,0.504,0.532,0.561,0.59,0.619,0.648,0.676,0.704,0.731,0.756,0.78,0.803,0.824,0.843,0.859,0.873,0.885,0.893,0.898,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.899,0.897,0.893,0.887,0.88,0.872,0.863,0.853,0.842,0.83,0.818,0.805,0.792,0.778,0.764,0.75,0.736,0.722,0.708,0.695,0.682,0.67,0.658,0.647,0.637,0.628,0.62,0.613,0.607,0.603,0.601]},"dock":{"x":[0.41,0.41,0.41,0.41,0.41,0.41,0.41,0.41,0.41,0.41,0.41,0.41,0.41,0.41,0.41,0.41,0.41,0.41,0.41,0.41,0.411,0.415,0.42,0.428,0.437,0.448,0.46,0.474,0.489,0.505,0.522,0.54,0.558,0.577,0.596,0.615,0.634,0.653,0.672,0.69,0.708,0.725,0.741,0.756,0.77,0.782,0.793,0.802,0.81,0.815,0.819,0.82,0.82,0.82,0.82,0.82,0.82,0.82,0.82,0.82,0.82,0.82,0.82,0.82,0.82,0.82,0.82,0.82,0.82,0.82,0.82,0.819,0.817,0.813,0.808,0.802,0.795,0.787,0.778,0.768,0.757,0.746,0.735,0.723,0.71,0.698,0.685,0.672,0.66,0.647,0.635,0.624,0.613,0.602,0.592,0.583,0.575,0.568,0.562,0.557,0.553,0.551,0.55,0.55,0.55,0.55,0.55,0.55,0.55,0.55,0.55,0.55,0.55,0.55,0.55,0.55,0.55,0.55,0.55,0.55,0.55,0.55,0.55,0.548,0.547,0.544,0.541,0.537,0.533,0.528,0.523,0.518,0.512,0.506,0.499,0.493,0.487,0.48,0.473,0.467,0.461,0.454,0.448,0.442,0.437,0.432,0.427,0.423,0.419,0.416,0.413,0.412,0.41],"y":[0.46,0.46,0.46,0.46,0.46,0.46,0.46,0.46,0.46,0.46,0.46,0.46,0.46,0.46,0.46,0.46,0.46,0.46,0.46,0.46,0.46,0.46,0.46,0.46,0.46,0.46,0.46,0.46,0.46,0.46,0.46,0.46,0.46,0.46,0.46,0.46,0.46,0.46,0.46,0.46,0.46,0.46,0.46,0.46,0.46,0.46,0.46,0.46,0.46,0.46,0.46,0.46,0.46,0.46,0.46,0.46,0.46,0.46,0.46,0.46,0.46,0.46,0.46,0.46,0.46,0.46,0.46,0.46,0.46,0.46,0.46,0.461,0.463,0.467,0.472,0.478,0.486,0.494,0.504,0.514,0.525,0.537,0.549,0.561,0.574,0.587,0.6,0.613,0.626,0.639,0.651,0.663,0.675,0.686,0.696,0.706,0.714,0.722,0.728,0.733,0.737,0.739,0.74,0.74,0.74,0.74,0.74,0.74,0.74,0.74,0.74,0.74,0.74,0.74,0.74,0.74,0.74,0.74,0.74,0.74,0.74,0.74,0.739,0.737,0.733,0.728,0.722,0.714,0.706,0.696,0.686,0.675,0.663,0.651,0.639,0.626,0.613,0.6,0.587,0.574,0.561,0.549,0.537,0.525,0.514,0.504,0.494,0.486,0.478,0.472,0.467,0.463,0.461]},"lighthouse":{"x":0.47,"y":0.62,"k":[0.175,0.175,0.175,0.175,0.175,0.175,0.175,0.175,0.175,0.175,0.175,0.175,0.175,0.175,0.175,0.175,0.175,0.175,0.175,0.175,0.175,0.175,0.176,0.178,0.181,0.186,0.191,0.198,0.206,0.215,0.225,0.236,0.248,0.261,0.274,0.289,0.304,0.32,0.336,0.353,0.371,0.389,0.407,0.426,0.446,0.465,0.485,0.505,0.526,0.546,0.567,0.587,0.608,0.629,0.649,0.67,0.69,0.71,0.729,0.749,0.768,0.786,0.804,0.822,0.839,0.855,0.871,0.886,0.901,0.914,0.927,0.939,0.95,0.96,0.969,0.977,0.984,0.989,0.994,0.997,0.999,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,0.999,0.997,0.994,0.989,0.984,0.977,0.969,0.96,0.95,0.939,0.927,0.914,0.901,0.886,0.871,0.855,0.839,0.822,0.804,0.786,0.768,0.749,0.729,0.71,0.69,0.67,0.649,0.629,0.608,0.588,0.567,0.546,0.526,0.505,0.485,0.465,0.446,0.426,0.407,0.389,0.371,0.353,0.336,0.32,0.304,0.289,0.274,0.261,0.248,0.236,0.225,0.215,0.206,0.198,0.191,0.186,0.181,0.178,0.176]},"coast":{"row":[0.36,0.36,0.36,0.36,0.36,0.36,0.36,0.36,0.36,0.36,0.36,0.36,0.36,0.361,0.362,0.364,0.367,0.37,0.373,0.377,0.381,0.385,0.39,0.395,0.401,0.407,0.413,0.419,0.426,0.433,0.44,0.447,0.454,0.462,0.469,0.477,0.484,0.492,0.5,0.508,0.516,0.523,0.531,0.538,0.546,0.553,0.56,0.567,0.574,0.581,0.587,0.593,0.599,0.605,0.61,0.615,0.619,0.623,0.627,0.63,0.633,0.636,0.638,0.639,0.64,0.64,0.64,0.64,0.64,0.64,0.64,0.64,0.64,0.64,0.64,0.64,0.64,0.64,0.639,0.638,0.636,0.633,0.63,0.627,0.623,0.619,0.615,0.61,0.605,0.599,0.593,0.587,0.581,0.574,0.567,0.56,0.553,0.546,0.538,0.531,0.523,0.516,0.508,0.5,0.492,0.484,0.477,0.469,0.462,0.454,0.447,0.44,0.433,0.426,0.419,0.413,0.407,0.401,0.395,0.39,0.385,0.381,0.377,0.373,0.37,0.367,0.364,0.362,0.361,0.36]},"toast":{"a":[0.26,0.3],"b":[0.6,0.66]},"grid":{"plants":{"lo":0.184,"hi":0.988,"levels":24,"stops":[16,11,8,5.6,4,2.8]},"horse":{"lo":0.076,"hi":1.0,"levels":24,"stops":[16,11,8,5.6,4,2.8]}}};
+  var stage=$('#stage'), lyA=$('#lyA'), lyB=$('#lyB'), lyV=$('#lyV'), retA=$('#retA'), retB=$('#retB'), ro=$('#readout'), roA=$('#roA'), roB=$('#roB');
+  var bandT=$('#bandT'), bandB=$('#bandB'), wl=$('#wipeLine'), bar=$('#heroBar');
+  var HP='assets/hero/';
+  var SAMPLES=[
+    {id:'cafe', tab:'Restore + refocus', w:1280, h:848, k:'Stage I → Stage II', t:'Restore once, then refocus', d:'A defocused photograph is restored in one diffusion step; every focal point after that is a 0.46 s renderer pass.'},
+    {id:'dock', tab:'Pull focus', w:1280, h:848, k:'Click to refocus', t:'Move the focal plane anywhere', d:'From the dog to the far pier to the leaves in front, each frame is one edit of the same restored image.'},
+    {id:'lighthouse', tab:'Aperture ring', w:1280, h:848, k:'Aperture after capture', t:'From f/16 to f/2.8', d:'The focus stays on the subject while the background blur grows like an opening aperture.'},
+    {id:'coast', tab:'Tilt-shift', w:1024, h:1280, k:'Depth edit', t:'A tilt-shift miniature', d:'A depth ramp replaces scene depth, so a horizontal band stays sharp wherever it is moved.'},
+    {id:'toast', tab:'Two focal planes', w:1280, h:848, k:'Depth edit', t:'Two subjects, two focal planes', d:'Each pixel is blurred by its distance to the nearer of two planes, which one physical lens cannot do.'}];
+  var cur=-1, paused=false, timers=[], t0=0, dur=1, raf=0;
+  SAMPLES.forEach(function(s,i){
+    var b=document.createElement('button'); b.type='button'; b.setAttribute('aria-pressed','false');
+    b.innerHTML='<span></span><i class="p"></i>'; b.firstChild.textContent=s.tab;
+    b.addEventListener('click',function(){ paused=false; setPause(); show(i); });
+    bar.insertBefore(b, $('#heroPause')); s.btn=b;
+    if(s.id!=='toast'){ new Image().src=HP+s.id+'_poster.jpg'; }
+  });
+  function cover(s){ var W=stage.clientWidth, Hh=stage.clientHeight, sc=Math.max(W/s.w,Hh/s.h); return {s:sc, ox:(W-s.w*sc)/2, oy:(Hh-s.h*sc)/2}; }
+  function place(el, s, x, y){ var c=cover(s); el.style.left=(c.ox+x*s.w*c.s)+'px'; el.style.top=(c.oy+y*s.h*c.s)+'px'; }
+  function placeRow(el, s, y){ var c=cover(s); el.style.top=(c.oy+y*s.h*c.s)+'px'; }
+  function later(fn,ms){ timers.push(setTimeout(fn,ms)); }
+  function clear(){ timers.forEach(clearTimeout); timers=[]; cancelAnimationFrame(raf); lyV.onended=null; lyV.pause();
+    [lyA,lyB,lyV,retA,retB,ro,bandT,bandB].forEach(function(e){ e.classList.remove('on'); });
+    lyB.classList.remove('wipe'); lyB.style.clipPath=''; wl.style.opacity=0; retA.classList.remove('lbl'); retB.classList.remove('lbl'); }
+  function cap(s){ $('#capK').textContent=s.k; $('#capT').textContent=s.t; $('#capD').textContent=s.d; }
+  function prog(p){ var s=SAMPLES[cur]; if(s) s.btn.style.setProperty('--p', Math.max(0,Math.min(1,p))); }
+  function img(el, src, cb){ if(el.getAttribute('src')===src){ cb&&cb(); return; } el.onload=function(){ el.onload=null; cb&&cb(); }; el.src=src; }
+  function playVideo(s, onFrame){
+    lyV.src=HP+s.id+'.mp4'; lyV.poster=HP+s.id+'_poster.jpg'; lyV.currentTime=0;
+    lyV.classList.add('on');
+    var p=lyV.play(); if(p&&p.catch) p.catch(function(){});
+    function tick(){ var d=lyV.duration||1, f=Math.floor(lyV.currentTime*24); onFrame&&onFrame(f); prog(lyV.currentTime/d); raf=requestAnimationFrame(tick); }
+    raf=requestAnimationFrame(tick);
+    lyV.onended=function(){ prog(1); if(!paused) next(); };
   }
+  function focusFrame(s, m){ return function(f){ f=Math.min(f,m.x.length-1); place(retA,s,m.x[f],m.y[f]); }; }
+  function fstop(k){ var n=2.8/k; return n>=10?Math.round(n):Math.round(n*10)/10; }
+  var RUN={
+    cafe:function(s){
+      var m=HM.cafe; lyA.classList.add('on'); img(lyA,HP+'cafe_aif.jpg');
+      img(lyB,HP+'cafe_in.jpg',function(){ lyB.classList.add('on','wipe'); lyB.style.clipPath='inset(0 0 0 0)'; });
+      $('#capK').textContent='Input'; $('#capT').textContent='A defocused photograph'; $('#capD').textContent='Everything outside a shallow focal plane was captured blurred.';
+      var t=0, D=1500;
+      later(function(){
+        cap(s); $('#capK').textContent='Stage I · one diffusion step'; $('#capT').textContent='Restored all-in-focus image';
+        $('#capD').textContent='Detail the lens never captured sharply is recovered once and reused by every edit.';
+        var a=performance.now(); wl.style.opacity=1;
+        (function w(){ var p=Math.min(1,(performance.now()-a)/D), e=p*p*(3-2*p); lyB.style.clipPath='inset(0 0 0 '+(e*100)+'%)'; wl.style.left=(e*100)+'%'; prog(0.25*p); if(p<1) raf=requestAnimationFrame(w); else wl.style.opacity=0; })();
+      }, 1100);
+      later(function(){ lyB.classList.remove('wipe'); lyB.style.clipPath=''; lyB.classList.remove('on'); img(lyB,HP+'cafe_depth.jpg',function(){ lyB.classList.add('on'); });
+        $('#capK').textContent='Depth'; $('#capT').textContent='Depth from the restored image'; $('#capD').textContent='Depth and a focal point define the defocus map the renderer follows.'; prog(.35); }, 3600);
+      later(function(){ lyB.classList.remove('on'); cap(s); $('#capK').textContent='Stage II · 0.46 s per edit';
+        $('#capT').textContent='Any focal point'; $('#capD').textContent='Focus moves from the bottles to the street outside and the table in front, rendered from the same restored image.';
+        retA.classList.add('on'); var ff=focusFrame(s,m);
+        playVideo(s,function(f){ ff(f); prog(.4+.6*lyV.currentTime/(lyV.duration||1)); }); later(function(){ lyA.classList.remove('on'); },700); }, 5200);
+    },
+    dock:function(s){ cap(s); retA.classList.add('on'); playVideo(s, focusFrame(s,HM.dock)); },
+    lighthouse:function(s){ var m=HM.lighthouse; cap(s); retA.classList.add('on'); ro.classList.add('on'); place(retA,s,m.x,m.y);
+      playVideo(s,function(f){ f=Math.min(f,m.k.length-1); var k=m.k[f]; roA.innerHTML='<i class="ring" style="--ap:'+(5-4*k).toFixed(1)+'px"><i></i></i>f/'+fstop(k); roB.textContent='K = '+k.toFixed(2); place(retA,s,m.x,m.y); }); },
+    coast:function(s){ var m=HM.coast; cap(s); bandT.classList.add('on'); bandB.classList.add('on');
+      playVideo(s,function(f){ f=Math.min(f,m.row.length-1); placeRow(bandT,s,m.row[f]-0.05); placeRow(bandB,s,m.row[f]+0.05); }); },
+    toast:function(s){ var m=HM.toast; cap(s); var seq=[['A',1],['B',2],['AB',3]], i=0, T=[0,1900,3800], total=6800;
+      img(lyA,HP+'toast_A.jpg',function(){ lyA.classList.add('on'); }); place(retA,s,m.a[0],m.a[1]); place(retB,s,m.b[0],m.b[1]); retA.classList.add('on','lbl'); retB.classList.add('lbl');
+      $('#capT').textContent='Focus on A';
+      later(function(){ img(lyB,HP+'toast_B.jpg',function(){ lyB.classList.add('on'); }); retA.classList.remove('on'); retB.classList.add('on'); $('#capT').textContent='Focus on B'; }, T[1]);
+      later(function(){ img(lyA,HP+'toast_AB.jpg',function(){ lyB.classList.remove('on'); }); retA.classList.add('on'); retB.classList.add('on'); $('#capT').textContent='A and B sharp, the rest blurred'; }, T[2]);
+      var a=performance.now(); (function p(){ var q=(performance.now()-a)/total; prog(q); if(q<1) raf=requestAnimationFrame(p); else if(!paused) next(); })(); }
+  };
+  function show(i){
+    clear(); if(cur>=0) SAMPLES[cur].btn.setAttribute('aria-pressed','false');
+    SAMPLES.forEach(function(s){ s.btn.style.setProperty('--p',0); });
+    cur=i; var s=SAMPLES[i]; s.btn.setAttribute('aria-pressed','true');
+    stage.setAttribute('aria-label','Model output: '+s.t);
+    RUN[s.id](s);
+  }
+  function next(){ show((cur+1)%SAMPLES.length); }
+  function setPause(){ var b=$('#heroPause'); b.innerHTML=paused?'&#9654;':'&#10074;&#10074;'; b.setAttribute('aria-label',paused?'Play the header animation':'Pause the header animation'); }
+  $('#heroPause').addEventListener('click',function(){
+    paused=!paused; setPause();
+    if(paused){ timers.forEach(clearTimeout); timers=[]; cancelAnimationFrame(raf); lyV.pause(); }
+    else show(cur);
+  });
+  window.addEventListener('resize',function(){ if(cur>=0 && SAMPLES[cur].id==='toast'){ var m=HM.toast; place(retA,SAMPLES[cur],m.a[0],m.a[1]); place(retB,SAMPLES[cur],m.b[0],m.b[1]); } });
+  if(reduce){ paused=true; setPause(); show(1); setTimeout(function(){ lyV.pause(); },50); } else show(0);
+
+  // ---------- click to refocus: a focal-depth x aperture grid of renderer outputs ----------
+  var G=HM.grid, gs='plants', gStop=4, gLevel=10, gTarget=10, gTimer=null, gDepth=null, gView='out';
+  var gVid=$('#gVid'), gOvl=$('#gOvl'), gRet=$('#gRet'), gcv=$('#gcv');
+  var SIZES={plants:[1024,678], horse:[768,960]};
+  G.plants.stops.forEach(function(n,i){ var b=document.createElement('button'); b.type='button'; b.textContent='f/'+n; b.setAttribute('aria-pressed', i===gStop?'true':'false');
+    b.addEventListener('click',function(){ $$('#gStops button').forEach(function(x){ x.setAttribute('aria-pressed', x===b?'true':'false'); }); gStop=i; gShow(); }); $('#gStops').appendChild(b); });
+  function gShow(){ var g=G[gs], f=gStop*g.levels+gLevel; try{ gVid.currentTime=(f+0.5)/24; }catch(e){}
+    var n=g.stops[gStop], k=2.8/n, df=g.lo+(g.hi-g.lo)*gLevel/(g.levels-1);
+    $('#gDf').textContent=df.toFixed(2)+(df>0.66?' (far)':df<0.33?' (near)':''); $('#gAp').textContent='f/'+n; $('#gK').textContent=k.toFixed(2); }
+  function gRack(){ if(gTimer) return; gTimer=setInterval(function(){ if(gLevel===gTarget){ clearInterval(gTimer); gTimer=null; return; } gLevel+=gLevel<gTarget?1:-1; gShow(); }, 45); }
+  function gLoadDepth(){ var im=new Image(); im.onload=function(){ var c=document.createElement('canvas'); c.width=im.width; c.height=im.height; var x=c.getContext('2d'); x.drawImage(im,0,0); gDepth={w:im.width,h:im.height,d:x.getImageData(0,0,im.width,im.height).data}; }; im.src=HP+gs+'_depthq.png'; }
+  function gScene(s){ gs=s; var z=SIZES[s]; gcv.style.maxWidth=(s==='horse'?'440px':'none'); gVid.src=HP+s+'_grid.mp4'; gVid.load(); gDepth=null; gLoadDepth();
+    gLevel=gTarget=Math.round(G[s].levels*0.45); gRet.style.left='50%'; gRet.style.top='50%'; $('#gPt').textContent='–'; gSetView(gView); }
+  function gSetView(v){ gView=v; if(v==='out'){ gOvl.classList.remove('on'); } else { gOvl.src=HP+gs+'_'+v+'.jpg'; gOvl.classList.add('on'); } gRet.style.opacity=v==='out'?'':'0'; }
+  gVid.addEventListener('loadeddata', gShow);
+  gcv.addEventListener('click',function(e){
+    var r=gVid.getBoundingClientRect(), x=(e.clientX-r.left)/r.width, y=(e.clientY-r.top)/r.height; if(x<0||x>1||y<0||y>1) return;
+    gRet.style.left=(x*100)+'%'; gRet.style.top=(y*100)+'%'; $('#gHint').style.opacity=0; if(gView!=='out'){ gSetView('out'); $$('[data-gview]').forEach(function(b){ b.setAttribute('aria-pressed', b.getAttribute('data-gview')==='out'?'true':'false'); }); }
+    var z=SIZES[gs]; $('#gPt').textContent='('+Math.round(x*z[0])+', '+Math.round(y*z[1])+')';
+    if(!gDepth) return; var px=Math.min(gDepth.w-1,Math.floor(x*gDepth.w)), py=Math.min(gDepth.h-1,Math.floor(y*gDepth.h)), d=gDepth.d[(py*gDepth.w+px)*4]/255, g=G[gs];
+    gTarget=Math.max(0,Math.min(g.levels-1,Math.round((d-g.lo)/(g.hi-g.lo)*(g.levels-1)))); gRack();
+  });
+  tabs('data-gscene', gScene); tabs('data-gview', gSetView);
+  if('IntersectionObserver' in window){ var gio=new IntersectionObserver(function(es){ if(es[0].isIntersecting){ gScene('plants'); gio.disconnect(); } },{rootMargin:'400px'}); gio.observe(gcv); } else gScene('plants');
 
   var scenes=[['real_sculpture','ours','Sculpture and trunk','our capture',848],['real_flower','ours','Flower','our capture',848],
     ['dpdd_bench','dpdd','Bench','DPDD',848],['dpdd_ivy','dpdd','Ivy','DPDD',848],['dpdd_fence','dpdd','Fence','DPDD',848],['dpdd_bike','dpdd','Bicycle','DPDD',848],
