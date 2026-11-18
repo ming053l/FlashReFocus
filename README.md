@@ -72,8 +72,8 @@ The photo is resized to a long side of 1024 (`--long-side`), and coordinates ref
 
 | | FlashReFocus | GenRefocus | DiffCamera |
 |---|---|---|---|
-| Complete refocus at 1536×1536 | **2.5 s** | 371 s (148×) | 136 s (55×) |
-| Each further focal edit | **0.47 s** | 217 s | 136 s |
+| Complete refocus at 1536×1536 | **2.45 s** | 371 s (151×) | 136 s (56×) |
+| Each further focal edit | **0.46 s** | 217 s (472×) | 136 s (296×) |
 | In-focus regions kept (PSNR to the input, 3CReal) | **44.4 dB** | 29.0 dB | – |
 
 Bokeh rendering: best LPIPS, LPIPS-VGG, DISTS, MS-SSIM and CLIP-I on EBB! Val176 and on our
