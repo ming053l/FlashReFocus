@@ -277,7 +277,7 @@ footer{padding:36px 0 48px;text-align:center;color:var(--muted);font-size:13px;b
 @media (max-width:700px){.lane{grid-template-columns:1fr 110px}.lane .lt{grid-column:1/3;grid-row:2}}
 
 .ctlgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:22px}
-.ctlcard{padding:12px}.ctlcard .frame{aspect-ratio:3/2}.ctlcard .frame video{width:100%;height:100%;object-fit:cover}.ctlcard h3{margin:12px 2px 4px;font-size:17px}.ctlcard .note{margin:0 2px}
+.ctlcard{padding:12px}.ctlcard .frame{aspect-ratio:3/2}.ctlcard .frame video{width:100%;height:100%;object-fit:cover}.ctlcard .frame video[data-src$="sharp.mp4"]{object-position:center top}.ctlcard .frame video[data-src$="prompt.mp4"]{object-fit:contain}.ctlcard h3{margin:12px 2px 4px;font-size:17px}.ctlcard .note{margin:0 2px}
 @media (max-width:960px){.ctlgrid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media (max-width:600px){.ctlgrid{grid-template-columns:1fr}}
 
@@ -454,9 +454,8 @@ footer{padding:36px 0 48px;text-align:center;color:var(--muted);font-size:13px;b
 <div class="card">
 <h3 data-i18n="k073">Photographs you can refocus later</h3>
 <p class="note" data-i18n="k103" style="margin:6px 0 12px">A focal stack of 24 focal depths × 6 apertures is rendered once from one photograph, so it can be refocused anywhere afterwards, like a light-field camera.</p>
-<div class="frame" style="max-width:220px;margin:0 auto"><img alt="Vintage car in front of a shop" src="assets/hero/car_aif.jpg" style="width:100%;height:auto"/></div>
-<p class="note" data-i18n="k104" style="margin-top:12px"><a href="#clickCard">Try the vintage car</a> in the click-to-refocus card, or download its stack.</p>
-<a class="btn" data-i18n="k198" download="" href="assets/hero/car_grid.mp4" style="margin-top:10px">Download focal stack</a>
+<div class="frame" style="max-width:240px;margin:0 auto"><video aria-label="Playback of the focal stack: the focal plane sweeps from near to far, then the aperture ring turns" class="lazy" data-src="assets/hero/car_stack.mp4" loop="" muted="" playsinline="" poster="assets/hero/car_stack_poster.jpg" preload="none" style="width:100%;height:auto;display:block"></video></div>
+<p class="note" data-i18n="k104" style="margin-top:12px">The video plays frames of this stack: the focal plane sweeps from near to far at f/2.8, then the aperture ring turns from f/2.8 to f/16 and back. <a href="#clickCard">Try the vintage car</a> in the click-to-refocus card.</p>
 </div>
 </div>
 </div>
