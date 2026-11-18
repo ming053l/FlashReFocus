@@ -6,7 +6,6 @@
   <a href="https://ming053l.github.io/">Chia-Ming Lee</a><sup>2,3*</sup> &nbsp;
   <a href="https://mingching.github.io/">Ming-Ching Chang</a><sup>2</sup> &nbsp;
   <a href="https://scholar.google.com/citations?user=gMBvzGoAAAAJ&hl=en">Xin Li</a><sup>2</sup> &nbsp;
-  <a href="https://yulunalexliu.github.io/">Yu-Lun Liu</a><sup>3</sup> &nbsp;
   <a href="https://cchsu.info/">Chih-Chung Hsu</a><sup>1,3&dagger;</sup>
 </p>
 <p align="center">
@@ -254,7 +253,7 @@ If you find FlashReFocus useful, please cite:
 @misc{cheng2026flashrefocus,
   title         = {FlashReFocus: Interactive Image Refocusing in Seconds},
   author        = {Cheng, Ching-Heng and Lee, Chia-Ming and Chang, Ming-Ching and
-                   Li, Xin and Liu, Yu-Lun and Hsu, Chih-Chung},
+                   Li, Xin and Hsu, Chih-Chung},
   year          = {2026},
   eprint        = {2610.23297},
   archivePrefix = {arXiv},
