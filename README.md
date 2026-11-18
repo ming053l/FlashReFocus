@@ -2,7 +2,7 @@
 <h1 align="center">FlashReFocus</h1>
 <p align="center"><b>Interactive Image Refocusing in Seconds</b></p>
 <p align="center">
-  Ching-Heng Cheng<sup>1*</sup> &nbsp;
+  <a href="https://chingheng0808.github.io/">Ching-Heng Cheng</a><sup>1*</sup> &nbsp;
   <a href="https://ming053l.github.io/">Chia-Ming Lee</a><sup>2,3*</sup> &nbsp;
   <a href="https://mingching.github.io/">Ming-Ching Chang</a><sup>2</sup> &nbsp;
   <a href="https://scholar.google.com/citations?user=gMBvzGoAAAAJ&hl=en">Xin Li</a><sup>2</sup> &nbsp;
