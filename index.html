@@ -816,12 +816,12 @@ footer{padding:36px 0 48px;text-align:center;color:var(--muted);font-size:13px;b
   var HP='assets/hero/';
   var SAMPLES=[
     {id:'cafe', tab:T('Restore + refocus'), w:1280, h:848, k:T('Stage I → Stage II'), t:T('Restore once, then refocus'), d:T('A defocused photograph is restored in one diffusion step; every focal point after that is a 0.46 s renderer pass.')},
-    {id:'hybrid', tab:T('Hybrid editing'), w:1280, h:960, k:T('Hybrid editing'), t:T('Defocused input'), d:T('One restoration, then focus, aperture and a depth edit chained on the same image.')},
     {id:'rider', tab:T('Depth swap'), w:1280, h:848, k:T('Depth edit'), t:T('Swap foreground and background'), d:T('The depth map is reflected so the subject takes the depth of the background and the background moves onto the focal plane.')},
     {id:'dock', tab:T('Pull focus'), w:1280, h:848, k:T('Click to refocus'), t:T('Move the focal plane anywhere'), d:T('From the dog to the far pier to the leaves in front, each frame is one edit of the same restored image.')},
     {id:'lighthouse', tab:T('Aperture ring'), w:1280, h:848, k:T('Aperture after capture'), t:T('From f/16 to f/2.8'), d:T('The focus stays on the subject while the background blur grows like an opening aperture.')},
     {id:'coast', tab:T('Tilt-shift'), w:1024, h:1280, k:T('Depth edit'), t:T('A tilt-shift miniature'), d:T('A depth ramp replaces scene depth, so a horizontal band stays sharp wherever it is moved.')},
-    {id:'toast', tab:T('Two focal planes'), w:1280, h:848, k:T('Depth edit'), t:T('Two subjects, two focal planes'), d:T('Each pixel is blurred by its distance to the nearer of two planes, which one physical lens cannot do.')}];
+    {id:'toast', tab:T('Two focal planes'), w:1280, h:848, k:T('Depth edit'), t:T('Two subjects, two focal planes'), d:T('Each pixel is blurred by its distance to the nearer of two planes, which one physical lens cannot do.')},
+    {id:'hybrid', tab:T('Hybrid editing'), w:1280, h:960, k:T('Hybrid editing'), t:T('Defocused input'), d:T('One restoration, then focus, aperture and a depth edit chained on the same image.')}];
   var cur=-1, paused=false, timers=[], t0=0, dur=1, raf=0, dep=null, LUT=[];
   for(var q=0;q<HM.lut.length;q+=2) LUT.push(parseInt(HM.lut.substr(q,2),16));
   SAMPLES.forEach(function(s,i){
