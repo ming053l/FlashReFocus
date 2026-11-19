@@ -71,7 +71,10 @@ Every control is also available as ComfyUI nodes: refocus and aperture, focus ra
 
 ## Applications
 
-<p align="center"><img src="docs/applications.jpg" width="900" alt="Focus range, radial focus, tilt-shift at an angle, background-only blur, three focal planes, a subject kept sharp, a photobomber pushed into the background, faces moved out of focus, three people on one focal plane, per-layer blur, a padlock moved in front of a flat door, and video tracking of a jockey"></p>
+<p align="center"><img src="docs/applications.gif" width="900" alt="Focus range, radial focus, tilt-shift at an angle, background-only blur, three focal planes, a subject kept sharp, a photobomber pushed into the background, faces moved out of focus, three people on one focal plane, per-layer blur, a padlock moved in front of a flat door, and video tracking of a jockey"></p>
+
+<p align="center"><img src="docs/video_tracking.gif" width="900" alt="Video tracking on an in-the-wild concert clip: left, the input with its depth and the SAM mask of the lead dancer in green; right, FlashReFocus keeps her sharp and blurs the dancers around her"></p>
+<p align="center"><sub>Video tracking in the wild: a SAM mask (green, left) keeps the lead dancer sharp in every frame while the dancers around her blur (right); insets show the estimated and the edited depth.</sub></p>
 
 The renderer was trained with one focal plane and one strength per image, yet it renders any depth map it is given, so every effect below is zero-shot: edit the depth, then render. All examples above are real photographs and videos (the small inset shows the edited depth or the input frame); animated versions are on the [project page](https://ming053l.github.io/FlashReFocus/).
 
