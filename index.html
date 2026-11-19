@@ -356,7 +356,7 @@ footer{padding:36px 0 48px;text-align:center;color:var(--muted);font-size:13px;b
 <img alt="" class="ly" id="lyB"/>
 <div class="ov">
 <div class="wipe-line" id="wipeLine"></div>
-<div class="band" id="bandT"><span data-i18n="k219">sharp band</span></div><div class="band" id="bandB"></div>
+<div class="band" id="bandT"><span data-i18n="k218">sharp band</span></div><div class="band" id="bandB"></div>
 <div class="ret" id="retA"><b>A</b></div><div class="ret" id="retB"><b>B</b></div>
 <div class="dinset" id="dinset"><canvas id="dcv"></canvas><span id="dlab">depth D</span></div>
 <div class="readout" id="readout"><span id="roA"></span><span id="roB"></span></div>
@@ -426,8 +426,8 @@ footer{padding:36px 0 48px;text-align:center;color:var(--muted);font-size:13px;b
 <h3 data-i18n="k065">Keep a subject sharp</h3><p class="note" data-i18n="k094">A mask of the mushroom keeps it sharp while the focus moves from the grass in front to the trees behind, so the depth around it changes but the subject does not.</p></div>
 </div>
 <div class="ctlgrid" style="margin-top:22px">
-<div class="card ctlcard"><div class="frame"><video aria-label="Portrait mode on a sharp photograph" class="lazy" data-src="assets/app/sharp.mp4" loop="" muted="" playsinline="" poster="assets/app/sharp_poster.jpg" preload="none"></video></div>
-<h3 data-i18n="k066">Portrait mode on sharp photographs</h3><p class="note" data-i18n="k095">A photograph that is already sharp skips Stage I and goes straight to the renderer: focus moves from the statue to the building and back, at about half a second per edit. This is the zero-shot bokeh rendering task of the paper.</p></div>
+<div class="card ctlcard"><div class="frame"><video aria-label="Portrait mode on a sharp photograph of a penguin" class="lazy" data-src="assets/app/sharp.mp4" loop="" muted="" playsinline="" poster="assets/app/sharp_poster.jpg" preload="none"></video></div>
+<h3 data-i18n="k066">Portrait mode on sharp photographs</h3><p class="note" data-i18n="k095">A photograph that is already sharp skips Stage I and goes straight to the renderer: the background rocks melt into bokeh behind the penguin, a divider compares the result with the sharp input, and focus then moves to the rocks, at about half a second per edit. This is the zero-shot bokeh rendering task of the paper.</p></div>
 <div class="card ctlcard"><div class="frame"><video aria-label="Focus following a path along a train" class="lazy" data-src="assets/app/path.mp4" loop="" muted="" playsinline="" poster="assets/app/path_poster.jpg" preload="none"></video></div>
 <h3 data-i18n="k067">Focus that follows a path</h3><p class="note" data-i18n="k096">A drawn path along the train sets the focal point frame by frame, from the front car to the far end and back, like a cinematographer pulling focus.</p></div>
 <div class="card ctlcard"><div class="frame"><video aria-label="Focus chosen by a prompt" class="lazy" data-src="assets/app/prompt.mp4" loop="" muted="" playsinline="" poster="assets/app/prompt_poster.jpg" preload="none"></video></div>
@@ -534,17 +534,17 @@ footer{padding:36px 0 48px;text-align:center;color:var(--muted);font-size:13px;b
 <video aria-label="Refocused photograph; click to choose the focal point" id="gVid" muted="" playsinline="" preload="none"></video>
 <img alt="" class="ovl" id="gOvl"/>
 <div class="ret on" id="gRet"></div>
-<span class="hint" data-i18n="k217" id="gHint">Click to focus</span>
+<span class="hint" data-i18n="k216" id="gHint">Click to focus</span>
 </div>
 </div>
 <div>
-<p class="ctl-h" data-i18n="k203">Aperture ring</p>
+<p class="ctl-h" data-i18n="k202">Aperture ring</p>
 <div class="lens">
 <div aria-label="Aperture" class="stops" id="gStops" role="group"></div>
-<div class="ends"><span data-i18n="k209">deep depth of field</span><span data-i18n="k210">shallow</span></div>
+<div class="ends"><span data-i18n="k208">deep depth of field</span><span data-i18n="k209">shallow</span></div>
 <p class="note lens-hint" data-i18n="k106">Scroll the mouse wheel over the ring to turn it, or click a stop.</p>
 </div>
-<p class="ctl-h" data-i18n="k204">Show</p>
+<p class="ctl-h" data-i18n="k203">Show</p>
 <div aria-label="Layer shown" class="seg" role="group">
 <button aria-pressed="true" data-gview="out" data-i18n="k143" type="button">Result</button>
 <button aria-pressed="false" data-gview="in" data-i18n="k144" type="button">Input</button>
@@ -552,12 +552,12 @@ footer{padding:36px 0 48px;text-align:center;color:var(--muted);font-size:13px;b
 <button aria-pressed="false" data-gview="depth" data-i18n="k146" type="button">Depth</button>
 </div>
 <dl class="kv">
-<dt data-i18n="k205">Focal point</dt><dd id="gPt">–</dd>
-<dt data-i18n="k206">Focal depth D<sub>f</sub></dt><dd id="gDf">–</dd>
-<dt data-i18n="k207">Aperture</dt><dd id="gAp">–</dd>
-<dt data-i18n="k208">Strength K</dt><dd id="gK">–</dd>
+<dt data-i18n="k204">Focal point</dt><dd id="gPt">–</dd>
+<dt data-i18n="k205">Focal depth D<sub>f</sub></dt><dd id="gDf">–</dd>
+<dt data-i18n="k206">Aperture</dt><dd id="gAp">–</dd>
+<dt data-i18n="k207">Strength K</dt><dd id="gK">–</dd>
 </dl>
-<a class="btn" data-i18n="k199" download="" href="assets/hero/plants_grid.mp4" id="gDl" style="margin-top:12px">Download focal stack</a>
+<a class="btn" data-i18n="k198" download="" href="assets/hero/plants_grid.mp4" id="gDl" style="margin-top:12px">Download focal stack</a>
 <p class="note" data-i18n="k107" style="margin-top:14px">Precomputed renderer outputs from one restored image: 24 focal depths × 6 apertures, rendered at 1280 px and played back here. The aperture ring uses a thin-lens mapping K = 2.8 / N, so K = 1, the trained maximum, at f/2.8; on MODEST, strengths selected for real apertures rise with the aperture (Spearman ρ = 0.985 against 1/N). Photographs from Unsplash and DIV2K.</p>
 </div>
 </div>
@@ -577,20 +577,20 @@ footer{padding:36px 0 48px;text-align:center;color:var(--muted);font-size:13px;b
 <div class="panel" id="pFocus">
 <div class="frame"><video id="rackVid" muted="" playsinline="" poster="assets/poster_04.jpg" preload="auto" src="assets/rack_04.mp4"></video></div>
 <div class="ctl">
-<button class="btn" data-i18n="k200" id="rackPlay" type="button">Play sweep</button>
+<button class="btn" data-i18n="k199" id="rackPlay" type="button">Play sweep</button>
 <input aria-label="Focus position" id="rackRing" max="56" min="0" step="1" type="range" value="0"/>
 <span class="read" id="rackRead">edit 1 / 57</span>
 </div>
-<div aria-hidden="true" class="scale"><span data-i18n="k211">∞ far</span><span data-i18n="k212">focus</span><span data-i18n="k213">near</span></div>
+<div aria-hidden="true" class="scale"><span data-i18n="k210">∞ far</span><span data-i18n="k211">focus</span><span data-i18n="k212">near</span></div>
 </div>
 <div class="panel" hidden="" id="pAperture">
 <div class="frame"><video data-src="assets/strength_04.mp4" id="strVid" muted="" playsinline="" poster="assets/poster_04.jpg" preload="none"></video></div>
 <div class="ctl">
-<button class="btn" data-i18n="k201" id="strPlay" type="button">Play sweep</button>
+<button class="btn" data-i18n="k200" id="strPlay" type="button">Play sweep</button>
 <input aria-label="Blur strength" id="strRing" max="40" min="0" step="1" type="range" value="0"/>
 <span class="read" id="strRead">strength 0.00</span>
 </div>
-<div aria-hidden="true" class="scale"><span data-i18n="k214">0 · pinhole</span><span data-i18n="k215">1 · trained maximum</span><span data-i18n="k216">2 · extrapolated</span></div>
+<div aria-hidden="true" class="scale"><span data-i18n="k213">0 · pinhole</span><span data-i18n="k214">1 · trained maximum</span><span data-i18n="k215">2 · extrapolated</span></div>
 </div>
 <p class="note" data-i18n="k108">With the focal point fixed, the strength behaves like an aperture: the background blur grows while the subject stays sharp. The renderer is trained for strengths 0 to 1; values from 1 to 2 extrapolate past training. Strength controllability (LVCorr) is 0.857 on LFDOF and 0.839 on 3CReal, against 0.690 and 0.666 for GenRefocus and 0.672 and 0.672 for AnyBokeh (both on the first 20 scenes of each set).</p>
 </div>
@@ -650,11 +650,11 @@ footer{padding:36px 0 48px;text-align:center;color:var(--muted);font-size:13px;b
 <button data-i18n="k162" id="rReplay" type="button">Replay</button>
 </div>
 </div>
-<div class="rclock"><span class="rl" data-i18n="k221">Elapsed</span><b id="rClock">0.0 s</b></div>
+<div class="rclock"><span class="rl" data-i18n="k220">Elapsed</span><b id="rClock">0.0 s</b></div>
 <div class="lanes">
-<div class="lane ours" data-first="2.45" data-next="0.46"><div class="ln"><b>FlashReFocus</b><span data-i18n="k222">2.45 s for the first refocus · 0.46 s per further edit</span></div><div class="lt"><i></i></div><div class="lc"></div></div>
-<div class="lane" data-first="191.38" data-next="183.38"><div class="ln"><b>AnyBokeh</b><span data-i18n="k223">191.38 s for the first refocus · 183.38 s per further edit</span></div><div class="lt"><i></i></div><div class="lc"></div></div>
-<div class="lane" data-first="370.65" data-next="217.32"><div class="ln"><b>GenRefocus</b><span data-i18n="k224">370.65 s for the first refocus · 217.32 s per further edit</span></div><div class="lt"><i></i></div><div class="lc"></div></div>
+<div class="lane ours" data-first="2.45" data-next="0.46"><div class="ln"><b>FlashReFocus</b><span data-i18n="k221">2.45 s for the first refocus · 0.46 s per further edit</span></div><div class="lt"><i></i></div><div class="lc"></div></div>
+<div class="lane" data-first="191.38" data-next="183.38"><div class="ln"><b>AnyBokeh</b><span data-i18n="k222">191.38 s for the first refocus · 183.38 s per further edit</span></div><div class="lt"><i></i></div><div class="lc"></div></div>
+<div class="lane" data-first="370.65" data-next="217.32"><div class="ln"><b>GenRefocus</b><span data-i18n="k223">370.65 s for the first refocus · 217.32 s per further edit</span></div><div class="lt"><i></i></div><div class="lc"></div></div>
 </div>
 <p class="note" data-i18n="k112">Simulated from the measured times in the paper's cost table (1536×1536, one NVIDIA RTX PRO 6000, after warm-up), not a recording. Each bar shows the edit in progress; the count on the right is the number of finished edits.</p>
 </div>
@@ -736,7 +736,7 @@ footer{padding:36px 0 48px;text-align:center;color:var(--muted);font-size:13px;b
 </div>
 <div class="card" style="margin-top:22px">
 <h3 data-i18n="k084">Abstract</h3>
-<p data-i18n="k220" style="margin-top:8px;color:var(--ink-2);font-size:15px;text-wrap:pretty">Single-image refocusing changes the focal plane and depth of field of a photograph after capture. Users compare focal choices on one photograph, so content stability across edits matters alongside quality and speed. Recent generative methods rerun large diffusion models for every edit, even when they first restore an all-in-focus image, so content can change inconsistently between edits. Yet only this restoration is highly ill-posed and benefits from a generative prior, whereas rendering blur is largely determined by depth and the focal plane. We therefore propose FlashReFocus, which runs diffusion once per photograph and renders each edit with a lightweight network. A one-step diffusion deblurrer with a decoder refiner recovers fine detail efficiently while balancing fidelity and perceptual quality. The renderer uses an explicit defocus map for control and defocus-bias attention to promote information exchange between tokens with similar blur magnitudes. Because every edit reuses the same reconstruction, in-focus content stays consistent across edits, and editing the map enables tilt-shift and two-plane effects. We further collect 3CReal, a benchmark of 89 pairs from three camera–lens systems, to evaluate generalization to unseen optics. For zero-shot bokeh rendering on EBB! Val176 and 3CReal, FlashReFocus leads the evaluated methods in fidelity and perceptual quality. At 1536×1536, a complete refocus takes 2.45 s and each subsequent edit 0.46 s on one RTX PRO 6000.</p>
+<p data-i18n="k219" style="margin-top:8px;color:var(--ink-2);font-size:15px;text-wrap:pretty">Single-image refocusing changes the focal plane and depth of field of a photograph after capture. Users compare focal choices on one photograph, so content stability across edits matters alongside quality and speed. Recent generative methods rerun large diffusion models for every edit, even when they first restore an all-in-focus image, so content can change inconsistently between edits. Yet only this restoration is highly ill-posed and benefits from a generative prior, whereas rendering blur is largely determined by depth and the focal plane. We therefore propose FlashReFocus, which runs diffusion once per photograph and renders each edit with a lightweight network. A one-step diffusion deblurrer with a decoder refiner recovers fine detail efficiently while balancing fidelity and perceptual quality. The renderer uses an explicit defocus map for control and defocus-bias attention to promote information exchange between tokens with similar blur magnitudes. Because every edit reuses the same reconstruction, in-focus content stays consistent across edits, and editing the map enables tilt-shift and two-plane effects. We further collect 3CReal, a benchmark of 89 pairs from three camera–lens systems, to evaluate generalization to unseen optics. For zero-shot bokeh rendering on EBB! Val176 and 3CReal, FlashReFocus leads the evaluated methods in fidelity and perceptual quality. At 1536×1536, a complete refocus takes 2.45 s and each subsequent edit 0.46 s on one RTX PRO 6000.</p>
 </div>
 </div>
 </section>
@@ -856,12 +856,12 @@ footer{padding:36px 0 48px;text-align:center;color:var(--muted);font-size:13px;b
   primaryClass  = {cs.CV},
   url           = {https://arxiv.org/abs/2610.23297}
 }</pre>
-<button class="btn" data-i18n="k202" id="copyBib" type="button">Copy BibTeX</button>
+<button class="btn" data-i18n="k201" id="copyBib" type="button">Copy BibTeX</button>
 </div>
 </div>
 </section>
 </main>
-<footer><div class="wrap" data-i18n="k218">FlashReFocus · National Cheng Kung University, University at Albany (SUNY), National Yang Ming Chiao Tung University</div></footer>
+<footer><div class="wrap" data-i18n="k217">FlashReFocus · National Cheng Kung University, University at Albany (SUNY), National Yang Ming Chiao Tung University</div></footer>
 <script>
 (function(){
   var reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
