@@ -412,8 +412,8 @@ footer{padding:36px 0 48px;text-align:center;color:var(--muted);font-size:13px;b
 <div class="wrap">
 <div class="head">
 <p class="eyebrow" data-i18n="k031">Controls and applications</p>
-<h2 data-i18n="k041" id="controls-h">Further controls and applications of <em>the defocus map</em></h2>
-<p data-i18n="k051">Six more controls, each only a different depth map given to the same renderer, and the applications they enable, from a detail dial for the restoration to refocusing video. Masks from SAM select regions whose depth is rewritten. Nothing is retrained.</p>
+<h2 data-i18n="k041" id="controls-h">Further controls and applications of <em>the explicit defocus map</em></h2>
+<p data-i18n="k051">Six more controls and the applications they enable, from a detail dial for the restoration to refocusing video. Each control only changes the explicit defocus map given to the same renderer, and masks from SAM select regions whose depth is rewritten. Every example is a real photograph or video, and every control is zero-shot: the renderer was trained only with one focal plane and one strength per image, and nothing is retrained.</p>
 </div>
 <div class="ctlgrid">
 <div class="card ctlcard"><div class="frame"><video aria-label="Focus range" class="lazy" data-src="assets/ctl/range.mp4" loop="" muted="" playsinline="" poster="assets/ctl/range_poster.jpg" preload="none"></video></div>
@@ -460,10 +460,10 @@ footer{padding:36px 0 48px;text-align:center;color:var(--muted);font-size:13px;b
 <h3 data-i18n="k074">Video: box prompt with SAM</h3><p class="note" data-i18n="k105">Two boxes on the first frame, one around the horse and one around the jockey, are segmented by SAM; each later frame is prompted with the previous masks' boxes, so both stay sharp from the far shot to the close-up while the track and the stands blur. Frame-to-frame change ratio 0.69.</p></div>
 </div>
 <div class="card sbscard" style="margin-top:22px">
-<h3 data-i18n="k075">Video tracking, before and after</h3>
+<h3 data-i18n="k075">Video tracking in the wild, before and after</h3>
 <div class="sbslab"><span data-i18n="k197">Input, with its estimated depth and the SAM mask</span><span data-i18n="k198">FlashReFocus, with the edited depth</span></div>
 <div class="frame"><video aria-label="Stage clip: input with depth and mask on the left, refocused result with edited depth on the right" class="lazy" data-src="assets/app/vid_stage_sbs.mp4" loop="" muted="" playsinline="" poster="assets/app/vid_stage_sbs_poster.jpg" preload="none"></video></div>
-<p class="note" data-i18n="k106">The stage clip from the top of the page, 9 s at its native resolution. In every frame the SAM mask of the lead dancer (white outline in the left inset) is set to the focal depth, and every other pixel is moved at least a fixed distance away from it (right inset); the renderer then blurs the dancers around her. Depth is estimated per frame and smoothed over time, and nothing is retrained.</p>
+<p class="note" data-i18n="k106">An in-the-wild concert clip (the one at the top of the page), 9 s at its native resolution. In every frame the SAM mask of the lead dancer (white outline in the left inset) is set to the focal depth, and every other pixel is moved at least a fixed distance away from it (right inset); the renderer then blurs the dancers around her. Depth is estimated per frame and smoothed over time, and nothing is retrained.</p>
 </div>
 </div>
 </section>
