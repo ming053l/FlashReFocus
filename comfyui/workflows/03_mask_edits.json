@@ -1,0 +1,202 @@
+{
+ "1": {
+  "class_type": "LoadImage",
+  "inputs": {
+   "image": "sharp_photo.jpg"
+  },
+  "_meta": {
+   "title": "LoadImage"
+  }
+ },
+ "2": {
+  "class_type": "LoadImageMask",
+  "inputs": {
+   "image": "subject_mask.png",
+   "channel": "red"
+  },
+  "_meta": {
+   "title": "LoadImageMask"
+  }
+ },
+ "3": {
+  "class_type": "FlashReFocusLoader",
+  "inputs": {
+   "restoration": false,
+   "detail_weight": 1.25,
+   "weights_dir": "",
+   "auto_download": true
+  },
+  "_meta": {
+   "title": "FlashReFocusLoader"
+  }
+ },
+ "4": {
+  "class_type": "FlashReFocusPrepare",
+  "inputs": {
+   "model": [
+    "3",
+    0
+   ],
+   "image": [
+    "1",
+    0
+   ],
+   "long_side": 1024,
+   "already_sharp": true,
+   "temporal_smoothing": 0.7
+  },
+  "_meta": {
+   "title": "FlashReFocusPrepare"
+  }
+ },
+ "5": {
+  "class_type": "FlashReFocusFocusMask",
+  "inputs": {
+   "scene": [
+    "4",
+    0
+   ],
+   "mask": [
+    "2",
+    0
+   ],
+   "keep_subject_sharp": true,
+   "temporal_smoothing": 0.6
+  },
+  "_meta": {
+   "title": "FlashReFocusFocusMask"
+  }
+ },
+ "6": {
+  "class_type": "FlashReFocusMaskEdit",
+  "inputs": {
+   "focus": [
+    "5",
+    0
+   ],
+   "mask": [
+    "2",
+    0
+   ],
+   "mode": "isolate",
+   "amount": 0.25
+  },
+  "_meta": {
+   "title": "FlashReFocusMaskEdit"
+  }
+ },
+ "7": {
+  "class_type": "FlashReFocusRender",
+  "inputs": {
+   "model": [
+    "3",
+    0
+   ],
+   "scene": [
+    "4",
+    0
+   ],
+   "focus": [
+    "6",
+    0
+   ],
+   "strength": 1.0
+  },
+  "_meta": {
+   "title": "FlashReFocusRender"
+  }
+ },
+ "8": {
+  "class_type": "SaveImage",
+  "inputs": {
+   "images": [
+    "7",
+    0
+   ],
+   "filename_prefix": "flashrefocus/subject_isolated"
+  },
+  "_meta": {
+   "title": "SaveImage"
+  }
+ },
+ "9": {
+  "class_type": "FlashReFocusFocusPoint",
+  "inputs": {
+   "scene": [
+    "4",
+    0
+   ],
+   "x": 0.2,
+   "y": 0.5,
+   "temporal_smoothing": 0.6
+  },
+  "_meta": {
+   "title": "FlashReFocusFocusPoint"
+  }
+ },
+ "10": {
+  "class_type": "FlashReFocusMaskEdit",
+  "inputs": {
+   "focus": [
+    "9",
+    0
+   ],
+   "mask": [
+    "2",
+    0
+   ],
+   "mode": "push_far",
+   "amount": 0.3
+  },
+  "_meta": {
+   "title": "FlashReFocusMaskEdit"
+  }
+ },
+ "11": {
+  "class_type": "FlashReFocusRender",
+  "inputs": {
+   "model": [
+    "3",
+    0
+   ],
+   "scene": [
+    "4",
+    0
+   ],
+   "focus": [
+    "10",
+    0
+   ],
+   "strength": 1.0
+  },
+  "_meta": {
+   "title": "FlashReFocusRender"
+  }
+ },
+ "12": {
+  "class_type": "SaveImage",
+  "inputs": {
+   "images": [
+    "11",
+    0
+   ],
+   "filename_prefix": "flashrefocus/masked_pushed_far"
+  },
+  "_meta": {
+   "title": "SaveImage"
+  }
+ },
+ "13": {
+  "class_type": "SaveImage",
+  "inputs": {
+   "images": [
+    "7",
+    1
+   ],
+   "filename_prefix": "flashrefocus/subject_isolated_depth"
+  },
+  "_meta": {
+   "title": "SaveImage"
+  }
+ }
+}

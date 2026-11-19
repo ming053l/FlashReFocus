@@ -106,3 +106,22 @@ def test_decoder_refiner_starts_as_the_vae_decoder():
     x, latent = torch.rand(1, 3, 64, 64) * 2 - 1, torch.randn(1, 4, 8, 8)
     with torch.no_grad():
         assert torch.allclose(refiner(x, latent), vae.decode(latent).sample, atol=1e-5)
+
+
+def test_more_depth_edits():
+    depth = torch.rand(1, 32, 48)
+    mask = torch.zeros(32, 48, dtype=torch.bool)
+    mask[8:16, 8:20] = True
+    assert torch.allclose(depth_edits.tilted_band(32, 48, 0.5, 0.4, 0.0), depth_edits.tilt_shift(32, 48, 0.4), atol=1e-5)
+    assert torch.equal(depth_edits.focal_planes(depth, [0.3, 0.7]), depth_edits.two_focal_planes(depth, 0.3, 0.7))
+    r = depth_edits.focus_range(depth, 0.5, 0.1)
+    assert torch.all(r[(depth - 0.5).abs() <= 0.1] == 0.5)
+    assert torch.all(depth_edits.one_sided(depth, 0.5, "foreground") >= 0.5)
+    assert torch.all(depth_edits.one_sided(depth, 0.5, "background") <= 0.5)
+    assert depth_edits.radial_focus(32, 48, 0.5, 0.5)[0, 16, 24] == 0.5
+    assert torch.all(depth_edits.keep_sharp(depth, mask, 0.4)[0][mask] == 0.4)
+    assert torch.all(depth_edits.set_mask_depth(depth, mask, 1.0)[0][mask] == 1.0)
+    moved = depth_edits.move_away(depth, mask, 0.5, 0.3)
+    assert torch.all((moved[0][mask] - 0.5).abs() >= 0.3 - 1e-6) and torch.equal(moved[0][~mask], depth[0][~mask])
+    iso = depth_edits.isolate(depth, mask, 0.5, 0.2)
+    assert torch.all(iso[0][mask] == 0.5) and torch.all((iso[0][~mask] - 0.5).abs() >= 0.2 - 1e-6)

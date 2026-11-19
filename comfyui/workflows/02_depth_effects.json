@@ -1,0 +1,300 @@
+{
+ "1": {
+  "class_type": "LoadImage",
+  "inputs": {
+   "image": "photo.jpg"
+  },
+  "_meta": {
+   "title": "LoadImage"
+  }
+ },
+ "2": {
+  "class_type": "FlashReFocusLoader",
+  "inputs": {
+   "restoration": true,
+   "detail_weight": 1.25,
+   "weights_dir": "",
+   "auto_download": true
+  },
+  "_meta": {
+   "title": "FlashReFocusLoader"
+  }
+ },
+ "3": {
+  "class_type": "FlashReFocusPrepare",
+  "inputs": {
+   "model": [
+    "2",
+    0
+   ],
+   "image": [
+    "1",
+    0
+   ],
+   "long_side": 1024,
+   "already_sharp": false,
+   "temporal_smoothing": 0.7
+  },
+  "_meta": {
+   "title": "FlashReFocusPrepare"
+  }
+ },
+ "4": {
+  "class_type": "FlashReFocusFocusPoint",
+  "inputs": {
+   "scene": [
+    "3",
+    0
+   ],
+   "x": 0.4,
+   "y": 0.88,
+   "temporal_smoothing": 0.6
+  },
+  "_meta": {
+   "title": "FlashReFocusFocusPoint"
+  }
+ },
+ "10": {
+  "class_type": "FlashReFocusFocusRange",
+  "inputs": {
+   "focus": [
+    "4",
+    0
+   ],
+   "width": 0.2
+  },
+  "_meta": {
+   "title": "FlashReFocusFocusRange"
+  }
+ },
+ "11": {
+  "class_type": "FlashReFocusOneSided",
+  "inputs": {
+   "focus": [
+    "4",
+    0
+   ],
+   "keep_sharp": "foreground"
+  },
+  "_meta": {
+   "title": "FlashReFocusOneSided"
+  }
+ },
+ "12": {
+  "class_type": "FlashReFocusAddFocalPlane",
+  "inputs": {
+   "focus": [
+    "4",
+    0
+   ],
+   "x": 0.55,
+   "y": 0.3
+  },
+  "_meta": {
+   "title": "FlashReFocusAddFocalPlane"
+  }
+ },
+ "13": {
+  "class_type": "FlashReFocusRadialFocus",
+  "inputs": {
+   "scene": [
+    "3",
+    0
+   ],
+   "x": 0.5,
+   "y": 0.6,
+   "radius": 0.12,
+   "falloff": 2.2
+  },
+  "_meta": {
+   "title": "FlashReFocusRadialFocus"
+  }
+ },
+ "14": {
+  "class_type": "FlashReFocusTiltShift",
+  "inputs": {
+   "scene": [
+    "3",
+    0
+   ],
+   "x": 0.5,
+   "y": 0.6,
+   "angle": 15.0,
+   "band": 0.06,
+   "falloff": 3.0
+  },
+  "_meta": {
+   "title": "FlashReFocusTiltShift"
+  }
+ },
+ "20": {
+  "class_type": "FlashReFocusRender",
+  "inputs": {
+   "model": [
+    "2",
+    0
+   ],
+   "scene": [
+    "3",
+    0
+   ],
+   "focus": [
+    "10",
+    0
+   ],
+   "strength": 0.8
+  },
+  "_meta": {
+   "title": "FlashReFocusRender"
+  }
+ },
+ "21": {
+  "class_type": "SaveImage",
+  "inputs": {
+   "images": [
+    "20",
+    0
+   ],
+   "filename_prefix": "flashrefocus/focus_range"
+  },
+  "_meta": {
+   "title": "SaveImage"
+  }
+ },
+ "22": {
+  "class_type": "FlashReFocusRender",
+  "inputs": {
+   "model": [
+    "2",
+    0
+   ],
+   "scene": [
+    "3",
+    0
+   ],
+   "focus": [
+    "11",
+    0
+   ],
+   "strength": 0.8
+  },
+  "_meta": {
+   "title": "FlashReFocusRender"
+  }
+ },
+ "23": {
+  "class_type": "SaveImage",
+  "inputs": {
+   "images": [
+    "22",
+    0
+   ],
+   "filename_prefix": "flashrefocus/one_sided"
+  },
+  "_meta": {
+   "title": "SaveImage"
+  }
+ },
+ "24": {
+  "class_type": "FlashReFocusRender",
+  "inputs": {
+   "model": [
+    "2",
+    0
+   ],
+   "scene": [
+    "3",
+    0
+   ],
+   "focus": [
+    "12",
+    0
+   ],
+   "strength": 0.8
+  },
+  "_meta": {
+   "title": "FlashReFocusRender"
+  }
+ },
+ "25": {
+  "class_type": "SaveImage",
+  "inputs": {
+   "images": [
+    "24",
+    0
+   ],
+   "filename_prefix": "flashrefocus/two_planes"
+  },
+  "_meta": {
+   "title": "SaveImage"
+  }
+ },
+ "26": {
+  "class_type": "FlashReFocusRender",
+  "inputs": {
+   "model": [
+    "2",
+    0
+   ],
+   "scene": [
+    "3",
+    0
+   ],
+   "focus": [
+    "13",
+    0
+   ],
+   "strength": 0.8
+  },
+  "_meta": {
+   "title": "FlashReFocusRender"
+  }
+ },
+ "27": {
+  "class_type": "SaveImage",
+  "inputs": {
+   "images": [
+    "26",
+    0
+   ],
+   "filename_prefix": "flashrefocus/radial"
+  },
+  "_meta": {
+   "title": "SaveImage"
+  }
+ },
+ "28": {
+  "class_type": "FlashReFocusRender",
+  "inputs": {
+   "model": [
+    "2",
+    0
+   ],
+   "scene": [
+    "3",
+    0
+   ],
+   "focus": [
+    "14",
+    0
+   ],
+   "strength": 0.8
+  },
+  "_meta": {
+   "title": "FlashReFocusRender"
+  }
+ },
+ "29": {
+  "class_type": "SaveImage",
+  "inputs": {
+   "images": [
+    "28",
+    0
+   ],
+   "filename_prefix": "flashrefocus/tilt_shift"
+  },
+  "_meta": {
+   "title": "SaveImage"
+  }
+ }
+}

@@ -40,6 +40,7 @@ at different distances sharp at once, or make a tilt-shift miniature. FlashReFoc
 
 - ✅ Release inference code and model weights
 - ✅ Release training code
+- ✅ ComfyUI nodes for refocusing, depth edits, mask edits and video tracking ([comfyui/](comfyui))
 
 ## Quick start
 
@@ -56,6 +57,10 @@ python scripts/refocus.py photo.jpg out/photo --focus 640 360 --strength 0.5
 The photo is resized to a long side of 1024 (`--long-side`), and coordinates refer to that size (it is printed);
 `--two-planes xA yA xB yB` and `--tilt-shift ROW` select the other edits. No GPU at hand? Try the
 [Hugging Face demo](https://huggingface.co/spaces/ming0531/FlashReFocus).
+
+## ComfyUI
+
+Every control is also available as ComfyUI nodes: refocus and aperture, focus range, several focal planes, one-sided blur, radial focus, tilt-shift at any angle, mask edits (keep a subject sharp, remove a photobomber, privacy blur) and video tracking with a mask video. Link [`comfyui/`](comfyui) into `ComfyUI/custom_nodes/` and load an example from [`comfyui/workflows/`](comfyui/workflows); weights download on first use. See [comfyui/README.md](comfyui/README.md).
 
 ## How it works
 
