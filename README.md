@@ -35,6 +35,13 @@ at different distances sharp at once, or make a tilt-shift miniature. FlashReFoc
 | 🔆 **Aperture after capture** | blur strength from pinhole to wide open; the subject stays sharp |
 | 👥 **Two focal planes** | two subjects at different depths sharp at once, beyond a physical lens |
 | 🏙️ **Tilt-shift and depth edits** | the renderer reads an explicit depth map, so editing it changes the focus without retraining |
+| 🎭 **Mask edits** | keep a subject sharp, push a photobomber into the bokeh, blur faces optically, give each layer its own blur |
+| 🎬 **Video** | focus pulls and subject tracking with a mask video, with depth and focus smoothed over time |
+| 🧩 **ComfyUI** | all of the above as ComfyUI nodes, with example workflows ([comfyui/](comfyui)) |
+
+### News
+
+- **2026-11-19** 🆕 **ComfyUI nodes and more depth edits.** FlashReFocus now runs in ComfyUI ([comfyui/](comfyui)), with four example workflows, and `flashrefocus.rendering.depth_edits` gains focus range, radial focus, tilt-shift at any angle, one-sided blur, any number of focal planes and mask edits (keep sharp, push to the background, move away for privacy blur, isolate a subject). See [Applications](#applications).
 
 ### TODO
 
@@ -61,6 +68,48 @@ The photo is resized to a long side of 1024 (`--long-side`), and coordinates ref
 ## ComfyUI
 
 Every control is also available as ComfyUI nodes: refocus and aperture, focus range, several focal planes, one-sided blur, radial focus, tilt-shift at any angle, mask edits (keep a subject sharp, remove a photobomber, privacy blur) and video tracking with a mask video. Link [`comfyui/`](comfyui) into `ComfyUI/custom_nodes/` and load an example from [`comfyui/workflows/`](comfyui/workflows); weights download on first use. See [comfyui/README.md](comfyui/README.md).
+
+## Applications
+
+<p align="center"><img src="docs/applications.jpg" width="900" alt="Focus range, radial focus, tilt-shift at an angle, background-only blur, three focal planes, a subject kept sharp, a photobomber pushed into the background, faces moved out of focus, three people on one focal plane, per-layer blur, a padlock moved in front of a flat door, and video tracking of a jockey"></p>
+
+The renderer was trained with one focal plane and one strength per image, yet it renders any depth map it is given, so every effect below is zero-shot: edit the depth, then render. All examples above are real photographs and videos (the small inset shows the edited depth or the input frame); animated versions are on the [project page](https://ming053l.github.io/FlashReFocus/).
+
+| Effect | `depth_edits` function | ComfyUI node |
+|---|---|---|
+| Focus range: a thick focal plane, separate from the aperture | `focus_range` | Focus Range |
+| Radial (Lensbaby-style) focus around a point | `radial_focus` | Radial Focus |
+| Tilt-shift band at any angle | `tilted_band` (`tilt_shift` for horizontal) | Tilt-Shift |
+| Blur only the background, or only the foreground | `one_sided` | One-Sided Blur |
+| Two, three or more focal planes | `focal_planes` (`two_focal_planes`) | Add Focal Plane |
+| Keep a masked subject sharp while the focus moves | `keep_sharp` | Focus on Mask, Mask Depth Edit |
+| Remove a photobomber: push him into the background bokeh (no inpainting) | `set_mask_depth(…, 1.0)` | Mask Depth Edit (`push_far`) |
+| Optical privacy blur for faces or plates | `move_away` | Mask Depth Edit (`move_away`) |
+| Per-layer blur, or a front layer for a flat picture | `set_mask_depth` | Mask Depth Edit (`set_depth`) |
+| Isolate a subject: everything else at least a set distance from focus | `isolate` | Mask Depth Edit (`isolate`) |
+| Portrait mode on a sharp photograph (skip Stage I) | `prepare(image, deblur=False)` | Prepare (`already_sharp`) |
+| Video focus pull and subject tracking | one `Scene` per frame, smoothed depth and focus | Prepare + Focus on Mask with an image batch |
+
+Masks can come from any segmenter, for example [Segment Anything](https://github.com/facebookresearch/segment-anything) from a click or a box, or [CLIPSeg](https://github.com/timojl/clipseg) from a text prompt; neither is part of FlashReFocus. In Python (see [Python API](#python-api)):
+
+```python
+from flashrefocus.rendering import depth_edits
+
+_, H, W = scene.depth.shape                                  # scene = refocuser.prepare(...), focal_depth as below
+edits = {
+    "focus_range": (depth_edits.focus_range(scene.depth, focal_depth, width=0.2), focal_depth),
+    "background_only": (depth_edits.one_sided(scene.depth, focal_depth, keep="foreground"), focal_depth),
+    "three_planes": (depth_edits.focal_planes(scene.depth, [focal_depth, scene.focal_depth_at(x2, y2), 0.9]), focal_depth),
+    "radial": (depth_edits.radial_focus(H, W, 0.5, 0.6, radius=0.12, device="cuda"), 0.5),
+    "tilt_shift_20deg": (depth_edits.tilted_band(H, W, 0.5, 0.6, angle=20, device="cuda"), 0.5),
+    "keep_sharp": (depth_edits.keep_sharp(scene.depth, mask, focal_depth), focal_depth),   # mask: H x W bool
+    "remove_photobomber": (depth_edits.set_mask_depth(scene.depth, mask, 1.0), focal_depth),
+    "privacy_blur": (depth_edits.move_away(scene.depth, mask, focal_depth, 0.3), focal_depth),
+    "isolate_subject": (depth_edits.isolate(scene.depth, mask, focal_depth, 0.25), focal_depth),
+}
+for name, (depth, d_f) in edits.items():
+    save_image(refocuser.render(scene, 0.8, d_f, depth=depth), f"{name}.png")   # about half a second each
+```
 
 ## How it works
 
@@ -242,6 +291,7 @@ flashrefocus/        the package (pip install -e .)
   rendering/           Stage II: renderer with defocus-bias attention, depth estimation, depth edits
   pipeline.py          Refocuser: deblur and estimate depth once per image (a Scene), render every focal edit
   image_io.py, layers.py, paths.py
+comfyui/             ComfyUI custom nodes and example workflows
 scripts/             command-line tools: refocus a photo, Stage I on a test set, cost benchmark, data preparation
 training/            Stage I, decoder-refiner and renderer training, with their data pipelines and configurations
 eval/                the paper's evaluations (tables, LVCorr, focal-edit consistency, analyses of Appendices C-H)
