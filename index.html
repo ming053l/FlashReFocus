@@ -412,7 +412,7 @@ footer{padding:36px 0 48px;text-align:center;color:var(--muted);font-size:13px;b
 <div class="wrap">
 <div class="head">
 <p class="eyebrow" data-i18n="k031">Controls and applications</p>
-<h2 data-i18n="k041" id="controls-h">More from <em>the same map</em></h2>
+<h2 data-i18n="k041" id="controls-h">Further controls and applications of <em>the defocus map</em></h2>
 <p data-i18n="k051">Six more controls, each only a different depth map given to the same renderer, and the applications they enable, from a detail dial for the restoration to refocusing video. Masks from SAM select regions whose depth is rewritten. Nothing is retrained.</p>
 </div>
 <div class="ctlgrid">
@@ -471,8 +471,8 @@ footer{padding:36px 0 48px;text-align:center;color:var(--muted);font-size:13px;b
 <div class="wrap">
 <div class="head">
 <p class="eyebrow" data-i18n="k032">Abstract</p>
-<h2 data-i18n="k042" id="video-h">Refocusing should not <em>regenerate the photograph</em></h2>
-<p data-i18n="k052">Single-image refocusing changes the focal plane and depth of field after capture. Users try many focal choices on one photograph, so each edit must be fast and must leave the content alone.</p>
+<h2 data-i18n="k042" id="video-h">Motivation and <em>approach</em></h2>
+<p data-i18n="k052">Single-image refocusing changes the focal plane and depth of field of a photograph after it is taken. People try many focal settings on the same photograph or video, so each edit has to be fast, has to leave the content unchanged, and has to give explicit control over where and how much to blur. The left card lists where current methods fall short of this; the right card lists how FlashReFocus meets it.</p>
 </div>
 <div class="grid2">
 <div class="card">
@@ -480,9 +480,9 @@ footer{padding:36px 0 48px;text-align:center;color:var(--muted);font-size:13px;b
 <div class="prose" style="margin:10px 0 0">
 <ul>
 <li data-i18n="k119"><b>Minutes per edit.</b> Single-stage and two-stage generative methods run a large diffusion model for every focal edit; at 1536×1536 a further edit takes 217 s with GenRefocus and 183 s with AnyBokeh.</li>
-<li data-i18n="k120"><b>Out of reach for video.</b> At 217 s per frame, a ten-second clip at 24 fps would take about 14.5 hours with GenRefocus and about 12 hours with AnyBokeh, and every frame is regenerated on its own.</li>
-<li data-i18n="k121"><b>Content changes between edits.</b> Diffusion resynthesizes the whole image, so moving only the focal point can also alter other regions; in-focus PSNR against the input is 29.0 dB for GenRefocus.</li>
-<li data-i18n="k122"><b>No global, explicit control.</b> Focus and blur enter as implicit conditions, with no editable map of where and how much to blur, so effects beyond one focal plane, such as tilt-shift, several focal planes or blur chosen region by region, cannot be specified.</li>
+<li data-i18n="k120"><b>Too slow for video, and it flickers.</b> At 217 s per frame, a ten-second clip at 24 fps would take about 14.5 hours with GenRefocus and about 12 hours with AnyBokeh. Diffusion also resynthesizes the whole image, so content changes even where the focus did not move (in-focus PSNR against the input is 29.0 dB for GenRefocus), and frames regenerated one by one flicker.</li>
+<li data-i18n="k121"><b>No global, explicit control.</b> Focus and blur enter as implicit conditions, with no editable map of where and how much to blur, so effects beyond one focal plane, such as tilt-shift, several focal planes or blur chosen region by region, cannot be specified.</li>
+<li data-i18n="k122"><b>Unsuited to interactive editing and personalised media.</b> When each edit takes minutes and the blur cannot be specified directly, users cannot adjust focus while they watch the result, and personalised uses, such as choosing which people stay sharp in a family photograph or refocusing one's own clips for social media, are impractical.</li>
 <li data-i18n="k123"><b>Soft newly focused regions.</b> Recovering detail and rendering blur in one pass often leaves regions brought into focus insufficiently sharp.</li>
 <li data-i18n="k124"><b>Lightweight renderers cannot restore.</b> Feed-forward bokeh renderers are fast but only add blur, so anything captured out of focus stays blurred.</li>
 </ul>
@@ -494,7 +494,7 @@ footer{padding:36px 0 48px;text-align:center;color:var(--muted);font-size:13px;b
 <ul>
 <li data-i18n="k125"><b>Seconds, not minutes.</b> A complete refocus takes 2.45 s and each further edit 0.46 s at 1536×1536 on one RTX PRO 6000: 151× faster than GenRefocus for the first refocus and 472× for every edit after it, with the fewest parameters (1.70 B) and 113 TFLOPs instead of tens of thousands.</li>
 <li data-i18n="k126"><b>Diffusion only where it helps.</b> One step of diffusion with a decoder refiner restores the all-in-focus image, the one ill-posed part; it gives the best LPIPS and BRISQUE on both DPDD and RealDOF. Rendering is left to a 1.3M-parameter network.</li>
-<li data-i18n="k127"><b>Content stays put.</b> Every edit is a residual to the same reconstruction, so in-focus regions stay at 44.4 dB PSNR against the input, against 29.0 dB for GenRefocus, which regenerates the image at every edit.</li>
+<li data-i18n="k127"><b>Consistent across edits and frames.</b> Every edit is a residual to the same reconstruction, so in-focus regions stay at 44.4 dB PSNR against the input, against 29.0 dB for GenRefocus, which regenerates the image at every edit. On video nothing is regenerated, so the result does not flicker: in our refocused clips the change from one frame to the next is smaller than in the input clip itself.</li>
 <li data-i18n="k128"><b>Best bokeh on cameras it never saw.</b> On EBB! Val176 and our three-camera 3CReal it leads every method in LPIPS, LPIPS-VGG, DISTS, MS-SSIM and CLIP-I, and on 3CReal also in PSNR and SSIM.</li>
 <li data-i18n="k129"><b>A strength dial that behaves like an aperture.</b> Blur follows the strength setting more faithfully than every diffusion-based method (LVCorr 0.857 and 0.839), and on real aperture series from MODEST the chosen strength rises with the aperture in 16 of 17 cases (Spearman ρ = 0.985).</li>
 <li data-i18n="k130"><b>An explicit map you can edit.</b> Focus, aperture and spatial blur are set by an explicit defocus map with defocus-bias attention, so editing the map gives tilt-shift at any angle, two or more focal planes, a focus range, radial focus, one-sided blur, depth swaps, and mask-driven edits such as removing a photobomber, optical privacy blur or prompt-based focus.</li>
@@ -509,7 +509,7 @@ footer{padding:36px 0 48px;text-align:center;color:var(--muted);font-size:13px;b
 <div class="wrap">
 <div class="head">
 <p class="eyebrow" data-i18n="k033">01 <b>/</b> Results</p>
-<h2 data-i18n="k043" id="results-h">Restored <em>once</em>, from a defocused photograph</h2>
+<h2 data-i18n="k043" id="results-h">All-in-focus restoration of <em>defocused photographs</em></h2>
 <p data-i18n="k053">Stage I recovers the all-in-focus image that every later edit reuses. Drag the divider on any card; the left side is the input and the right side is FlashReFocus.</p>
 </div>
 <div aria-label="Filter by source" class="chips" role="group">
@@ -526,7 +526,7 @@ footer{padding:36px 0 48px;text-align:center;color:var(--muted);font-size:13px;b
 <div class="wrap">
 <div class="head">
 <p class="eyebrow" data-i18n="k034">02 <b>/</b> Interactive</p>
-<h2 data-i18n="k044" id="interactive-h">One restored image, <em>every focal edit</em></h2>
+<h2 data-i18n="k044" id="interactive-h">Interactive demo: <em>click to refocus and set the aperture</em></h2>
 <p data-i18n="k054">Click anywhere in the photograph to focus there, and turn the aperture ring to set the depth of field. Every frame is a renderer output from one restored image.</p>
 </div>
 <div class="card" id="clickCard" style="margin-bottom:22px">
@@ -597,7 +597,7 @@ footer{padding:36px 0 48px;text-align:center;color:var(--muted);font-size:13px;b
 <div class="wrap">
 <div class="head">
 <p class="eyebrow" data-i18n="k035">03 <b>/</b> Real time</p>
-<h2 data-i18n="k045" id="race-h">Ten edits while GenRefocus is <em>5% into its first</em></h2>
+<h2 data-i18n="k045" id="race-h">Editing speed compared with <em>GenRefocus</em></h2>
 <p data-i18n="k055">In the recording, both methods start on the same photograph and each FlashReFocus result appears after its measured time; GenRefocus needs 370.65 s for its first refocus. The race below adds AnyBokeh on the same clock.</p>
 </div>
 <div class="card">
@@ -628,7 +628,7 @@ footer{padding:36px 0 48px;text-align:center;color:var(--muted);font-size:13px;b
 <div class="wrap">
 <div class="head">
 <p class="eyebrow" data-i18n="k036">04 <b>/</b> Method</p>
-<h2 data-i18n="k046" id="method-h">Restore once, <em>render every edit</em></h2>
+<h2 data-i18n="k046" id="method-h">Pipeline: one-step restoration, then <em>a lightweight renderer for every edit</em></h2>
 </div>
 <div class="prose">
 <p data-i18n="k118">Recovering an all-in-focus image from a defocused photograph is highly ill-posed and benefits from a generative prior, whereas rendering blur is largely determined by depth and the focal plane. FlashReFocus therefore splits refocusing into two stages with very different costs.</p>
