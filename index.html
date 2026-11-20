@@ -463,7 +463,7 @@ footer{padding:36px 0 48px;text-align:center;color:var(--muted);font-size:13px;b
 <h3 data-i18n="k075">Video tracking in the wild, before and after</h3>
 <div class="sbslab"><span data-i18n="k198">Input, with its estimated depth and the SAM mask</span><span data-i18n="k199">FlashReFocus, with the edited depth</span></div>
 <div class="frame"><video aria-label="Stage clip: input with depth and mask on the left, refocused result with edited depth on the right" class="lazy" data-src="assets/app/vid_stage_sbs.mp4" loop="" muted="" playsinline="" poster="assets/app/vid_stage_sbs_poster.jpg" preload="none"></video></div>
-<p class="note" data-i18n="k106">An in-the-wild concert clip (the one at the top of the page), 9 s at its native resolution. In every frame the SAM mask of the lead dancer (white outline in the left inset) is set to the focal depth, and every other pixel is moved at least a fixed distance away from it (right inset); the renderer then blurs the dancers around her. Depth is estimated per frame and smoothed over time, and nothing is retrained.</p>
+<p class="note" data-i18n="k106">An in-the-wild concert clip (the one at the top of the page), 6 s rendered at its native 4K resolution (3840×1720, 60 fps). SAM 3, prompted with the word &ldquo;person&rdquo;, segments and tracks every performer; the lead singer is picked automatically by her appearance and kept through cuts and lighting changes. In every frame her mask (white outline in the left inset) is set to the focal depth, and every other pixel is moved at least a fixed distance away from it (right inset); the renderer then blurs the dancers around her. Depth is estimated per frame and smoothed over time, and nothing is retrained.</p>
 </div>
 </div>
 </section>
@@ -844,7 +844,7 @@ footer{padding:36px 0 48px;text-align:center;color:var(--muted);font-size:13px;b
     {id:'aperture', tab:T('Aperture ring'), w:960, h:1280, k:T('Aperture after capture'), t:T('From f/16 to f/2.8'), d:T('The focus stays on the subject while the background blur grows like an opening aperture.')},
     {id:'coast', tab:T('Tilt-shift'), w:1024, h:1280, k:T('Depth edit'), t:T('A tilt-shift miniature'), d:T('A depth ramp replaces scene depth, so a horizontal band stays sharp wherever it is moved.')},
     {id:'toast', tab:T('Two focal planes'), w:1280, h:848, k:T('Depth edit'), t:T('Two subjects, two focal planes'), d:T('Each pixel is blurred by its distance to the nearer of two planes, which one physical lens cannot do.')},
-    {id:'vtrack', tab:T('Video tracking'), w:1280, h:720, k:T('Video · box prompt + SAM'), t:T('Focus that follows a dancer'), d:T('A box around her in each shot; SAM follows her through the performance and the dancers around her are pushed out of focus.')},
+    {id:'vtrack', tab:T('Video tracking'), w:1280, h:720, k:T('Video · text prompt + SAM 3'), t:T('Focus that follows a dancer'), d:T('SAM 3 follows the lead singer through the whole performance, across cuts and lighting changes, and the dancers around her are pushed out of focus.')},
     {id:'vpull', tab:T('Video focus pull'), w:1280, h:720, k:T('Video · focus pull'), t:T('From her hair to the hills'), d:T('Focus is pulled from her hair to the hills across the bay and back, frame by frame, while she moves.')},
     {id:'hybrid', tab:T('Hybrid editing'), w:1280, h:960, k:T('Hybrid editing'), t:T('Defocused input'), d:T('One restoration, then focus, aperture and a depth edit chained on the same image.')}];
   var cur=-1, paused=false, timers=[], t0=0, dur=1, raf=0, dep=null, LUT=[];
