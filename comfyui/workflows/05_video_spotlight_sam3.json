@@ -1,0 +1,191 @@
+{
+ "1": {
+  "class_type": "LoadVideo",
+  "inputs": {
+   "file": "video.mp4"
+  },
+  "_meta": {
+   "title": "LoadVideo"
+  }
+ },
+ "2": {
+  "class_type": "GetVideoComponents",
+  "inputs": {
+   "video": [
+    "1",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "GetVideoComponents"
+  }
+ },
+ "3": {
+  "class_type": "FlashReFocusSAM3Subject",
+  "inputs": {
+   "images": [
+    "2",
+    0
+   ],
+   "prompt": "person",
+   "select": "most_central",
+   "x": 0.5,
+   "y": 0.5,
+   "long_side": 1280,
+   "chunk": 300
+  },
+  "_meta": {
+   "title": "FlashReFocusSAM3Subject"
+  }
+ },
+ "4": {
+  "class_type": "FlashReFocusLoader",
+  "inputs": {
+   "restoration": false,
+   "detail_weight": 1.25,
+   "weights_dir": "",
+   "auto_download": true,
+   "fused_attention": true
+  },
+  "_meta": {
+   "title": "FlashReFocusLoader"
+  }
+ },
+ "5": {
+  "class_type": "FlashReFocusPrepare",
+  "inputs": {
+   "model": [
+    "4",
+    0
+   ],
+   "image": [
+    "2",
+    0
+   ],
+   "long_side": 1280,
+   "already_sharp": true,
+   "temporal_smoothing": 0.7
+  },
+  "_meta": {
+   "title": "FlashReFocusPrepare"
+  }
+ },
+ "6": {
+  "class_type": "FlashReFocusSpotlight",
+  "inputs": {
+   "scene": [
+    "5",
+    0
+   ],
+   "subject": [
+    "3",
+    0
+   ],
+   "others": [
+    "3",
+    1
+   ],
+   "gap": 0.6,
+   "grow": 10,
+   "temporal_smoothing": 0.6
+  },
+  "_meta": {
+   "title": "FlashReFocusSpotlight"
+  }
+ },
+ "7": {
+  "class_type": "FlashReFocusRender",
+  "inputs": {
+   "model": [
+    "4",
+    0
+   ],
+   "scene": [
+    "5",
+    0
+   ],
+   "focus": [
+    "6",
+    0
+   ],
+   "strength": 1.5
+  },
+  "_meta": {
+   "title": "FlashReFocusRender"
+  }
+ },
+ "8": {
+  "class_type": "CreateVideo",
+  "inputs": {
+   "images": [
+    "7",
+    0
+   ],
+   "fps": [
+    "2",
+    2
+   ]
+  },
+  "_meta": {
+   "title": "CreateVideo"
+  }
+ },
+ "9": {
+  "class_type": "SaveVideo",
+  "inputs": {
+   "video": [
+    "8",
+    0
+   ],
+   "filename_prefix": "flashrefocus/video_spotlight_sam3",
+   "format": "auto",
+   "codec": "auto"
+  },
+  "_meta": {
+   "title": "SaveVideo"
+  }
+ },
+ "10": {
+  "class_type": "MaskToImage",
+  "inputs": {
+   "mask": [
+    "6",
+    1
+   ]
+  },
+  "_meta": {
+   "title": "MaskToImage"
+  }
+ },
+ "11": {
+  "class_type": "CreateVideo",
+  "inputs": {
+   "images": [
+    "10",
+    0
+   ],
+   "fps": [
+    "2",
+    2
+   ]
+  },
+  "_meta": {
+   "title": "CreateVideo"
+  }
+ },
+ "12": {
+  "class_type": "SaveVideo",
+  "inputs": {
+   "video": [
+    "11",
+    0
+   ],
+   "filename_prefix": "flashrefocus/video_spotlight_sam3_mask",
+   "format": "auto",
+   "codec": "auto"
+  },
+  "_meta": {
+   "title": "SaveVideo"
+  }
+ }
+}

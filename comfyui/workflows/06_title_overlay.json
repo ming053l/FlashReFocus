@@ -2,7 +2,7 @@
  "1": {
   "class_type": "LoadVideo",
   "inputs": {
-   "file": "video.mp4"
+   "file": "title_video.mp4"
   },
   "_meta": {
    "title": "LoadVideo"
@@ -21,37 +21,47 @@
   }
  },
  "3": {
-  "class_type": "LoadVideo",
+  "class_type": "LoadImageMask",
   "inputs": {
-   "file": "video_mask.mp4"
+   "image": "title_mask.png",
+   "channel": "red"
   },
   "_meta": {
-   "title": "LoadVideo"
+   "title": "LoadImageMask"
   }
  },
  "4": {
-  "class_type": "GetVideoComponents",
+  "class_type": "FlashReFocusOverlayFill",
   "inputs": {
-   "video": [
+   "image": [
+    "2",
+    0
+   ],
+   "mask": [
     "3",
     0
    ]
   },
   "_meta": {
-   "title": "GetVideoComponents"
+   "title": "FlashReFocusOverlayFill"
   }
  },
  "5": {
-  "class_type": "ImageToMask",
+  "class_type": "FlashReFocusSAM3Subject",
   "inputs": {
-   "image": [
-    "4",
+   "images": [
+    "2",
     0
    ],
-   "channel": "red"
+   "prompt": "person",
+   "select": "most_central",
+   "x": 0.5,
+   "y": 0.5,
+   "long_side": 1280,
+   "chunk": 300
   },
   "_meta": {
-   "title": "ImageToMask"
+   "title": "FlashReFocusSAM3Subject"
   }
  },
  "6": {
@@ -60,7 +70,8 @@
    "restoration": false,
    "detail_weight": 1.25,
    "weights_dir": "",
-   "auto_download": true
+   "auto_download": true,
+   "fused_attention": true
   },
   "_meta": {
    "title": "FlashReFocusLoader"
@@ -74,10 +85,10 @@
     0
    ],
    "image": [
-    "2",
+    "4",
     0
    ],
-   "long_side": 960,
+   "long_side": 1280,
    "already_sharp": true,
    "temporal_smoothing": 0.7
   },
@@ -86,42 +97,29 @@
   }
  },
  "8": {
-  "class_type": "FlashReFocusFocusMask",
+  "class_type": "FlashReFocusSpotlight",
   "inputs": {
    "scene": [
     "7",
     0
    ],
-   "mask": [
+   "subject": [
     "5",
     0
    ],
-   "keep_subject_sharp": true,
+   "others": [
+    "5",
+    1
+   ],
+   "gap": 0.6,
+   "grow": 10,
    "temporal_smoothing": 0.6
   },
   "_meta": {
-   "title": "FlashReFocusFocusMask"
+   "title": "FlashReFocusSpotlight"
   }
  },
  "9": {
-  "class_type": "FlashReFocusMaskEdit",
-  "inputs": {
-   "focus": [
-    "8",
-    0
-   ],
-   "mask": [
-    "5",
-    0
-   ],
-   "mode": "isolate",
-   "amount": 0.25
-  },
-  "_meta": {
-   "title": "FlashReFocusMaskEdit"
-  }
- },
- "10": {
   "class_type": "FlashReFocusRender",
   "inputs": {
    "model": [
@@ -133,13 +131,34 @@
     0
    ],
    "focus": [
-    "9",
+    "8",
     0
    ],
-   "strength": 1.0
+   "strength": 1.5
   },
   "_meta": {
    "title": "FlashReFocusRender"
+  }
+ },
+ "10": {
+  "class_type": "FlashReFocusOverlayPasteBack",
+  "inputs": {
+   "image": [
+    "9",
+    0
+   ],
+   "original": [
+    "2",
+    0
+   ],
+   "mask": [
+    "3",
+    0
+   ],
+   "feather": 2
+  },
+  "_meta": {
+   "title": "FlashReFocusOverlayPasteBack"
   }
  },
  "11": {
@@ -165,7 +184,7 @@
     "11",
     0
    ],
-   "filename_prefix": "flashrefocus/video_tracking",
+   "filename_prefix": "flashrefocus/title_overlay",
    "format": "auto",
    "codec": "auto"
   },

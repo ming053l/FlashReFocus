@@ -15,13 +15,31 @@ class Deblurrer:
 
     @classmethod
     def from_pretrained(cls, checkpoint=paths.STAGE1, refiner=paths.REFINER, detail_weight=1.25,
-                        refiner_dtype=torch.bfloat16, merge_vae_lora=False, separate_unets=False, device="cuda"):
+                        refiner_dtype=torch.bfloat16, merge_vae_lora=False, separate_unets=False, device="cuda",
+                        compile=False):
         """The released Stage I; refiner=None decodes with the SD2.1 VAE decoder instead. See one_step_diffusion for
-        separate_unets. The one-step model is built on the device PiSA-SR builds on (cuda, see its code)."""
+        separate_unets. The one-step model is built on the device PiSA-SR builds on (cuda, see its code).
+        compile: see Deblurrer.compile (False, "static" or "dynamic")."""
         model = load_one_step_diffusion(checkpoint, detail_weight=detail_weight, merge_vae_lora=merge_vae_lora,
                                         separate_unets=separate_unets)
         refiner = load_decoder_refiner(refiner, dtype=refiner_dtype, device=device) if refiner is not None else None
-        return cls(model, refiner)
+        deblurrer = cls(model, refiner)
+        if compile:
+            deblurrer.compile(dynamic=compile == "dynamic")
+        return deblurrer
+
+    def compile(self, dynamic=False):
+        """torch.compile the decoder refiner and the VAE encoder, the two full-resolution parts of Stage I (the refiner
+        alone is about 70% of its time): Inductor fuses their many GroupNorm / SiLU / NAF LayerNorm and gating
+        operations around the convolutions. Same weights; outputs match the eager path to ~62 dB (bf16 rounding).
+        dynamic=False compiles once per input size (fastest, for many images of one size; a new size costs a
+        recompilation); dynamic=True compiles shape-generic code once (~10% slower, no recompilation per size). The
+        first call compiles (one to two minutes). The U-Net is left eager: its attention already runs
+        FlashAttention, and its weights are swapped in place between the two passes."""
+        if self.refiner is not None:
+            self.refiner.forward = torch.compile(self.refiner.forward, dynamic=dynamic)
+        self.model.vae.encoder.forward = torch.compile(self.model.vae.encoder.forward, dynamic=dynamic)
+        return self
 
     def to(self, device):
         """Move the modules that run (VAE, U-Net(s), refiner) and the prompt embedding; the text encoder stays."""

@@ -125,3 +125,48 @@ def test_more_depth_edits():
     assert torch.all((moved[0][mask] - 0.5).abs() >= 0.3 - 1e-6) and torch.equal(moved[0][~mask], depth[0][~mask])
     iso = depth_edits.isolate(depth, mask, 0.5, 0.2)
     assert torch.all(iso[0][mask] == 0.5) and torch.all((iso[0][~mask] - 0.5).abs() >= 0.2 - 1e-6)
+
+
+def test_spotlight_grows_into_hands_but_not_neighbours():
+    depth = torch.full((1, 32, 32), 0.8)
+    depth[:, 8:24, 8:16] = 0.4                                   # the subject ...
+    depth[:, 8:24, 16:19] = 0.41                                 # ... and a hand the mask missed
+    depth[:, 8:24, 20:23] = 0.41                                 # a neighbour at the same depth
+    mask = torch.zeros(1, 32, 32, dtype=torch.bool)
+    mask[:, 8:24, 8:16] = True
+    others = torch.zeros_like(mask)
+    others[:, 8:24, 20:23] = True
+    edited, grown = depth_edits.spotlight(depth, mask, 0.4, gap=0.5, others=others, grow=3)
+    assert grown[:, 8:24, 16:19].all() and not grown[:, 8:24, 20:23].any()
+    assert torch.allclose(edited[grown], torch.tensor(0.4))
+    assert ((edited[~grown] - 0.4).abs() >= 0.5 - 1e-6).all()
+
+
+def test_overlay_fill_and_paste_back():
+    from flashrefocus.overlays import fill_region, paste_back
+    img = torch.full((1, 3, 32, 32), 0.2)
+    mask = torch.zeros(1, 1, 32, 32, dtype=torch.bool)
+    mask[..., 12:20, 12:20] = True
+    titled = torch.where(mask, torch.ones_like(img), img)        # a white "title"
+    filled = fill_region(titled, mask)
+    assert (filled - 0.2).abs().max() < 1e-4                     # the title is gone
+    back = paste_back(filled, titled, mask, feather=0)
+    assert torch.allclose(back, titled, atol=1e-6)
+
+
+@pytest.mark.skipif(not torch.cuda.is_available(), reason="the fused kernel runs on CUDA")
+def test_fused_attention_matches_reference():
+    pytest.importorskip("triton")
+    from flashrefocus.rendering.defocus_bias_attention import DefocusBiasAttention
+    from flashrefocus.rendering.fused import fused_attention_forward
+    torch.manual_seed(0)
+    att = DefocusBiasAttention(96, 3).cuda().eval()
+    att.defocus_alpha.data.uniform_(0.5, 2.0)
+    for h, w in [(13, 70), (40, 33)]:                           # lengths that are not multiples of the block size
+        x = torch.randn(2, h, w, 96, device="cuda")
+        defocus = torch.rand(2, 1, h, w, device="cuda")
+        strength = torch.tensor([[0.3], [1.0]], device="cuda")
+        with torch.no_grad():
+            ref = DefocusBiasAttention.forward(att, x, defocus, strength)
+            out = fused_attention_forward(att, x, defocus, strength)
+        assert (out - ref).abs().max() < 2e-3                    # TF32 matmuls in the kernel

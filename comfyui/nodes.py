@@ -23,11 +23,18 @@ _MODELS = {}
 
 
 # ---------------------------------------------------------------------------------------------------------------- utils
-def _fetch_weights(weights):
-    """Download the weights that are missing from `weights` (public backbones and the FlashReFocus checkpoints)."""
+def _fetch_weights(weights, restoration=True):
+    """Download the weights that are missing from `weights` (public backbones and the FlashReFocus checkpoints). Without
+    restoration only Depth Anything V2 and the renderer are needed."""
     from huggingface_hub import hf_hub_download, snapshot_download
     w = Path(weights)
     w.mkdir(parents=True, exist_ok=True)
+    if not (w / "depth_anything_v2_vitl.pth").exists():
+        hf_hub_download("depth-anything/Depth-Anything-V2-Large", "depth_anything_v2_vitl.pth", local_dir=w)
+    if not (w / "renderer.pt").exists():
+        hf_hub_download(WEIGHT_REPO, "renderer.pt", local_dir=w)
+    if not restoration:
+        return
     if not (w / "stable-diffusion-2-1-base" / "unet").exists():
         sd = ["model_index.json", "scheduler/scheduler_config.json", "tokenizer/*", "text_encoder/config.json",
               "text_encoder/model.safetensors", "unet/config.json", "unet/diffusion_pytorch_model.safetensors",
@@ -37,9 +44,7 @@ def _fetch_weights(weights):
         snapshot_download("stable-diffusion-v1-5/stable-diffusion-v1-5",
                           allow_patterns=["vae/config.json", "vae/diffusion_pytorch_model.safetensors"],
                           local_dir=w / "stable-diffusion-v1-5")
-    if not (w / "depth_anything_v2_vitl.pth").exists():
-        hf_hub_download("depth-anything/Depth-Anything-V2-Large", "depth_anything_v2_vitl.pth", local_dir=w)
-    for f in ("stage1.pkl", "refiner.pt", "renderer.pt"):
+    for f in ("stage1.pkl", "refiner.pt"):
         if not (w / f).exists():
             hf_hub_download(WEIGHT_REPO, f, local_dir=w)
 
@@ -98,7 +103,11 @@ def _xy(default_x=0.5, default_y=0.5):
 class FlashReFocusLoader:
     """Loads Stage I (one-step restoration), Depth Anything V2 and the renderer. With restoration off, only depth and the
     renderer are loaded, for photographs and videos that are already sharp (portrait mode). weights_dir: empty uses
-    $FLASHREFOCUS_WEIGHTS or weights/ in the repository; auto_download fetches missing weights from Hugging Face."""
+    $FLASHREFOCUS_WEIGHTS or weights/ in the repository; auto_download fetches missing weights from Hugging Face.
+    fused_attention runs the renderer's attention as one Triton kernel (same output up to rounding; much less memory
+    and faster at high resolution); it falls back to the reference code without Triton. compile_restoration compiles
+    Stage I's full-resolution parts with torch.compile (about 35-40% faster restoration; the first image takes one to
+    two minutes to compile): "dynamic" serves any image size, "static" is a little faster but recompiles per size."""
     @classmethod
     def INPUT_TYPES(cls):
         return {"required": {
@@ -106,23 +115,29 @@ class FlashReFocusLoader:
             "detail_weight": ("FLOAT", {"default": 1.25, "min": 0.0, "max": 1.75, "step": 0.05}),
             "weights_dir": ("STRING", {"default": ""}),
             "auto_download": ("BOOLEAN", {"default": True}),
+        }, "optional": {                      # optional, so workflows saved before it existed still load
+            "fused_attention": ("BOOLEAN", {"default": True}),
+            "compile_restoration": (["off", "dynamic", "static"], {"default": "off"}),
         }}
 
     RETURN_TYPES = ("FLASHREFOCUS_MODEL",)
     FUNCTION = "load"
     CATEGORY = CATEGORY
 
-    def load(self, restoration, detail_weight, weights_dir, auto_download):
+    def load(self, restoration, detail_weight, weights_dir, auto_download, fused_attention=True,
+             compile_restoration="off"):
         # empty: $FLASHREFOCUS_WEIGHTS if set, else weights/ in the repository
         weights_dir = weights_dir.strip() or os.environ.get("FLASHREFOCUS_WEIGHTS", str(REPO / "weights"))
-        key = (restoration, weights_dir)
+        key = (restoration, weights_dir, fused_attention, compile_restoration)
         if key not in _MODELS:
             if auto_download:
-                _fetch_weights(weights_dir)
+                _fetch_weights(weights_dir, restoration)
             os.environ["FLASHREFOCUS_WEIGHTS"] = weights_dir          # read by flashrefocus.paths at import
             from flashrefocus import Refocuser
             _MODELS.clear()
-            _MODELS[key] = Refocuser.from_pretrained(detail_weight=detail_weight, deblurring=restoration)
+            _MODELS[key] = Refocuser.from_pretrained(detail_weight=detail_weight, deblurring=restoration,
+                                                     fused=fused_attention,
+                                                     compile=False if compile_restoration == "off" else compile_restoration)
         model = _MODELS[key]
         if model.deblurrer is not None:
             model.deblurrer.detail_weight = float(detail_weight)
@@ -342,7 +357,7 @@ class FlashReFocusRender:
     def INPUT_TYPES(cls):
         return {"required": {"model": ("FLASHREFOCUS_MODEL",), "scene": ("FLASHREFOCUS_SCENE",),
                              "focus": ("FLASHREFOCUS_FOCUS",),
-                             "strength": ("FLOAT", {"default": 0.5, "min": 0.0, "max": 1.5, "step": 0.01})}}
+                             "strength": ("FLOAT", {"default": 0.5, "min": 0.0, "max": 2.0, "step": 0.01})}}
 
     RETURN_TYPES = ("IMAGE", "IMAGE")
     RETURN_NAMES = ("image", "rendered_depth")
@@ -360,6 +375,127 @@ class FlashReFocusRender:
         return (_to_comfy(out), _depth_preview(focus["depths"]))
 
 
+
+# ----------------------------------------------------------------------------------------------- video spotlight
+class FlashReFocusSAM3Subject:
+    """SAM 3 subject masks for a video (image batch): segments and tracks every instance of `prompt` through the clip
+    and picks one track as the subject (most_central, largest, or the track under point x, y on the first frame
+    where one covers it). Outputs the subject mask and the union of the others (for Spotlight). Needs
+    transformers >= 4.57 and access to facebook/sam3; segmentation runs at `long_side` at most."""
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {"required": {"images": ("IMAGE",), "prompt": ("STRING", {"default": "person"}),
+                             "select": (["most_central", "largest", "point"],), **_xy(),
+                             "long_side": ("INT", {"default": 1280, "min": 256, "max": 2048, "step": 16}),
+                             "chunk": ("INT", {"default": 300, "min": 16, "max": 2000, "step": 1})}}
+
+    RETURN_TYPES = ("MASK", "MASK")
+    RETURN_NAMES = ("subject", "others")
+    FUNCTION = "run"
+    CATEGORY = CATEGORY
+
+    def run(self, images, prompt, select, x, y, long_side, chunk):
+        from flashrefocus.segment import track_subject
+        _, h, w, _ = images.shape
+        s = min(1.0, long_side / max(h, w))
+        frames = images.permute(0, 3, 1, 2).float()
+        if s < 1:
+            frames = F.interpolate(frames, size=(round(h * s), round(w * s)), mode="bilinear", align_corners=False,
+                                   antialias=True)
+        frames = (frames.clamp(0, 1) * 255).round().byte().permute(0, 2, 3, 1)
+        device = "cuda" if torch.cuda.is_available() else "cpu"
+        subject, others = track_subject(frames, prompt.strip() or "person", select, (x, y), chunk, device=device,
+                                        dtype=torch.bfloat16 if device == "cuda" else torch.float32)
+        return (subject.float(), others.float())
+
+
+class FlashReFocusSpotlight:
+    """Spotlight on a subject in a video or photograph: the focal depth is the median depth inside the subject mask
+    (smoothed over frames), the mask is grown by `grow` pixels into nearby pixels at the subject's depth that belong
+    to no other person (missed hands and hair), and every pixel outside it moves at least `gap` away from the focal
+    plane, so the people around the subject blur strongly. Connect `others` (for example from SAM 3 Subject) so the
+    mask never grows into a neighbour. Frames without the subject are rendered with their own depth."""
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {"required": {"scene": ("FLASHREFOCUS_SCENE",), "subject": ("MASK",),
+                             "gap": ("FLOAT", {"default": 0.6, "min": 0.0, "max": 1.0, "step": 0.01}),
+                             "grow": ("INT", {"default": 10, "min": 0, "max": 64, "step": 1}),
+                             "temporal_smoothing": ("FLOAT", {"default": 0.6, "min": 0.0, "max": 0.95, "step": 0.05})},
+                "optional": {"others": ("MASK",)}}
+
+    RETURN_TYPES = ("FLASHREFOCUS_FOCUS", "MASK")
+    RETURN_NAMES = ("focus", "subject_grown")
+    FUNCTION = "run"
+    CATEGORY = CATEGORY
+
+    def run(self, scene, subject, gap, grow, temporal_smoothing, others=None):
+        from flashrefocus.rendering import depth_edits as E
+        depths = scene["depths"]
+        _, h, w = depths[0].shape
+        masks = _masks_for(subject, len(depths), h, w)
+        other = _masks_for(others, len(depths), h, w) if others is not None else [None] * len(depths)
+        present = [bool(m.sum() > 50) for m in masks]
+        focal = [float(d[m].median()) if p else float(d.median()) for d, m, p in zip(depths, masks, present)]
+        focal = _smooth(focal, temporal_smoothing)
+        out, grown = [], []
+        for d, m, o, f, p in zip(depths, masks, other, focal, present):
+            if p:
+                d2, m2 = E.spotlight(d, m, f, gap, o, grow)
+            else:
+                d2, m2 = d, m
+            out.append(d2)
+            grown.append(m2.float().view(h, w))
+        return (_focus(out, focal), torch.stack(grown))
+
+
+class FlashReFocusOverlayFill:
+    """Removes a burnt-in overlay (title, caption, logo; white = overlay) by filling it from its surroundings, before
+    Prepare: otherwise the renderer blurs the letters together with the scene and they glow and flicker as the focus
+    changes. Put the sharp overlay back after Render with Overlay Paste Back."""
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {"required": {"image": ("IMAGE",), "mask": ("MASK",)}}
+
+    RETURN_TYPES = ("IMAGE",)
+    FUNCTION = "run"
+    CATEGORY = CATEGORY
+
+    def run(self, image, mask):
+        from flashrefocus.overlays import fill_region
+        x = image.permute(0, 3, 1, 2).float()
+        m = _batch_mask(mask, x.shape[0], *x.shape[-2:])
+        return (fill_region(x, m).permute(0, 2, 3, 1).clamp(0, 1),)
+
+
+class FlashReFocusOverlayPasteBack:
+    """Pastes the overlay (white in the mask) from the original frames back onto the rendered frames, with a soft
+    edge. The original and the mask are resized to the rendered size."""
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {"required": {"image": ("IMAGE",), "original": ("IMAGE",), "mask": ("MASK",),
+                             "feather": ("INT", {"default": 2, "min": 0, "max": 16, "step": 1})}}
+
+    RETURN_TYPES = ("IMAGE",)
+    FUNCTION = "run"
+    CATEGORY = CATEGORY
+
+    def run(self, image, original, mask, feather):
+        from flashrefocus.overlays import paste_back
+        r = image.permute(0, 3, 1, 2).float()
+        o = F.interpolate(original.permute(0, 3, 1, 2).float(), size=r.shape[-2:], mode="bicubic",
+                          align_corners=False, antialias=True).clamp(0, 1)
+        if o.shape[0] < r.shape[0]:
+            o = o[torch.arange(r.shape[0]).clamp(max=o.shape[0] - 1)]
+        m = _batch_mask(mask, r.shape[0], *r.shape[-2:])
+        return (paste_back(r, o, m, feather).permute(0, 2, 3, 1).clamp(0, 1),)
+
+
+def _batch_mask(mask, n, h, w):
+    """ComfyUI MASK -> (n, 1, h, w) float in [0, 1] (one mask is reused for every frame)."""
+    m = mask if mask.dim() == 3 else mask[None]
+    m = F.interpolate(m[:, None].float(), size=(h, w), mode="bilinear", align_corners=False)
+    return m[torch.arange(n).clamp(max=m.shape[0] - 1)]
+
 NODE_CLASS_MAPPINGS = {
     "FlashReFocusLoader": FlashReFocusLoader,
     "FlashReFocusPrepare": FlashReFocusPrepare,
@@ -372,6 +508,10 @@ NODE_CLASS_MAPPINGS = {
     "FlashReFocusAddFocalPlane": FlashReFocusAddFocalPlane,
     "FlashReFocusMaskEdit": FlashReFocusMaskEdit,
     "FlashReFocusRender": FlashReFocusRender,
+    "FlashReFocusSAM3Subject": FlashReFocusSAM3Subject,
+    "FlashReFocusSpotlight": FlashReFocusSpotlight,
+    "FlashReFocusOverlayFill": FlashReFocusOverlayFill,
+    "FlashReFocusOverlayPasteBack": FlashReFocusOverlayPasteBack,
 }
 NODE_DISPLAY_NAME_MAPPINGS = {
     "FlashReFocusLoader": "FlashReFocus Loader",
@@ -385,4 +525,8 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "FlashReFocusAddFocalPlane": "FlashReFocus Add Focal Plane",
     "FlashReFocusMaskEdit": "FlashReFocus Mask Depth Edit",
     "FlashReFocusRender": "FlashReFocus Render",
+    "FlashReFocusSAM3Subject": "FlashReFocus SAM 3 Subject (video)",
+    "FlashReFocusSpotlight": "FlashReFocus Spotlight",
+    "FlashReFocusOverlayFill": "FlashReFocus Overlay Fill (before Prepare)",
+    "FlashReFocusOverlayPasteBack": "FlashReFocus Overlay Paste Back (after Render)",
 }

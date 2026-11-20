@@ -23,10 +23,10 @@
   <a href="https://huggingface.co/datasets/ming0531/3CReal"><img src="https://img.shields.io/badge/%F0%9F%A4%97%20Dataset-3CReal-ffcc4d" alt="3CReal dataset"></a>
   <a href="https://youtu.be/g032M7moWQ4"><img src="https://img.shields.io/badge/Video-YouTube-ff0000" alt="Video"></a>
 </p>
-<p align="center"><img src="docs/video_tracking.gif" width="900" alt="Video tracking on an in-the-wild concert clip: left, the input with its depth and the SAM mask of the lead dancer in green; right, FlashReFocus keeps her sharp and blurs the dancers around her"></p>
-<p align="center"><sub>Video tracking in the wild: a SAM mask (green, left) keeps the lead dancer sharp in every frame while the dancers around her blur (right); insets show the estimated and the edited depth.</sub></p>
+<p align="center"><img src="docs/video_spotlight.gif" width="900" alt="Video spotlight on a 4K concert clip: left, the input with its depth and the SAM 3 mask of the lead singer in green; right, FlashReFocus keeps her sharp and blurs the dancers around her"></p>
+<p align="center"><sub>Video spotlight on a 4K concert clip: a SAM 3 mask (green, left), prompted with the word "person" and picked automatically, keeps the lead singer sharp in every frame while the dancers around her blur (right); insets show the estimated and the edited depth.</sub></p>
 
-<p align="center"><img src="docs/applications.gif" width="900" alt="Focus range, radial focus, tilt-shift at an angle, background-only blur, three focal planes, a subject kept sharp, a photobomber pushed into the background, faces moved out of focus, three people on one focal plane, per-layer blur, a padlock moved in front of a flat door, and video tracking of a jockey"></p>
+<p align="center"><img src="docs/applications.gif" width="900" alt="Focus range, radial focus, tilt-shift at an angle, background-only blur, three focal planes, a subject kept sharp, a photobomber pushed into the background, faces moved out of focus, three people on one focal plane, per-layer blur, a padlock moved in front of a flat door, and a jockey followed through a video"></p>
 
 Refocus a photograph after it was taken: click where it should be sharp, open or close the aperture, keep two subjects
 at different distances sharp at once, or make a tilt-shift miniature. FlashReFocus restores the all-in-focus image
@@ -39,10 +39,12 @@ at different distances sharp at once, or make a tilt-shift miniature. FlashReFoc
 | 👥 **Two focal planes** | two subjects at different depths sharp at once, beyond a physical lens |
 | 🏙️ **Tilt-shift and depth edits** | the renderer reads an explicit depth map, so editing it changes the focus without retraining |
 | 🎭 **Mask edits** | keep a subject sharp, push a photobomber into the bokeh, blur faces optically, give each layer its own blur |
-| 🎬 **Video** | focus pulls and subject tracking with a mask video, with depth and focus smoothed over time |
+| 🎬 **Video** | focus pulls, and a spotlight that keeps one subject sharp (SAM 3 picks and follows the subject from a text prompt), with depth and focus smoothed over time |
 | 🧩 **ComfyUI** | all of the above as ComfyUI nodes, with example workflows ([comfyui/](comfyui)) |
 
 ### News
+
+- **2026-11-21** 🆕 **Faster renderer and restoration, video spotlight and SAM 3.** `Refocuser.from_pretrained(fused=True)` runs the renderer's defocus-bias attention as one Triton kernel that never stores the bias or attention matrices: the same output up to floating-point rounding, peak renderer memory down from 16.1 to 3.0 GiB at 3840×1728 (3.5 to 1.1 GiB at 1536×1536), and faster (the ComfyUI loader turns it on); `compile="static"` or `"dynamic"` makes Stage I restoration about 35-40% faster with `torch.compile`. New `depth_edits.spotlight` keeps one subject sharp and pushes everyone else out of focus, `flashrefocus.segment.track_subject` finds and follows the subject with SAM 3 from a text prompt, and `flashrefocus.overlays` keeps burnt-in titles sharp. ComfyUI gains four nodes and three video workflows.
 
 - **2026-11-19** 🆕 **ComfyUI nodes and more depth edits.** FlashReFocus now runs in ComfyUI ([comfyui/](comfyui)), with four example workflows, and `flashrefocus.rendering.depth_edits` gains focus range, radial focus, tilt-shift at any angle, one-sided blur, any number of focal planes and mask edits (keep sharp, push to the background, move away for privacy blur, isolate a subject). See [Applications](#applications).
 
@@ -50,7 +52,8 @@ at different distances sharp at once, or make a tilt-shift miniature. FlashReFoc
 
 - ✅ Release inference code and model weights
 - ✅ Release training code
-- ✅ ComfyUI nodes for refocusing, depth edits, mask edits and video tracking ([comfyui/](comfyui))
+- ✅ ComfyUI nodes for refocusing, depth edits, mask edits and video spotlight ([comfyui/](comfyui))
+- ✅ Fused Triton kernel for the renderer's attention (`fused=True`) and compiled Stage I (`compile=`)
 
 ## Quick start
 
@@ -70,7 +73,7 @@ The photo is resized to a long side of 1024 (`--long-side`), and coordinates ref
 
 ## ComfyUI
 
-Every control is also available as ComfyUI nodes: refocus and aperture, focus range, several focal planes, one-sided blur, radial focus, tilt-shift at any angle, mask edits (keep a subject sharp, remove a photobomber, privacy blur) and video tracking with a mask video. Link [`comfyui/`](comfyui) into `ComfyUI/custom_nodes/` and load an example from [`comfyui/workflows/`](comfyui/workflows); weights download on first use. See [comfyui/README.md](comfyui/README.md).
+Every control is also available as ComfyUI nodes: refocus and aperture, focus range, several focal planes, one-sided blur, radial focus, tilt-shift at any angle, mask edits (keep a subject sharp, remove a photobomber, privacy blur), and a video spotlight that keeps one subject sharp, with the subject found and followed by SAM 3 from a text prompt or given as a mask video. Link [`comfyui/`](comfyui) into `ComfyUI/custom_nodes/` and load an example from [`comfyui/workflows/`](comfyui/workflows); weights download on first use. See [comfyui/README.md](comfyui/README.md).
 
 ## Applications
 
@@ -89,7 +92,9 @@ The renderer was trained with one focal plane and one strength per image, yet it
 | Per-layer blur, or a front layer for a flat picture | `set_mask_depth` | Mask Depth Edit (`set_depth`) |
 | Isolate a subject: everything else at least a set distance from focus | `isolate` | Mask Depth Edit (`isolate`) |
 | Portrait mode on a sharp photograph (skip Stage I) | `prepare(image, deblur=False)` | Prepare (`already_sharp`) |
-| Video focus pull and subject tracking | one `Scene` per frame, smoothed depth and focus | Prepare + Focus on Mask with an image batch |
+| Video focus pull | one `Scene` per frame, smoothed depth and focus | Prepare + Focus Point with an image batch |
+| Video spotlight (one subject sharp, everyone else blurred) | `spotlight` + `flashrefocus.segment.track_subject` (SAM 3) | SAM 3 Subject + Spotlight |
+| Burnt-in titles kept sharp in video | `flashrefocus.overlays.fill_region` / `paste_back` | Overlay Fill + Overlay Paste Back |
 
 Masks can come from any segmenter, for example [Segment Anything](https://github.com/facebookresearch/segment-anything) from a click or a box, or [CLIPSeg](https://github.com/timojl/clipseg) from a text prompt; neither is part of FlashReFocus. In Python (see [Python API](#python-api)):
 
@@ -239,6 +244,38 @@ Outputs are bit-reproducible with `torch.backends.cudnn.benchmark = False`; cuDN
 size but may pick different convolution algorithms between runs, changing outputs by a few 1/255.
 `Refocuser.from_pretrained(merge_vae_lora=True)` merges the VAE-encoder LoRA for a ~20% faster encoder (outputs ~60 dB
 from the exact ones).
+
+**Deployment.** `Refocuser.from_pretrained(fused=True)` runs the renderer's defocus-bias attention as one Triton kernel
+([`flashrefocus/rendering/fused.py`](flashrefocus/rendering/fused.py)): the defocus bias is computed inside the kernel
+and the attention uses an online softmax, so the per-row and per-column bias and attention matrices are never stored.
+Weights are unchanged; outputs match the reference path to ~61 dB in bf16 (within bf16 rounding) and ~80 dB in fp32.
+Peak renderer memory drops from 16.1 to 3.0 GiB at 3840×1728 and from 3.5 to 1.1 GiB at 1536×1536, and rendering is
+faster, most of all at high resolution. It is off by default so that the reported numbers are reproduced exactly, and
+falls back to the reference code without Triton or on CPU. `from flashrefocus.rendering.fused import enable_fused;
+enable_fused(renderer)` switches an already loaded renderer.
+`Refocuser.from_pretrained(compile="static")` (or `"dynamic"`) also compiles Stage I's two full-resolution parts, the
+decoder refiner and the VAE encoder, with `torch.compile`, which fuses their many normalization, activation and gating
+operations: restoration runs about 35-40% faster after a one-time compilation of one to two minutes, and outputs match
+the eager path to ~57-62 dB. `"static"` is fastest for many images of one size and recompiles for a new size;
+`"dynamic"` compiles shape-generic code once and is about 10% slower.
+
+**Video spotlight.** Keep one subject sharp in a sharp video and blur everyone around them:
+
+```python
+from flashrefocus.segment import track_subject        # SAM 3: transformers >= 4.57, access to facebook/sam3
+
+refocuser = Refocuser.from_pretrained(deblurring=False, fused=True)
+subject, others = track_subject(frames, prompt="person", select="most_central")   # frames: (n, h, w, 3) uint8
+for frame, m, o in zip(frames_as_tensors, subject, others):
+    scene = refocuser.prepare(frame, deblur=False)
+    d_f = float(scene.depth[0][m].median())           # smooth over frames in practice
+    depth, _ = depth_edits.spotlight(scene.depth, m[None], d_f, gap=0.6, others=o[None], grow=10)
+    out = refocuser.render(scene, 1.5, d_f, depth=depth)
+```
+
+`spotlight` grows the subject mask into nearby pixels at the subject's depth that belong to no other person (hands and
+hair that segmentation misses) and moves every other pixel at least `gap` from the focal plane. Without restoration,
+FlashReFocus does not import Stage I, so this runs alongside a recent `transformers`.
 
 ## Tests
 

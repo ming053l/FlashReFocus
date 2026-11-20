@@ -1,0 +1,160 @@
+{
+ "1": {
+  "class_type": "LoadVideo",
+  "inputs": {
+   "file": "video.mp4"
+  },
+  "_meta": {
+   "title": "LoadVideo"
+  }
+ },
+ "2": {
+  "class_type": "GetVideoComponents",
+  "inputs": {
+   "video": [
+    "1",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "GetVideoComponents"
+  }
+ },
+ "3": {
+  "class_type": "LoadVideo",
+  "inputs": {
+   "file": "video_mask.mp4"
+  },
+  "_meta": {
+   "title": "LoadVideo"
+  }
+ },
+ "4": {
+  "class_type": "GetVideoComponents",
+  "inputs": {
+   "video": [
+    "3",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "GetVideoComponents"
+  }
+ },
+ "5": {
+  "class_type": "ImageToMask",
+  "inputs": {
+   "image": [
+    "4",
+    0
+   ],
+   "channel": "red"
+  },
+  "_meta": {
+   "title": "ImageToMask"
+  }
+ },
+ "6": {
+  "class_type": "FlashReFocusLoader",
+  "inputs": {
+   "restoration": false,
+   "detail_weight": 1.25,
+   "weights_dir": "",
+   "auto_download": true,
+   "fused_attention": true
+  },
+  "_meta": {
+   "title": "FlashReFocusLoader"
+  }
+ },
+ "7": {
+  "class_type": "FlashReFocusPrepare",
+  "inputs": {
+   "model": [
+    "6",
+    0
+   ],
+   "image": [
+    "2",
+    0
+   ],
+   "long_side": 1280,
+   "already_sharp": true,
+   "temporal_smoothing": 0.7
+  },
+  "_meta": {
+   "title": "FlashReFocusPrepare"
+  }
+ },
+ "8": {
+  "class_type": "FlashReFocusSpotlight",
+  "inputs": {
+   "scene": [
+    "7",
+    0
+   ],
+   "subject": [
+    "5",
+    0
+   ],
+   "gap": 0.6,
+   "grow": 10,
+   "temporal_smoothing": 0.6
+  },
+  "_meta": {
+   "title": "FlashReFocusSpotlight"
+  }
+ },
+ "9": {
+  "class_type": "FlashReFocusRender",
+  "inputs": {
+   "model": [
+    "6",
+    0
+   ],
+   "scene": [
+    "7",
+    0
+   ],
+   "focus": [
+    "8",
+    0
+   ],
+   "strength": 1.5
+  },
+  "_meta": {
+   "title": "FlashReFocusRender"
+  }
+ },
+ "10": {
+  "class_type": "CreateVideo",
+  "inputs": {
+   "images": [
+    "9",
+    0
+   ],
+   "fps": [
+    "2",
+    2
+   ]
+  },
+  "_meta": {
+   "title": "CreateVideo"
+  }
+ },
+ "11": {
+  "class_type": "SaveVideo",
+  "inputs": {
+   "video": [
+    "10",
+    0
+   ],
+   "filename_prefix": "flashrefocus/video_spotlight",
+   "format": "auto",
+   "codec": "auto"
+  },
+  "_meta": {
+   "title": "SaveVideo"
+  }
+ }
+}

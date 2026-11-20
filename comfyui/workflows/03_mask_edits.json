@@ -24,7 +24,8 @@
    "restoration": false,
    "detail_weight": 1.25,
    "weights_dir": "",
-   "auto_download": true
+   "auto_download": true,
+   "fused_attention": true
   },
   "_meta": {
    "title": "FlashReFocusLoader"

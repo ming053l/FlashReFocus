@@ -105,5 +105,34 @@ def move_away(depth, mask, focal_depth, distance):
 
 def isolate(depth, mask, focal_depth, gap):
     """Keep the masked pixels on the focal plane and move every other pixel at least `gap` away from it, so everything
-    around the subject blurs strongly (used for video tracking with a SAM mask)."""
+    around the subject blurs strongly."""
     return keep_sharp(move_away(depth, ~mask.view_as(depth), focal_depth, gap), mask, focal_depth)
+
+
+def grow_mask(mask, depth, focal_depth, others=None, radius=10, tolerance=0.05):
+    """Add to a subject mask the pixels next to it (within `radius` pixels) that sit near the focal depth and belong to
+    no other person (`others`, optional bool mask): segmentation often misses fingers, hair and motion-blurred hands,
+    which would otherwise be pushed out of focus. Only grown pixels connected to the mask are kept; holes are filled."""
+    import numpy as np
+    from scipy import ndimage
+    m = mask.view(depth.shape[-2:]).cpu().numpy().astype(bool)
+    if not m.any():
+        return mask
+    d = depth.view(depth.shape[-2:]).float().cpu().numpy()
+    ring = ndimage.binary_dilation(m, iterations=int(radius)) & ~m
+    if others is not None:
+        ring &= ~others.view(depth.shape[-2:]).cpu().numpy().astype(bool)
+    grown = m | (ring & (np.abs(d - float(focal_depth)) < tolerance))
+    lab, _ = ndimage.label(grown)
+    keep = np.unique(lab[m])
+    grown = ndimage.binary_fill_holes(np.isin(lab, keep[keep > 0]))
+    return torch.from_numpy(grown).to(mask.device).view_as(mask)
+
+
+def spotlight(depth, mask, focal_depth, gap=0.6, others=None, grow=10):
+    """Spotlight on a subject (for example the lead singer in a concert video): the subject mask, grown by `grow`
+    pixels into its missed hands and hair (grow_mask), goes on the focal plane and every other pixel moves at least
+    `gap` away from it, so the people around the subject blur strongly. Returns the edited depth and the grown mask."""
+    if grow > 0:
+        mask = grow_mask(mask, depth, focal_depth, others, radius=grow)
+    return isolate(depth, mask, focal_depth, gap), mask

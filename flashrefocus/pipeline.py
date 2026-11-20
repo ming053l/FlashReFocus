@@ -12,7 +12,6 @@ from dataclasses import dataclass
 import torch
 
 from . import paths
-from .deblurring.deblurrer import Deblurrer
 from .image_io import read_image, save_image, to_signed, to_unit_range
 from .rendering.depth import DepthEstimator
 from .rendering.depth_edits import depth_at
@@ -44,14 +43,24 @@ class Refocuser:
     @classmethod
     def from_pretrained(cls, detail_weight=1.25, refiner=paths.REFINER, refiner_dtype=torch.bfloat16,
                         render_dtype=torch.bfloat16, channels_last=False, merge_vae_lora=False, deblurring=True,
-                        device="cuda"):
+                        device="cuda", fused=False, compile=False):
         """The released models. Reported results use the defaults; the cost benchmark (Table 6) also uses
         refiner_dtype=float16 and channels_last=True. render_dtype=None renders in fp32. deblurring=False loads only
-        the depth estimator and the renderer, for images that are already all-in-focus."""
+        the depth estimator and the renderer, for images that are already all-in-focus. fused=True runs the renderer's
+        defocus-bias attention as one Triton kernel (flashrefocus/rendering/fused.py): same weights and, up to
+        floating-point rounding, the same output, several times less memory and faster at high resolution. It is off by
+        default so that the reported numbers are reproduced exactly; deployment (ComfyUI, the demo) turns it on.
+        compile ("static" or "dynamic") compiles Stage I's full-resolution parts (Deblurrer.compile): about 35-40%
+        faster restoration after a one-time compilation of one to two minutes; off by default for the same reason."""
+        if deblurring:                     # Stage I (and its pinned diffusers / transformers) only when restoring
+            from .deblurring.deblurrer import Deblurrer
         deblurrer = Deblurrer.from_pretrained(refiner=refiner, detail_weight=detail_weight, refiner_dtype=refiner_dtype,
-                                              merge_vae_lora=merge_vae_lora) if deblurring else None
+                                              merge_vae_lora=merge_vae_lora, compile=compile) if deblurring else None
         refocuser = cls(deblurrer, DepthEstimator.from_pretrained(device=device), load_renderer(paths.RENDERER, device),
                         render_dtype, channels_last)
+        if fused:
+            from .rendering.fused import enable_fused
+            enable_fused(refocuser.renderer)
         if channels_last:
             modules = [refocuser.renderer]
             if deblurrer is not None:
