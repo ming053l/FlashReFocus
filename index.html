@@ -287,7 +287,7 @@ footer{padding:36px 0 48px;text-align:center;color:var(--muted);font-size:13px;b
 .maskgrid .frame video{object-fit:contain;background:#0b0d0f}
 .hero-bar{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}.hero-bar::-webkit-scrollbar{display:none}.hero-bar button{flex:none;padding:6px 11px;font-size:12.5px}
 
-.sbscard{padding:12px}.sbscard h3{margin:2px 2px 8px;font-size:17px}.sbscard .frame{aspect-ratio:1936/592;background:var(--surface-2);border-radius:10px;overflow:hidden}.sbscard video{width:100%;height:100%;display:block;object-fit:cover}.sbslab{display:grid;grid-template-columns:1fr 1fr;column-gap:.83%;margin:0 2px 8px;font-size:13.5px;font-weight:600;color:var(--ink-2)}.sbscard .note{margin:10px 2px 0}
+.sbscard{padding:12px}.sbscard h3{margin:2px 2px 8px;font-size:17px}.sbscard .frame{aspect-ratio:3840/856;background:var(--surface-2);border-radius:10px;overflow:hidden}.sbscard video{width:100%;height:100%;display:block;object-fit:cover}.sbslab{display:grid;grid-template-columns:1fr 1fr;column-gap:.83%;margin:0 2px 8px;font-size:13.5px;font-weight:600;color:var(--ink-2)}.sbscard .note{margin:10px 2px 0}
 /* click-to-refocus */
 .clk{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:22px;align-items:start}
 .cv{position:relative;border-radius:12px;overflow:hidden;background:#0b0d0f;cursor:crosshair;margin:0 auto}
@@ -415,6 +415,12 @@ footer{padding:36px 0 48px;text-align:center;color:var(--muted);font-size:13px;b
 <h2 data-i18n="k041" id="controls-h">Further controls and applications of <em>the explicit defocus map</em></h2>
 <p data-i18n="k051">Six more controls and the applications they enable, from a detail dial for the restoration to refocusing video. Each control only changes the explicit defocus map given to the same renderer, and masks from SAM select regions whose depth is rewritten. Every example is a real photograph or video, and every control is zero-shot: the renderer was trained only with one focal plane and one strength per image, and nothing is retrained.</p>
 </div>
+<div class="card sbscard" style="margin-bottom:22px">
+<h3 data-i18n="k075">Spotlight in a concert video: input and result</h3>
+<div class="sbslab"><span data-i18n="k198">Input, with its estimated depth and the SAM mask</span><span data-i18n="k199">FlashReFocus, with the edited depth</span></div>
+<div class="frame"><video aria-label="Stage clip: input with depth and mask on the left, refocused result with edited depth on the right" class="lazy" data-src="assets/app/vid_stage_sbs.mp4" loop="" muted="" playsinline="" poster="assets/app/vid_stage_sbs_poster.jpg" preload="none"></video></div>
+<p class="note" data-i18n="k106">An in-the-wild concert clip (the one at the top of the page), 6 s rendered at its native 4K resolution (3840×1720, 60 fps). SAM 3, prompted with the word &ldquo;person&rdquo;, segments and tracks every performer; the lead singer is picked automatically by her appearance and kept through cuts and lighting changes. In every frame her mask (white outline in the left inset) is set to the focal depth, and every other pixel is moved at least a fixed distance away from it (right inset); the renderer then blurs the dancers around her. Depth is estimated per frame and smoothed over time, and nothing is retrained.</p>
+</div>
 <div class="ctlgrid">
 <div class="card ctlcard"><div class="frame"><video aria-label="Focus range" class="lazy" data-src="assets/ctl/range.mp4" loop="" muted="" playsinline="" poster="assets/ctl/range_poster.jpg" preload="none"></video></div>
 <h3 data-i18n="k057">Focus range</h3><p class="note" data-i18n="k088">A thick focal plane: everything within a chosen depth range stays sharp, from the bottles alone to the floor and the street outside. The range and the aperture are separate dials, which one physical lens cannot separate.</p></div>
@@ -458,12 +464,6 @@ footer{padding:36px 0 48px;text-align:center;color:var(--muted);font-size:13px;b
 <h3 data-i18n="k073">Video: click prompt with SAM</h3><p class="note" data-i18n="k104">One click on the woman in the orange jacket gives SAM a point prompt; the resulting mask follows her down the street and keeps her sharp while the shop windows and the street behind her blur. Frame-to-frame change ratio 0.75.</p></div>
 <div class="card ctlcard"><div class="frame"><video aria-label="Box prompt with SAM on a galloping horse and its jockey" class="lazy" data-src="assets/app/vid_jockey.mp4" loop="" muted="" playsinline="" poster="assets/app/vid_jockey_poster.jpg" preload="none"></video></div>
 <h3 data-i18n="k074">Video: box prompt with SAM</h3><p class="note" data-i18n="k105">Two boxes on the first frame, one around the horse and one around the jockey, are segmented by SAM; each later frame is prompted with the previous masks' boxes, so both stay sharp from the far shot to the close-up while the track and the stands blur. Frame-to-frame change ratio 0.69.</p></div>
-</div>
-<div class="card sbscard" style="margin-top:22px">
-<h3 data-i18n="k075">Video tracking in the wild, before and after</h3>
-<div class="sbslab"><span data-i18n="k198">Input, with its estimated depth and the SAM mask</span><span data-i18n="k199">FlashReFocus, with the edited depth</span></div>
-<div class="frame"><video aria-label="Stage clip: input with depth and mask on the left, refocused result with edited depth on the right" class="lazy" data-src="assets/app/vid_stage_sbs.mp4" loop="" muted="" playsinline="" poster="assets/app/vid_stage_sbs_poster.jpg" preload="none"></video></div>
-<p class="note" data-i18n="k106">An in-the-wild concert clip (the one at the top of the page), 6 s rendered at its native 4K resolution (3840×1720, 60 fps). SAM 3, prompted with the word &ldquo;person&rdquo;, segments and tracks every performer; the lead singer is picked automatically by her appearance and kept through cuts and lighting changes. In every frame her mask (white outline in the left inset) is set to the focal depth, and every other pixel is moved at least a fixed distance away from it (right inset); the renderer then blurs the dancers around her. Depth is estimated per frame and smoothed over time, and nothing is retrained.</p>
 </div>
 </div>
 </section>
@@ -844,7 +844,7 @@ footer{padding:36px 0 48px;text-align:center;color:var(--muted);font-size:13px;b
     {id:'aperture', tab:T('Aperture ring'), w:960, h:1280, k:T('Aperture after capture'), t:T('From f/16 to f/2.8'), d:T('The focus stays on the subject while the background blur grows like an opening aperture.')},
     {id:'coast', tab:T('Tilt-shift'), w:1024, h:1280, k:T('Depth edit'), t:T('A tilt-shift miniature'), d:T('A depth ramp replaces scene depth, so a horizontal band stays sharp wherever it is moved.')},
     {id:'toast', tab:T('Two focal planes'), w:1280, h:848, k:T('Depth edit'), t:T('Two subjects, two focal planes'), d:T('Each pixel is blurred by its distance to the nearer of two planes, which one physical lens cannot do.')},
-    {id:'vtrack', tab:T('Video tracking'), w:1280, h:720, k:T('Video · text prompt + SAM 3'), t:T('Focus that follows a dancer'), d:T('SAM 3 follows the lead singer through the whole performance, across cuts and lighting changes, and the dancers around her are pushed out of focus.')},
+    {id:'vtrack', tab:T('Video spotlight'), w:1280, h:720, k:T('Video · text prompt + SAM 3'), t:T('The main subject is kept in focus'), d:T('SAM 3 follows the lead singer through the whole performance, across cuts and lighting changes, and the dancers around her are pushed out of focus.')},
     {id:'vpull', tab:T('Video focus pull'), w:1280, h:720, k:T('Video · focus pull'), t:T('From her hair to the hills'), d:T('Focus is pulled from her hair to the hills across the bay and back, frame by frame, while she moves.')},
     {id:'hybrid', tab:T('Hybrid editing'), w:1280, h:960, k:T('Hybrid editing'), t:T('Defocused input'), d:T('One restoration, then focus, aperture and a depth edit chained on the same image.')}];
   var cur=-1, paused=false, timers=[], t0=0, dur=1, raf=0, dep=null, LUT=[];
