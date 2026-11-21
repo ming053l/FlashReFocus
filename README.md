@@ -234,24 +234,9 @@ two_planes = depth_edits.two_focal_planes(scene.depth, focal_depth, scene.focal_
 save_image(refocuser.render(scene, 0.8, focal_depth, depth=two_planes), "two_planes.png")
 ```
 
-`render` takes the focal depth rather than a pixel, so a video can be processed as one `Scene` per frame with D_f
-and K chosen per frame (for example smoothed over time). The stages are also usable alone:
-`flashrefocus.deblurring.Deblurrer.from_pretrained()(x)` restores an image in [-1, 1], and
-`Refocuser.from_pretrained(deblurring=False)` loads only the depth estimator and the renderer.
-`Deblurrer.from_pretrained(separate_unets=True)` keeps the pixel and pixel + detail U-Nets as two modules instead of
-swapping weights in place (same output, twice the U-Net memory), as the Hugging Face demo does on ZeroGPU.
-
-Outputs are bit-reproducible with `torch.backends.cudnn.benchmark = False`; cuDNN autotuning is faster for a fixed input
-size but may pick different convolution algorithms between runs, changing outputs by a few 1/255.
-`Refocuser.from_pretrained(merge_vae_lora=True)` merges the VAE-encoder LoRA for a ~20% faster encoder (outputs ~60 dB
-from the exact ones).
-
-**Optional speed-ups.** We additionally provide an optimized inference path, off by default so that the reported
-numbers are reproduced exactly: `Refocuser.from_pretrained(fused=True)` runs the renderer's attention as one fused
-Triton kernel ([`flashrefocus/rendering/fused.py`](flashrefocus/rendering/fused.py)), `compile="static"` compiles
-Stage I with `torch.compile`, `save_image(..., background=True)` writes PNGs on a background thread, and
-`flashrefocus.video.VideoWriter` streams video frames into one encode. Outputs match the default path up to
-floating-point rounding.
+`Refocuser.from_pretrained(deblurring=False)` skips Stage I for images that are already sharp. We additionally
+provide an optimized inference path, off by default so that the reported numbers are reproduced exactly:
+`fused=True` (a fused attention kernel for the renderer) and `compile="static"` (compiled Stage I).
 
 **Video spotlight.** Keep one subject sharp in a sharp video and blur everyone around them:
 
@@ -259,17 +244,16 @@ floating-point rounding.
 from flashrefocus.segment import track_subject        # SAM 3: transformers >= 4.57, access to facebook/sam3
 
 refocuser = Refocuser.from_pretrained(deblurring=False, fused=True)
-subject, others = track_subject(frames, prompt="person", select="most_central")   # frames: (n, h, w, 3) uint8
+subject, others = track_subject(frames, prompt="person")   # frames: (n, h, w, 3) uint8
 for frame, m, o in zip(frames_as_tensors, subject, others):
     scene = refocuser.prepare(frame, deblur=False)
-    d_f = float(scene.depth[0][m].median())           # smooth over frames in practice
-    depth, _ = depth_edits.spotlight(scene.depth, m[None], d_f, gap=0.6, others=o[None], grow=10)
+    d_f = float(scene.depth[0][m].median())
+    depth, _ = depth_edits.spotlight(scene.depth, m[None], d_f, others=o[None])
     out = refocuser.render(scene, 1.5, d_f, depth=depth)
 ```
 
-`spotlight` grows the subject mask into nearby pixels at the subject's depth that belong to no other person (hands and
-hair that segmentation misses) and moves every other pixel at least `gap` from the focal plane. Without restoration,
-FlashReFocus does not import Stage I, so this runs alongside a recent `transformers`.
+All loading options, the video and overlay tools, background image writing, the video writer and the speed-ups are
+described in [flashrefocus/README.md](flashrefocus/README.md).
 
 ## Tests
 
