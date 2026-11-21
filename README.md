@@ -54,6 +54,7 @@ at different distances sharp at once, or make a tilt-shift miniature. FlashReFoc
 - ✅ Release training code
 - ✅ ComfyUI nodes for refocusing, depth edits, mask edits and video spotlight ([comfyui/](comfyui))
 - ✅ Fused Triton kernel for the renderer's attention (`fused=True`) and compiled Stage I (`compile=`)
+- ✅ Background PNG writing and a streaming video writer (`flashrefocus.video`)
 
 ## Quick start
 
@@ -258,6 +259,35 @@ decoder refiner and the VAE encoder, with `torch.compile`, which fuses their man
 operations: restoration runs about 35-40% faster after a one-time compilation of one to two minutes, and outputs match
 the eager path to ~57-62 dB. `"static"` is fastest for many images of one size and recompiles for a new size;
 `"dynamic"` compiles shape-generic code once and is about 10% slower.
+
+**Expected speed of the deployment path** (fused attention, compiled Stage I, background PNG writing), at 1536×1536 on
+one RTX PRO 6000. These are **estimates** from per-component timings taken on a shared GPU, not yet clean
+measurements; they will be replaced by `scripts/benchmark_cost.py refocusing --fused --compile static --background-save`
+run on an idle GPU.
+
+| | Reported path (paper, Table 6) | Deployment path (estimate) |
+|---|---|---|
+| Each further focal edit, until the caller can show the result | 0.46 s | ~0.1 s (the PNG is written in the background) |
+| Each further focal edit, PNG written | 0.46 s | ~0.36 s |
+| Complete refocus (Stage I + depth + rendering) | 2.45 s | ~1.7-1.8 s |
+| Renderer alone at 3840×1728 | ~0.75 s, 16.1 GiB | ~0.23 s, 3.0 GiB |
+
+**Writing results.** At 1536×1536, PNG compression (single-threaded zlib) takes about as long as rendering a fused
+edit. `save_image(x, path, background=True)` copies the image to the CPU at once and compresses and writes it on a
+background thread (the same file, byte for byte), so an interactive caller can show the next edit without waiting;
+`wait_for_writes()` flushes the pending files. For video, write no per-frame images: `flashrefocus.video.VideoWriter`
+streams frames into one ffmpeg encode from a background thread, so encoding overlaps rendering, and picks a working
+encoder (NVENC on the GPU when the ffmpeg build has it, else libx264, libopenh264 or mpeg4); `audio_from=` copies the
+audio of the source clip. `Refocuser.render_batch` renders several frames with per-frame strengths and focal depths
+in one call.
+
+```python
+from flashrefocus.video import VideoWriter
+
+with VideoWriter("refocused.mp4", fps=30, audio_from="clip.mp4") as writer:
+    for scene, d_f in zip(scenes, focal_depths):
+        writer.write(refocuser.render(scene, 1.0, d_f))
+```
 
 **Video spotlight.** Keep one subject sharp in a sharp video and blur everyone around them:
 

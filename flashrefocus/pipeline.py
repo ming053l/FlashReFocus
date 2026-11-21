@@ -103,3 +103,19 @@ class Refocuser:
         with torch.autocast(device.type, dtype=self.render_dtype or torch.float32, enabled=self.render_dtype is not None):
             return self.renderer(image, torch.tensor([[float(strength)]], device=device), depth[None],
                                  torch.tensor([[float(focal_depth)]], device=device)).float()
+
+    @torch.no_grad()
+    def render_batch(self, images, depths, strengths, focal_depths):
+        """Stage II for several frames in one pass (video): images (b, 3, H, W), depths (b, H, W), one strength and one
+        focal depth per frame (sequences or scalars). The same result as rendering the frames one by one, up to
+        rounding; at video resolutions one frame already fills a large GPU, so this is a convenience, not a speed-up."""
+        b = images.shape[0]
+        device = images.device
+
+        def per_frame(v):
+            t = torch.as_tensor(v, dtype=torch.float32, device=device).flatten()
+            return (t.expand(b) if t.numel() == 1 else t).view(b, 1)
+
+        with torch.autocast(device.type, dtype=self.render_dtype or torch.float32, enabled=self.render_dtype is not None):
+            return self.renderer(self._memory_format(images), per_frame(strengths), depths.view(b, 1, *depths.shape[-2:]),
+                                 per_frame(focal_depths)).float()

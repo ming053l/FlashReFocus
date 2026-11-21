@@ -22,7 +22,7 @@ from torch.utils.flop_counter import FlopCounterMode
 from flashrefocus import Refocuser, paths
 from flashrefocus.deblurring import Deblurrer
 from flashrefocus.deblurring.one_step_diffusion import stage1_parameter_count
-from flashrefocus.image_io import read_image, save_image
+from flashrefocus.image_io import read_image, save_image, wait_for_writes
 
 
 def timed(fn, warmup, runs):
@@ -61,7 +61,8 @@ def refocusing_cost(a):
     src, aif, bokeh = a.work / "input.png", a.work / "aif.png", a.work / "bokeh.png"
     h, w = a.size
     Image.fromarray(np.random.RandomState(0).randint(0, 255, (h, w, 3), dtype=np.uint8)).save(src)
-    rf = Refocuser.from_pretrained(refiner_dtype=torch.float16, channels_last=True)
+    rf = Refocuser.from_pretrained(refiner_dtype=torch.float16, channels_last=True, fused=a.fused,
+                                   compile=a.compile or False)
     points = [(300, 400), (w - 336, h - 636), (w // 2, 200), (500, h - 236)]
     state = {"scene": None, "edit": 0}
 
@@ -75,14 +76,17 @@ def refocusing_cost(a):
     def new_focus():
         x, y = points[state["edit"] % len(points)]
         state["edit"] += 1
-        save_image(rf.render(state["scene"], 0.5, state["scene"].focal_depth_at(x, y)), bokeh)
+        save_image(rf.render(state["scene"], 0.5, state["scene"].focal_depth_at(x, y)), bokeh,
+                   background=a.background_save)
 
     t1, m1 = timed(stage1, a.warmup, a.runs)
     t2, m2 = timed(depth_and_render, a.warmup, a.runs)
     t3, m3 = timed(new_focus, a.warmup, a.runs)
+    wait_for_writes()
     params = stage1_parameter_count(rf.deblurrer.model, rf.deblurrer.refiner) + sum(
         p.numel() for m in (rf.depth_estimator, rf.renderer) for p in m.parameters())
-    return {"size": a.size, "params_B": params / 1e9, "stage1_s": t1, "depth_render_s": t2, "first_s": t1 + t2,
+    return {"size": a.size, "fused": a.fused, "compile": a.compile, "background_save": a.background_save,
+            "params_B": params / 1e9, "stage1_s": t1, "depth_render_s": t2, "first_s": t1 + t2,
             "new_focus_s": t3, "peak_GiB": max(m1, m2, m3)}
 
 
@@ -93,6 +97,10 @@ def main():
     ap.add_argument("--refiner", action="store_true", help="deblurring: decode with the refiner")
     ap.add_argument("--detail-weight", type=float, default=1.25)
     ap.add_argument("--flops", action="store_true")
+    ap.add_argument("--fused", action="store_true", help="refocusing: fused renderer attention (deployment path)")
+    ap.add_argument("--compile", choices=["static", "dynamic"], default=None, help="refocusing: compile Stage I")
+    ap.add_argument("--background-save", action="store_true",
+                    help="refocusing: New focus writes its PNG on a background thread (time until the caller goes on)")
     ap.add_argument("--warmup", type=int, default=3)
     ap.add_argument("--runs", type=int, default=10)
     ap.add_argument("--work", type=Path, default=paths.WORK / "benchmark_cost")

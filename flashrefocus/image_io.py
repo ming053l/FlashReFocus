@@ -23,9 +23,35 @@ def tensor_to_uint8(x):
     return (x[0].float().clamp(0, 1) * 255.0).to(torch.uint8).permute(1, 2, 0).cpu().numpy()
 
 
-def save_image(x, path, compress_level=1):
-    """Lossless PNG of a 1x3xHxW float tensor in [0, 1]; a low zlib level keeps writing fast."""
-    Image.fromarray(tensor_to_uint8(x)).save(path, compress_level=compress_level)
+_WRITER = None
+
+
+def _png(arr, path, compress_level):
+    Image.fromarray(arr).save(path, compress_level=compress_level)
+
+
+def save_image(x, path, compress_level=1, background=False):
+    """Lossless PNG of a 1x3xHxW float tensor in [0, 1]; a low zlib level keeps writing fast.
+
+    PNG compression (zlib, single-threaded) takes far longer than rendering an edit (about 0.13 s at 1536x1536).
+    background=True quantises and copies the image to the CPU now (so `x` can be reused at once) and compresses and
+    writes the file on a background thread: an interactive caller can show the result without waiting for the file.
+    Returns a Future in that case; wait_for_writes() blocks until every pending file is written."""
+    arr = tensor_to_uint8(x)
+    if not background:
+        return _png(arr, path, compress_level)
+    global _WRITER
+    if _WRITER is None:
+        from concurrent.futures import ThreadPoolExecutor
+        _WRITER = ThreadPoolExecutor(max_workers=2, thread_name_prefix="flashrefocus-png")
+    return _WRITER.submit(_png, arr, path, compress_level)
+
+
+def wait_for_writes():
+    """Block until every image saved with background=True is on disk."""
+    if _WRITER is not None:
+        _WRITER.shutdown(wait=True)
+        globals()["_WRITER"] = None
 
 
 def to_signed(x):

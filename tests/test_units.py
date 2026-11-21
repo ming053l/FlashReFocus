@@ -170,3 +170,28 @@ def test_fused_attention_matches_reference():
             ref = DefocusBiasAttention.forward(att, x, defocus, strength)
             out = fused_attention_forward(att, x, defocus, strength)
         assert (out - ref).abs().max() < 2e-3                    # TF32 matmuls in the kernel
+
+
+def test_background_save_matches_foreground(tmp_path):
+    from flashrefocus.image_io import save_image, wait_for_writes
+    x = torch.rand(1, 3, 40, 56)
+    save_image(x, tmp_path / "a.png")
+    save_image(x, tmp_path / "b.png", background=True)
+    wait_for_writes()
+    assert np.array_equal(np.asarray(Image.open(tmp_path / "a.png")), np.asarray(Image.open(tmp_path / "b.png")))
+
+
+def test_video_writer(tmp_path):
+    import subprocess
+    from flashrefocus.video import VideoWriter, ffmpeg_exe
+    try:
+        exe = ffmpeg_exe()
+    except FileNotFoundError:
+        pytest.skip("no ffmpeg")
+    with VideoWriter(tmp_path / "v.mp4", fps=10) as w:
+        for _ in range(3):
+            w.write(torch.rand(4, 3, 32, 48))                      # batches of frames
+        w.write(np.zeros((32, 48, 3), np.uint8))                   # and a single uint8 frame
+    log = subprocess.run([exe, "-i", str(tmp_path / "v.mp4"), "-map", "0:v", "-f", "null", "-"],
+                         capture_output=True, text=True).stderr
+    assert "frame=   13" in log or "frame=13" in log.replace(" ", "")
