@@ -17,6 +17,8 @@ The [top-level README](../README.md) covers the common use. This page lists the 
 | `merge_vae_lora` | `False` | Merges the VAE-encoder LoRA: about 20% faster encoder, outputs about 60 dB from the exact ones. |
 | `fused` | `False` | Fused attention kernel for the renderer, see [Speed-ups](#speed-ups). |
 | `compile` | `False` | `"static"` or `"dynamic"`: compiles Stage I, see [Speed-ups](#speed-ups). |
+| `depth_input_size` | `1024` | Short side at which Depth Anything V2 runs. 518 (its native size) is about 5x faster on the CPU. |
+| `device` | `"cuda"` | `"cpu"` with `deblurring=False`, see [Running on the CPU](#running-on-the-cpu). |
 
 Stage I alone: `flashrefocus.deblurring.Deblurrer.from_pretrained()(x)` restores an image `x` in [-1, 1].
 `Deblurrer.from_pretrained(separate_unets=True)` keeps the pixel and pixel + detail U-Nets as two modules instead of
@@ -141,6 +143,29 @@ Both options are off by default, so the reported numbers are reproduced exactly.
   encoder, with `torch.compile`. Restoration is about 35-40% faster after a one-time compilation of one to two
   minutes, and outputs match the eager path to about 57-62 dB. `"static"` is fastest for many images of one size and
   recompiles for a new size. `"dynamic"` compiles once for all sizes and is about 10% slower.
+
+## Running on the CPU
+
+The depth estimator and the renderer run without a GPU, for images that are already sharp (Stage I needs CUDA):
+
+```python
+refocuser = Refocuser.from_pretrained(deblurring=False, device="cpu", fused=True, depth_input_size=518)
+scene = refocuser.prepare(read_image("photo.jpg", "cpu", multiple=16), deblur=False)
+bokeh = refocuser.render(scene, 0.8, scene.focal_depth_at(x, y))
+```
+
+On the CPU both models run in fp32 (bf16 and fp16 are emulated on most CPUs and much slower), and the renderer uses
+channels-last tensors. `fused=True` selects a CPU attention path: the defocus bias from one `torch.cdist` and the
+attention from PyTorch's fused `scaled_dot_product_attention`, with outputs equal to the reference up to fp32 rounding.
+Measured with 16 threads of a Threadripper 3960X (AVX2) shared with other jobs:
+
+| 768x512 image | Time |
+|---|---|
+| Depth, `depth_input_size=1024` / `518` | 18.9 s / 3.4 s (once per image) |
+| Render, reference / `fused=True` | 2.1 s / 1.2 s (per edit) |
+
+At 1024x672 a render takes 4.4 s with the reference path and 2.9 s with `fused=True`. INT8 dynamic quantization of
+the depth model gave only about 15% more speed and a larger depth error than `depth_input_size=518`.
 
 ## Reproducibility
 

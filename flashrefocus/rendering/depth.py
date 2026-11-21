@@ -52,7 +52,7 @@ def disparity_to_depth(disparity):
 
 class DepthEstimator(nn.Module):
     """image (1, 3, H, W) in [0, 1] -> D (1, H, W). DA-V2 runs at `input_size` on the short side (a multiple of 14),
-    in fp16 autocast."""
+    in fp16 autocast on CUDA and in fp32 on the CPU (fp16 is emulated there and far slower)."""
 
     def __init__(self, model, input_size=1024):
         super().__init__()
@@ -79,7 +79,7 @@ class DepthEstimator(nn.Module):
         h, w = image.shape[-2:]
         x = F.interpolate(image, self._network_size(h, w), mode="bicubic", align_corners=False)
         x = (x - self.mean.to(x)) / self.std.to(x)
-        with torch.autocast(image.device.type, dtype=torch.float16):
+        with torch.autocast(image.device.type, dtype=torch.float16, enabled=image.is_cuda):   # fp32 on the CPU
             disparity = self.model(x)
         disparity = F.interpolate(disparity[:, None].float(), (h, w), mode="bilinear", align_corners=True)[0]
         return disparity_to_depth(disparity)

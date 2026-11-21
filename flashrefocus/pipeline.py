@@ -6,7 +6,7 @@
 
 A Scene holds everything an edit needs, so a video can be processed as one Scene per frame, with the focal depth
 D_f and the strength K chosen per frame (for example smoothed over time) and frames rendered in batches.
-Images are 1 x 3 x H x W in [0, 1] on the GPU; sides should be multiples of 16."""
+Images are 1 x 3 x H x W in [0, 1] on the GPU (or the CPU, without Stage I); sides should be multiples of 16."""
 from dataclasses import dataclass
 
 import torch
@@ -43,7 +43,7 @@ class Refocuser:
     @classmethod
     def from_pretrained(cls, detail_weight=1.25, refiner=paths.REFINER, refiner_dtype=torch.bfloat16,
                         render_dtype=torch.bfloat16, channels_last=False, merge_vae_lora=False, deblurring=True,
-                        device="cuda", fused=False, compile=False):
+                        device="cuda", fused=False, compile=False, depth_input_size=1024):
         """The released models. Reported results use the defaults; the cost benchmark (Table 6) also uses
         refiner_dtype=float16 and channels_last=True. render_dtype=None renders in fp32. deblurring=False loads only
         the depth estimator and the renderer, for images that are already all-in-focus. fused=True runs the renderer's
@@ -51,12 +51,23 @@ class Refocuser:
         floating-point rounding, the same output, several times less memory and faster at high resolution. It is off by
         default so that the reported numbers are reproduced exactly; deployment (ComfyUI, the demo) turns it on.
         compile ("static" or "dynamic") compiles Stage I's full-resolution parts (Deblurrer.compile): about 35-40%
-        faster restoration after a one-time compilation of one to two minutes; off by default for the same reason."""
+        faster restoration after a one-time compilation of one to two minutes; off by default for the same reason.
+        depth_input_size: short side at which Depth Anything V2 runs (1024 for the reported results; 518, its native
+        size, is about 5x faster on the CPU).
+
+        device="cpu" needs deblurring=False (Stage I builds on CUDA). On the CPU the depth model and the renderer run in
+        fp32 (bf16 and fp16 are emulated on most CPUs), the renderer uses channels-last tensors, and fused=True selects
+        a CPU attention path (flashrefocus/rendering/fused.py); the output matches the reference to fp32 rounding."""
+        if str(device).startswith("cpu"):
+            if deblurring:
+                raise ValueError("Stage I needs CUDA: use deblurring=False on the CPU (for images that are already sharp)")
+            channels_last = True
         if deblurring:                     # Stage I (and its pinned diffusers / transformers) only when restoring
             from .deblurring.deblurrer import Deblurrer
         deblurrer = Deblurrer.from_pretrained(refiner=refiner, detail_weight=detail_weight, refiner_dtype=refiner_dtype,
                                               merge_vae_lora=merge_vae_lora, compile=compile) if deblurring else None
-        refocuser = cls(deblurrer, DepthEstimator.from_pretrained(device=device), load_renderer(paths.RENDERER, device),
+        refocuser = cls(deblurrer, DepthEstimator.from_pretrained(device=device, input_size=depth_input_size),
+                        load_renderer(paths.RENDERER, device),
                         render_dtype, channels_last)
         if fused:
             from .rendering.fused import enable_fused
@@ -100,7 +111,8 @@ class Refocuser:
         depth = scene.depth if depth is None else depth
         image = self._memory_format(scene.image)
         device = image.device
-        with torch.autocast(device.type, dtype=self.render_dtype or torch.float32, enabled=self.render_dtype is not None):
+        with torch.autocast(device.type, dtype=self.render_dtype or torch.float32,
+                            enabled=self.render_dtype is not None and device.type == "cuda"):     # fp32 on the CPU
             return self.renderer(image, torch.tensor([[float(strength)]], device=device), depth[None],
                                  torch.tensor([[float(focal_depth)]], device=device)).float()
 
@@ -116,6 +128,7 @@ class Refocuser:
             t = torch.as_tensor(v, dtype=torch.float32, device=device).flatten()
             return (t.expand(b) if t.numel() == 1 else t).view(b, 1)
 
-        with torch.autocast(device.type, dtype=self.render_dtype or torch.float32, enabled=self.render_dtype is not None):
+        with torch.autocast(device.type, dtype=self.render_dtype or torch.float32,
+                            enabled=self.render_dtype is not None and device.type == "cuda"):
             return self.renderer(self._memory_format(images), per_frame(strengths), depths.view(b, 1, *depths.shape[-2:]),
                                  per_frame(focal_depths)).float()

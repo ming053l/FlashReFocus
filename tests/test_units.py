@@ -172,6 +172,22 @@ def test_fused_attention_matches_reference():
         assert (out - ref).abs().max() < 2e-3                    # TF32 matmuls in the kernel
 
 
+def test_cpu_attention_matches_reference():
+    from flashrefocus.rendering.defocus_bias_attention import DefocusBiasAttention
+    from flashrefocus.rendering.fused import fused_attention_forward
+    torch.manual_seed(0)
+    att = DefocusBiasAttention(96, 3).eval()
+    att.defocus_alpha.data.uniform_(0.5, 2.0)
+    for h, w in [(13, 70), (40, 33)]:
+        x = torch.randn(2, h, w, 96)
+        defocus = torch.rand(2, 1, h, w)
+        strength = torch.tensor([[0.3], [1.0]])
+        with torch.no_grad():
+            ref = DefocusBiasAttention.forward(att, x, defocus, strength)
+            out = fused_attention_forward(att, x, defocus, strength)   # the CPU path (cdist + fused SDPA)
+        assert (out - ref).abs().max() < 1e-4
+
+
 def test_background_save_matches_foreground(tmp_path):
     from flashrefocus.image_io import save_image, wait_for_writes
     x = torch.rand(1, 3, 40, 56)
