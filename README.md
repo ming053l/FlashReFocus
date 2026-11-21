@@ -44,17 +44,14 @@ at different distances sharp at once, or make a tilt-shift miniature. FlashReFoc
 
 ### News
 
-- **2026-11-21** 🆕 **Faster renderer and restoration, video spotlight and SAM 3.** `Refocuser.from_pretrained(fused=True)` runs the renderer's defocus-bias attention as one Triton kernel that never stores the bias or attention matrices: the same output up to floating-point rounding, peak renderer memory down from 16.1 to 3.0 GiB at 3840×1728 (3.5 to 1.1 GiB at 1536×1536), and faster (the ComfyUI loader turns it on); `compile="static"` or `"dynamic"` makes Stage I restoration about 35-40% faster with `torch.compile`. New `depth_edits.spotlight` keeps one subject sharp and pushes everyone else out of focus, `flashrefocus.segment.track_subject` finds and follows the subject with SAM 3 from a text prompt, and `flashrefocus.overlays` keeps burnt-in titles sharp. ComfyUI gains four nodes and three video workflows.
-
-- **2026-11-19** 🆕 **ComfyUI nodes and more depth edits.** FlashReFocus now runs in ComfyUI ([comfyui/](comfyui)), with four example workflows, and `flashrefocus.rendering.depth_edits` gains focus range, radial focus, tilt-shift at any angle, one-sided blur, any number of focal planes and mask edits (keep sharp, push to the background, move away for privacy blur, isolate a subject). See [Applications](#applications).
+- **2026-11-21** Video spotlight with SAM 3, and optional speed-ups (a fused attention kernel for the renderer, compiled Stage I). See [flashrefocus/README.md](flashrefocus/README.md).
+- **2026-11-19** ComfyUI nodes ([comfyui/](comfyui)) and more depth edits: focus range, radial focus, tilt-shift at any angle, several focal planes, mask edits.
 
 ### TODO
 
-- ✅ Release inference code and model weights
-- ✅ Release training code
-- ✅ ComfyUI nodes for refocusing, depth edits, mask edits and video spotlight ([comfyui/](comfyui))
-- ✅ Fused Triton kernel for the renderer's attention (`fused=True`) and compiled Stage I (`compile=`)
-- ✅ Background PNG writing and a streaming video writer (`flashrefocus.video`)
+- ✅ Inference code, model weights and training code
+- ✅ ComfyUI nodes, including the video spotlight
+- ✅ Optional speed-ups: fused renderer attention and compiled Stage I
 
 ## Quick start
 
@@ -78,26 +75,7 @@ Every control is also available as ComfyUI nodes: refocus and aperture, focus ra
 
 ## Applications
 
-The renderer was trained with one focal plane and one strength per image, yet it renders any depth map it is given, so every effect below is zero-shot: edit the depth, then render. All examples at the top of this page are real photographs and videos (the small inset shows the edited depth or the input frame); animated versions are on the [project page](https://ming053l.github.io/FlashReFocus/).
-
-| Effect | `depth_edits` function | ComfyUI node |
-|---|---|---|
-| Focus range: a thick focal plane, separate from the aperture | `focus_range` | Focus Range |
-| Radial (Lensbaby-style) focus around a point | `radial_focus` | Radial Focus |
-| Tilt-shift band at any angle | `tilted_band` (`tilt_shift` for horizontal) | Tilt-Shift |
-| Blur only the background, or only the foreground | `one_sided` | One-Sided Blur |
-| Two, three or more focal planes | `focal_planes` (`two_focal_planes`) | Add Focal Plane |
-| Keep a masked subject sharp while the focus moves | `keep_sharp` | Focus on Mask, Mask Depth Edit |
-| Remove a photobomber: push him into the background bokeh (no inpainting) | `set_mask_depth(…, 1.0)` | Mask Depth Edit (`push_far`) |
-| Optical privacy blur for faces or plates | `move_away` | Mask Depth Edit (`move_away`) |
-| Per-layer blur, or a front layer for a flat picture | `set_mask_depth` | Mask Depth Edit (`set_depth`) |
-| Isolate a subject: everything else at least a set distance from focus | `isolate` | Mask Depth Edit (`isolate`) |
-| Portrait mode on a sharp photograph (skip Stage I) | `prepare(image, deblur=False)` | Prepare (`already_sharp`) |
-| Video focus pull | one `Scene` per frame, smoothed depth and focus | Prepare + Focus Point with an image batch |
-| Video spotlight (one subject sharp, everyone else blurred) | `spotlight` + `flashrefocus.segment.track_subject` (SAM 3) | SAM 3 Subject + Spotlight |
-| Burnt-in titles kept sharp in video | `flashrefocus.overlays.fill_region` / `paste_back` | Overlay Fill + Overlay Paste Back |
-
-Masks can come from any segmenter, for example [Segment Anything](https://github.com/facebookresearch/segment-anything) or [CLIPSeg](https://github.com/timojl/clipseg); neither is part of FlashReFocus. Python code for every edit is in [flashrefocus/README.md](flashrefocus/README.md#depth-edits).
+The renderer was trained with one focal plane and one strength per image, yet it renders any depth map it is given, so every effect at the top of this page is zero-shot: edit the depth, then render. All examples are real photographs and videos (the small inset shows the edited depth or the input frame); animated versions are on the [project page](https://ming053l.github.io/FlashReFocus/). Masks can come from any segmenter, for example [Segment Anything](https://github.com/facebookresearch/segment-anything) or [CLIPSeg](https://github.com/timojl/clipseg). The function and ComfyUI node for every effect, with code, are listed in [flashrefocus/README.md](flashrefocus/README.md#depth-edits).
 
 ## How it works
 
@@ -123,40 +101,23 @@ Bokeh rendering: best LPIPS, LPIPS-VGG, DISTS, MS-SSIM and CLIP-I on EBB! Val176
 
 ## Setup
 
-Install as in [Quick start](#quick-start).
-
-### Weights
-
-Weights go into `weights/` (or set `FLASHREFOCUS_WEIGHTS`). Download the backbone weights with `huggingface-cli`
+Install as in [Quick start](#quick-start). Weights go into `weights/` (or set `FLASHREFOCUS_WEIGHTS`). Download the backbone weights with `huggingface-cli`
 (`pip install huggingface_hub`):
 
 ```bash
 huggingface-cli download sd2-community/stable-diffusion-2-1-base --local-dir weights/stable-diffusion-2-1-base
 huggingface-cli download stable-diffusion-v1-5/stable-diffusion-v1-5 --include "vae/*" --local-dir weights/stable-diffusion-v1-5
 huggingface-cli download depth-anything/Depth-Anything-V2-Large depth_anything_v2_vitl.pth --local-dir weights
-# Stage I training only: RAM++ for the prompts, and the pretrained one-step LoRAs used as initialisation
-huggingface-cli download xinyu1205/recognize-anything-plus-model ram_plus_swin_large_14m.pth --local-dir weights
 ```
 
-The initial LoRAs for Stage I training (`pisa_sr.pkl`) go to `third_party/PiSA-SR/preset/models/PiSA-SR/`, as described in
-that repository.
-
-Our trained checkpoints are publicly available at [ming0531/FlashReFocus-weights](https://huggingface.co/ming0531/FlashReFocus-weights):
-
-| Checkpoint | Component |
-|---|---|
-| [`stage1.pkl`](https://huggingface.co/ming0531/FlashReFocus-weights/resolve/main/stage1.pkl) | Stage I: trained pixel and detail LoRAs for one-step deblurring |
-| [`refiner.pt`](https://huggingface.co/ming0531/FlashReFocus-weights/resolve/main/refiner.pt) | Stage I: trained decoder refiner |
-| [`renderer.pt`](https://huggingface.co/ming0531/FlashReFocus-weights/resolve/main/renderer.pt) | Stage II: bokeh renderer after RealBokeh adaptation |
-
-Download all three checkpoints (no login required):
+Download our trained checkpoints from [ming0531/FlashReFocus-weights](https://huggingface.co/ming0531/FlashReFocus-weights) (no login required):
 
 ```bash
 huggingface-cli download ming0531/FlashReFocus-weights stage1.pkl refiner.pt renderer.pt --local-dir weights
 ```
 
-These are trained model checkpoints, not a complete training-resume snapshot for all stages. The backbone weights
-listed above are required separately; see [Training](#training) for the training scripts and datasets.
+Training needs further weights and the datasets; see
+[training/README.md](training/README.md).
 
 ```
 weights/
@@ -164,38 +125,7 @@ weights/
   stable-diffusion-v1-5/vae/      decoder refiner backbone
   depth_anything_v2_vitl.pth      depth for the renderer
   stage1.pkl  refiner.pt  renderer.pt
-  ram_plus_swin_large_14m.pth     Stage I training only
 ```
-
-### Data
-
-Refocusing your own photos needs no dataset. For training and evaluation, download the datasets into `data/` (or set
-`FLASHREFOCUS_DATA`) with the folder names below, then build the evaluation sets:
-
-| Folder in `data/` | Dataset | Used for | Source |
-|---|---|---|---|
-| `dd_dp_dataset_png/` (`train_c`, `val_c`, `test_c`, each with `source/`, `target/`) | DPDD, Canon PNG version | Stage I training, deblurring evaluation | [github.com/Abdullah-Abuolaim/defocus-deblurring-dual-pixel](https://github.com/Abdullah-Abuolaim/defocus-deblurring-dual-pixel) |
-| `RealDOF/` (`source/`, `target/`) | RealDOF test set | deblurring evaluation | [github.com/codeslake/IFAN](https://github.com/codeslake/IFAN) (Datasets) |
-| `LFDOF/` (`train_data/`, `test_data/`) | LFDOF | Stage I training, LVCorr benchmark | [sweb.cityu.edu.hk/miullam/AIFNET](https://sweb.cityu.edu.hk/miullam/AIFNET/) |
-| `div2k/DIV2K_train_HR/` | DIV2K train HR | Stage I training (synthetic blur) | [data.vision.ee.ethz.ch/cvl/DIV2K](https://data.vision.ee.ethz.ch/cvl/DIV2K/) |
-| `RealBokeh/` (`train/`, `validation/`, `test/`) | RealBokeh_3MP | Stage I and renderer training, evaluation | `huggingface-cli download timseizinger/RealBokeh_3MP --repo-type dataset --local-dir data/RealBokeh` |
-| `EBB/` (`train/`, `validation/`) | EBB! | bokeh-rendering evaluation | [aiff22.github.io/pynet-bokeh.html](https://aiff22.github.io/pynet-bokeh.html#dataset) |
-| `3CReal/validation/` (`original/`, `bokeh/`, `focus_point.json`) | [3CReal](https://huggingface.co/datasets/ming0531/3CReal) (ours, 89 pairs, CC BY-NC 4.0) | bokeh-rendering evaluation | `huggingface-cli download ming0531/3CReal --repo-type dataset --local-dir data/3CReal/validation` |
-| `MODEST/` | MODEST | aperture-series evaluation (optional) | `huggingface-cli download independent-vision-lab/MODEST --repo-type dataset --local-dir data/MODEST` |
-| `Hypersim_processed/` | Hypersim scenes with rendered bokeh targets | renderer pre-training | scenes from [github.com/apple/ml-hypersim](https://github.com/apple/ml-hypersim); target rendering script to be released |
-
-Stage I trains on 4,179 RealBokeh pairs of the top-1000 scenes (`training/configs/realbokeh_deblurring_top1000.csv`);
-this manifest and the test pairs in `annotations/deblurring_pairs/` store paths relative to `data/`. Our focal-point annotations for
-EBB!, RealBokeh, 3CReal and LFDOF are in `annotations/`; `scripts/prepare_data.py` copies them next to the images and
-builds the evaluation folders:
-
-```bash
-python scripts/prepare_data.py check   # which datasets are in place
-python scripts/prepare_data.py all     # EBB_Val176/, RealBokeh_val_f2.0/, work/lfdof_refocus/, RealBokeh and 3CReal focal points
-python scripts/cache_depth.py          # cache Depth Anything V2 depth of RealBokeh for renderer training
-```
-
-Evaluation outputs go into `work/` (`FLASHREFOCUS_WORK`); `flashrefocus/paths.py` lists every location.
 
 ## Python API
 
@@ -219,22 +149,8 @@ save_image(refocuser.render(scene, 0.8, focal_depth, depth=two_planes), "two_pla
 provide an optimized inference path, off by default so that the reported numbers are reproduced exactly:
 `fused=True` (a fused attention kernel for the renderer) and `compile="static"` (compiled Stage I).
 
-**Video spotlight.** Keep one subject sharp in a sharp video and blur everyone around them:
-
-```python
-from flashrefocus.segment import track_subject        # SAM 3: transformers >= 4.57, access to facebook/sam3
-
-refocuser = Refocuser.from_pretrained(deblurring=False, fused=True)
-subject, others = track_subject(frames, prompt="person")   # frames: (n, h, w, 3) uint8
-for frame, m, o in zip(frames_as_tensors, subject, others):
-    scene = refocuser.prepare(frame, deblur=False)
-    d_f = float(scene.depth[0][m].median())
-    depth, _ = depth_edits.spotlight(scene.depth, m[None], d_f, others=o[None])
-    out = refocuser.render(scene, 1.5, d_f, depth=depth)
-```
-
-All loading options, the video and overlay tools, background image writing, the video writer and the speed-ups are
-described in [flashrefocus/README.md](flashrefocus/README.md).
+All loading options, the video spotlight, background image writing, the video writer and the speed-ups are described
+in [flashrefocus/README.md](flashrefocus/README.md).
 
 ## Tests
 
@@ -245,37 +161,10 @@ pytest tests                    # also the end-to-end regression (GPU and the re
 
 Details of the regression test are in [flashrefocus/README.md](flashrefocus/README.md#tests).
 
-## Training
+## Training and evaluation
 
-Run from the repository root:
-
-| Stage (paper section) | Script | Data |
-|---|---|---|
-| Stage I: deblurring (Sec. 3.1) | `training/train_deblurring.sh` (pixel phase, then detail phase) | DPDD, RealBokeh, LFDOF, DIV2K (`training/configs/deblurring_data.yaml`) |
-| Stage I: decoder refiner (Sec. 3.1) | `training/train_decoder_refiner.sh` | same mixture, Stage I latents at ω = 1.25 |
-| Stage II: bokeh rendering (Sec. 3.2) | `training/train_renderer.sh` (Hypersim pre-training, RealBokeh adaptation) | Hypersim with BokehMe targets, RealBokeh |
-
-## Evaluation
-
-Run from `eval/` (`cd eval`):
-
-| Result | Scripts |
-|---|---|
-| Defocus deblurring (DPDD, RealDOF; Table 1) | `scripts/deblur.py --pairs annotations/deblurring_pairs/<set>_test.json`, `score_folders.py` |
-| Bokeh rendering (EBB! Val176, 3CReal, RealBokeh val.; Tables 3, G.1) | `bokeh_strength_search.py`, `bokeh_table_metrics.py`, `score_folders.py` |
-| Strength control (LVCorr) | `lvcorr.py` |
-| Consistency across focal edits (Table H.2) | `focal_edits_render_ours.py`, `focal_edits_render_genrefocus.py`, `focal_edits_match_ours.py`, `focal_edits_match_genrefocus.py`, `focal_edits_metrics.py i` / `ii`, `focal_edits_figures.py` |
-| Two focal planes (Appendix H) | `two_focal_planes.py` |
-| MODEST aperture series (Appendix G) | `build_modest_series.py`, `modest_strength_analysis.py` |
-| Effect of the defocus bias on attention (Appendix C.1) | `attention_bias.py` |
-| Renderer residual, defocus embedding and strength scale (Appendix C.1) | `renderer_internals.py` |
-| Where the detail branch acts (Appendix F) | `detail_branch.py` |
-| Depth source: DA-V2 S/B/L and Depth Pro (Appendix G) | `depth_source.py` |
-| Held-out model selection of Stage I (Sec. 4.1) | `scripts/deblur_model_selection.py`, `score_folders.py` |
-| Inference cost (Tables 2, 6) | `scripts/benchmark_cost.py deblurring` / `refocusing` |
-
-Outputs of compared methods are produced with their own code (under `baselines/`, `FLASHREFOCUS_BASELINES`) and
-scored with the same scripts.
+Datasets, training and the scripts behind every table of the paper are described in
+[training/README.md](training/README.md) and [eval/README.md](eval/README.md).
 
 ## Repository layout
 
@@ -291,7 +180,7 @@ flashrefocus/        the package (pip install -e .)
   README.md            all options of the Python API
 comfyui/             ComfyUI custom nodes and example workflows
 scripts/             command-line tools: refocus a photo, Stage I on a test set, cost benchmark, data preparation
-training/            Stage I, decoder-refiner and renderer training, with their data pipelines and configurations
+training/            Stage I, decoder-refiner and renderer training, with their data pipelines and configurations (README: data)
 eval/                the paper's evaluations (tables, LVCorr, focal-edit consistency, analyses of Appendices C-H)
 tests/               unit tests (CPU) and end-to-end regression tests against pinned outputs (GPU and weights)
 annotations/         our focal-point annotations, evaluation subsets and deblurring test lists

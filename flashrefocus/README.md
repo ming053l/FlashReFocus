@@ -39,7 +39,27 @@ swapping weights in place (same output, twice the U-Net memory), as the Hugging 
 
 ## Depth edits
 
-Every edit in the Applications table of the top-level README replaces the depth passed to `render`:
+Every effect replaces the depth passed to `render`. The renderer was trained with one focal plane and one strength per
+image, so all of them are zero-shot.
+
+| Effect | `depth_edits` function | ComfyUI node |
+|---|---|---|
+| Focus range: a thick focal plane, separate from the aperture | `focus_range` | Focus Range |
+| Radial (Lensbaby-style) focus around a point | `radial_focus` | Radial Focus |
+| Tilt-shift band at any angle | `tilted_band` (`tilt_shift` for horizontal) | Tilt-Shift |
+| Blur only the background, or only the foreground | `one_sided` | One-Sided Blur |
+| Two, three or more focal planes | `focal_planes` (`two_focal_planes`) | Add Focal Plane |
+| Keep a masked subject sharp while the focus moves | `keep_sharp` | Focus on Mask, Mask Depth Edit |
+| Remove a photobomber: push him into the background bokeh (no inpainting) | `set_mask_depth(…, 1.0)` | Mask Depth Edit (`push_far`) |
+| Optical privacy blur for faces or plates | `move_away` | Mask Depth Edit (`move_away`) |
+| Per-layer blur, or a front layer for a flat picture | `set_mask_depth` | Mask Depth Edit (`set_depth`) |
+| Isolate a subject: everything else at least a set distance from focus | `isolate` | Mask Depth Edit (`isolate`) |
+| Portrait mode on a sharp photograph (skip Stage I) | `prepare(image, deblur=False)` | Prepare (`already_sharp`) |
+| Video focus pull | one `Scene` per frame, smoothed depth and focus | Prepare + Focus Point with an image batch |
+| Video spotlight (one subject sharp, everyone else blurred) | `spotlight` + `flashrefocus.segment.track_subject` (SAM 3) | SAM 3 Subject + Spotlight |
+| Burnt-in titles kept sharp in video | `flashrefocus.overlays.fill_region` / `paste_back` | Overlay Fill + Overlay Paste Back |
+
+In Python:
 
 ```python
 from flashrefocus.rendering import depth_edits
