@@ -20,12 +20,13 @@
   <a href="https://ming053l.github.io/FlashReFocus/"><img src="https://img.shields.io/badge/Project-Page-48A43F" alt="Project page"></a>
   <a href="https://huggingface.co/spaces/ming0531/FlashReFocus"><img src="https://img.shields.io/badge/%F0%9F%A4%97%20Demo-Hugging%20Face-ffcc4d" alt="Hugging Face demo"></a>
   <a href="https://huggingface.co/spaces/ming0531/FlashReFocus-CPU"><img src="https://img.shields.io/badge/%F0%9F%A4%97%20CPU%20Demo-Hugging%20Face-ffcc4d" alt="Hugging Face CPU demo"></a>
+  <a href="https://huggingface.co/spaces/ming0531/FlashReFocus-Video"><img src="https://img.shields.io/badge/%F0%9F%A4%97%20Video%20Demo-Hugging%20Face-ffcc4d" alt="Hugging Face video spotlight demo"></a>
   <a href="https://huggingface.co/ming0531/FlashReFocus-weights"><img src="https://img.shields.io/badge/%F0%9F%A4%97%20Checkpoints-Hugging%20Face-ffcc4d" alt="Trained checkpoints"></a>
   <a href="https://huggingface.co/datasets/ming0531/3CReal"><img src="https://img.shields.io/badge/%F0%9F%A4%97%20Dataset-3CReal-ffcc4d" alt="3CReal dataset"></a>
   <a href="https://youtu.be/g032M7moWQ4"><img src="https://img.shields.io/badge/Video-YouTube-ff0000" alt="Video"></a>
 </p>
 <p align="center"><img src="docs/video_spotlight.gif" width="900" alt="Video spotlight on a 4K concert clip: left, the input with its depth and the SAM 3 mask of the lead singer in green; right, FlashReFocus keeps her sharp and blurs the dancers around her"></p>
-<p align="center"><sub>Video spotlight on a 4K concert clip: a SAM 3 mask (green, left), prompted with the word "person" and picked automatically, keeps the lead singer sharp in every frame while the dancers around her blur (right); insets show the estimated and the edited depth.</sub></p>
+<p align="center"><sub>Video spotlight on a 4K concert clip: a SAM 3 mask (green, left), prompted with the word "person" and picked automatically, keeps the lead singer sharp in every frame while the dancers around her blur (right); insets show the estimated and the edited depth. Try it on your own clip in the <a href="https://huggingface.co/spaces/ming0531/FlashReFocus-Video">video spotlight demo</a>.</sub></p>
 
 <p align="center"><img src="docs/applications.gif" width="900" alt="Focus range, radial focus, tilt-shift at an angle, background-only blur, three focal planes, a subject kept sharp, a photobomber pushed into the background, faces moved out of focus, three people on one focal plane, per-layer blur, a padlock moved in front of a flat door, and a jockey followed through a video"></p>
 

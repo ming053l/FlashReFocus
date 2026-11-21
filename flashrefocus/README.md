@@ -87,6 +87,9 @@ a text prompt.
 
 ## Video spotlight
 
+The [video spotlight demo](https://huggingface.co/spaces/ming0531/FlashReFocus-Video) runs this on a short clip of your own (SAM 3, Depth Anything V2 and the renderer
+on ZeroGPU).
+
 ```python
 from flashrefocus.segment import track_subject        # SAM 3: transformers >= 5.0, access to facebook/sam3
 from flashrefocus.rendering import depth_edits
