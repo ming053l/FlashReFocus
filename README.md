@@ -97,26 +97,7 @@ The renderer was trained with one focal plane and one strength per image, yet it
 | Video spotlight (one subject sharp, everyone else blurred) | `spotlight` + `flashrefocus.segment.track_subject` (SAM 3) | SAM 3 Subject + Spotlight |
 | Burnt-in titles kept sharp in video | `flashrefocus.overlays.fill_region` / `paste_back` | Overlay Fill + Overlay Paste Back |
 
-Masks can come from any segmenter, for example [Segment Anything](https://github.com/facebookresearch/segment-anything) from a click or a box, or [CLIPSeg](https://github.com/timojl/clipseg) from a text prompt; neither is part of FlashReFocus. In Python (see [Python API](#python-api)):
-
-```python
-from flashrefocus.rendering import depth_edits
-
-_, H, W = scene.depth.shape                                  # scene = refocuser.prepare(...), focal_depth as below
-edits = {
-    "focus_range": (depth_edits.focus_range(scene.depth, focal_depth, width=0.2), focal_depth),
-    "background_only": (depth_edits.one_sided(scene.depth, focal_depth, keep="foreground"), focal_depth),
-    "three_planes": (depth_edits.focal_planes(scene.depth, [focal_depth, scene.focal_depth_at(x2, y2), 0.9]), focal_depth),
-    "radial": (depth_edits.radial_focus(H, W, 0.5, 0.6, radius=0.12, device="cuda"), 0.5),
-    "tilt_shift_20deg": (depth_edits.tilted_band(H, W, 0.5, 0.6, angle=20, device="cuda"), 0.5),
-    "keep_sharp": (depth_edits.keep_sharp(scene.depth, mask, focal_depth), focal_depth),   # mask: H x W bool
-    "remove_photobomber": (depth_edits.set_mask_depth(scene.depth, mask, 1.0), focal_depth),
-    "privacy_blur": (depth_edits.move_away(scene.depth, mask, focal_depth, 0.3), focal_depth),
-    "isolate_subject": (depth_edits.isolate(scene.depth, mask, focal_depth, 0.25), focal_depth),
-}
-for name, (depth, d_f) in edits.items():
-    save_image(refocuser.render(scene, 0.8, d_f, depth=depth), f"{name}.png")   # about half a second each
-```
+Masks can come from any segmenter, for example [Segment Anything](https://github.com/facebookresearch/segment-anything) or [CLIPSeg](https://github.com/timojl/clipseg); neither is part of FlashReFocus. Python code for every edit is in [flashrefocus/README.md](flashrefocus/README.md#depth-edits).
 
 ## How it works
 
@@ -262,10 +243,7 @@ pytest tests/test_units.py      # CPU only, no weights: image I/O, depth edits, 
 pytest tests                    # also the end-to-end regression (GPU and the released weights)
 ```
 
-The regression test restores two small photographs in `tests/data/` and compares the restored image, depth, refocused
-image, two focal planes and tilt-shift with `tests/reference/`: bit-identical on the machine that made the references,
-PSNR >= 45 dB elsewhere (floating-point differences between GPUs and library versions). Regenerate the references with
-`python tests/regression_cases.py` only when an output changes on purpose.
+Details of the regression test are in [flashrefocus/README.md](flashrefocus/README.md#tests).
 
 ## Training
 
@@ -306,7 +284,11 @@ flashrefocus/        the package (pip install -e .)
   deblurring/          Stage I: one-step diffusion (pixel and detail LoRAs, detail weight ω), decoder refiner
   rendering/           Stage II: renderer with defocus-bias attention, depth estimation, depth edits
   pipeline.py          Refocuser: deblur and estimate depth once per image (a Scene), render every focal edit
+  segment.py           SAM 3 subject tracking for the video spotlight
+  overlays.py          keeping burnt-in titles sharp in video
+  video.py             streaming video writer
   image_io.py, layers.py, paths.py
+  README.md            all options of the Python API
 comfyui/             ComfyUI custom nodes and example workflows
 scripts/             command-line tools: refocus a photo, Stage I on a test set, cost benchmark, data preparation
 training/            Stage I, decoder-refiner and renderer training, with their data pipelines and configurations

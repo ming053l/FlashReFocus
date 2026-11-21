@@ -37,6 +37,32 @@ swapping weights in place (same output, twice the U-Net memory), as the Hugging 
   strength and focal depth per frame. It gives the same result as rendering them one by one. At video resolutions one
   frame already fills a large GPU, so it is a convenience, not a speed-up.
 
+## Depth edits
+
+Every edit in the Applications table of the top-level README replaces the depth passed to `render`:
+
+```python
+from flashrefocus.rendering import depth_edits
+
+_, H, W = scene.depth.shape                                  # scene = refocuser.prepare(...); focal_depth = scene.focal_depth_at(x, y)
+edits = {
+    "focus_range": (depth_edits.focus_range(scene.depth, focal_depth, width=0.2), focal_depth),
+    "background_only": (depth_edits.one_sided(scene.depth, focal_depth, keep="foreground"), focal_depth),
+    "three_planes": (depth_edits.focal_planes(scene.depth, [focal_depth, scene.focal_depth_at(x2, y2), 0.9]), focal_depth),
+    "radial": (depth_edits.radial_focus(H, W, 0.5, 0.6, radius=0.12, device="cuda"), 0.5),
+    "tilt_shift_20deg": (depth_edits.tilted_band(H, W, 0.5, 0.6, angle=20, device="cuda"), 0.5),
+    "keep_sharp": (depth_edits.keep_sharp(scene.depth, mask, focal_depth), focal_depth),   # mask: H x W bool
+    "remove_photobomber": (depth_edits.set_mask_depth(scene.depth, mask, 1.0), focal_depth),
+    "privacy_blur": (depth_edits.move_away(scene.depth, mask, focal_depth, 0.3), focal_depth),
+    "isolate_subject": (depth_edits.isolate(scene.depth, mask, focal_depth, 0.25), focal_depth),
+}
+for name, (depth, d_f) in edits.items():
+    save_image(refocuser.render(scene, 0.8, d_f, depth=depth), f"{name}.png")   # about half a second each
+```
+
+`mask` is an H x W bool tensor from any segmenter, for example Segment Anything from a click or a box, or CLIPSeg from
+a text prompt.
+
 ## Video spotlight
 
 ```python
@@ -100,3 +126,10 @@ Both options are off by default, so the reported numbers are reproduced exactly.
 
 Outputs are bit-reproducible with `torch.backends.cudnn.benchmark = False`. cuDNN autotuning is faster for a fixed
 input size, but it may pick different convolution algorithms between runs, which changes outputs by a few 1/255.
+
+## Tests
+
+The regression test restores two small photographs in `tests/data/` and compares the restored image, depth, refocused
+image, two focal planes and tilt-shift with `tests/reference/`: bit-identical on the machine that made the references,
+PSNR >= 45 dB elsewhere (floating-point differences between GPUs and library versions). Regenerate the references with
+`python tests/regression_cases.py` only when an output changes on purpose.
