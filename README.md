@@ -19,6 +19,7 @@
   <a href="https://arxiv.org/abs/2610.23297"><img src="https://img.shields.io/badge/arXiv-2610.23297-b31b1b" alt="arXiv:2610.23297"></a>
   <a href="https://ming053l.github.io/FlashReFocus/"><img src="https://img.shields.io/badge/Project-Page-48A43F" alt="Project page"></a>
   <a href="https://huggingface.co/spaces/ming0531/FlashReFocus"><img src="https://img.shields.io/badge/%F0%9F%A4%97%20Demo-Hugging%20Face-ffcc4d" alt="Hugging Face demo"></a>
+  <a href="https://huggingface.co/spaces/ming0531/FlashReFocus-CPU"><img src="https://img.shields.io/badge/%F0%9F%A4%97%20CPU%20Demo-Hugging%20Face-ffcc4d" alt="Hugging Face CPU demo"></a>
   <a href="https://huggingface.co/ming0531/FlashReFocus-weights"><img src="https://img.shields.io/badge/%F0%9F%A4%97%20Checkpoints-Hugging%20Face-ffcc4d" alt="Trained checkpoints"></a>
   <a href="https://huggingface.co/datasets/ming0531/3CReal"><img src="https://img.shields.io/badge/%F0%9F%A4%97%20Dataset-3CReal-ffcc4d" alt="3CReal dataset"></a>
   <a href="https://youtu.be/g032M7moWQ4"><img src="https://img.shields.io/badge/Video-YouTube-ff0000" alt="Video"></a>
@@ -67,7 +68,8 @@ python scripts/refocus.py photo.jpg out/photo --focus 640 360 --strength 0.5
 `out/photo_aif.png` is the restored all-in-focus image, `_depth.png` its depth and `_bokeh.png` the refocused result.
 The photo is resized to a long side of 1024 (`--long-side`), and coordinates refer to that size (it is printed);
 `--two-planes xA yA xB yB` and `--tilt-shift ROW` select the other edits. No GPU at hand? Try the
-[Hugging Face demo](https://huggingface.co/spaces/ming0531/FlashReFocus).
+[Hugging Face demo](https://huggingface.co/spaces/ming0531/FlashReFocus), or the
+[CPU demo](https://huggingface.co/spaces/ming0531/FlashReFocus-CPU) for photographs that are already sharp.
 
 ## ComfyUI
 

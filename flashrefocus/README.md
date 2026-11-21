@@ -146,7 +146,9 @@ Both options are off by default, so the reported numbers are reproduced exactly.
 
 ## Running on the CPU
 
-The depth estimator and the renderer run without a GPU, for images that are already sharp (Stage I needs CUDA):
+The depth estimator and the renderer run without a GPU, for images that are already sharp (Stage I needs CUDA). The
+[CPU demo](https://huggingface.co/spaces/ming0531/FlashReFocus-CPU) runs this path on a free two-core Hugging Face CPU
+(depth about 30 s once per photograph, about 4.5 s per edit at 768x512):
 
 ```python
 refocuser = Refocuser.from_pretrained(deblurring=False, device="cpu", fused=True, depth_input_size=518)
