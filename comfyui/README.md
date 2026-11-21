@@ -30,7 +30,7 @@ attention kernel by default (same output, much less memory at high resolution).
    other custom nodes need a newer version, run FlashReFocus in a separate ComfyUI environment. Tested with Python
    3.10, torch 2.7.1 (CUDA 12.8) and ComfyUI from November 2026.
 
-   **SAM 3 Subject** needs `transformers` >= 4.57 and access to the gated
+   **SAM 3 Subject** needs `transformers` >= 5.0 and access to the gated
    [facebook/sam3](https://huggingface.co/facebook/sam3) checkpoint (accept its terms, then `huggingface-cli login`).
    With restoration off (sharp video, which is what the spotlight workflows use), FlashReFocus does not load Stage I,
    so these nodes run with a recent `transformers`; workflows 04-06 were tested with Python 3.11, torch 2.11 (CUDA

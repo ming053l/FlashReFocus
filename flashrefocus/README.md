@@ -86,7 +86,7 @@ a text prompt.
 ## Video spotlight
 
 ```python
-from flashrefocus.segment import track_subject        # SAM 3: transformers >= 4.57, access to facebook/sam3
+from flashrefocus.segment import track_subject        # SAM 3: transformers >= 5.0, access to facebook/sam3
 from flashrefocus.rendering import depth_edits
 
 refocuser = Refocuser.from_pretrained(deblurring=False, fused=True)

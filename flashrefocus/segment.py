@@ -5,7 +5,7 @@ as the subject and the union of the others is returned too (for depth_edits.spot
 subject mask into a neighbour). Long clips are processed in chunks; the subject is carried from one chunk to the next
 by the overlap of its last mask with the tracks of the next chunk.
 
-Needs transformers >= 4.57 (Sam3VideoModel) and access to the gated checkpoint facebook/sam3 on Hugging Face. Stage I
+Needs transformers >= 5.0 (Sam3VideoModel) and access to the gated checkpoint facebook/sam3 on Hugging Face. Stage I
 pins an older transformers; the spotlight path (restoration off) does not use Stage I, so it can run in an
 environment with a recent transformers.
 
@@ -22,7 +22,7 @@ def _load(device, dtype):
     try:
         from transformers import Sam3VideoModel, Sam3VideoProcessor
     except ImportError as e:                                   # pragma: no cover
-        raise ImportError("SAM 3 needs transformers >= 4.57 (pip install -U transformers) and access to "
+        raise ImportError("SAM 3 needs transformers >= 5.0 (pip install -U transformers) and access to "
                           "facebook/sam3 on Hugging Face.") from e
     key = (str(device), dtype)
     if key not in _SAM3:

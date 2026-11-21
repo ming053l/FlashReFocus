@@ -381,7 +381,7 @@ class FlashReFocusSAM3Subject:
     """SAM 3 subject masks for a video (image batch): segments and tracks every instance of `prompt` through the clip
     and picks one track as the subject (most_central, largest, or the track under point x, y on the first frame
     where one covers it). Outputs the subject mask and the union of the others (for Spotlight). Needs
-    transformers >= 4.57 and access to facebook/sam3; segmentation runs at `long_side` at most."""
+    transformers >= 5.0 and access to facebook/sam3; segmentation runs at `long_side` at most."""
     @classmethod
     def INPUT_TYPES(cls):
         return {"required": {"images": ("IMAGE",), "prompt": ("STRING", {"default": "person"}),
