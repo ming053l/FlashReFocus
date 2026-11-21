@@ -246,48 +246,12 @@ size but may pick different convolution algorithms between runs, changing output
 `Refocuser.from_pretrained(merge_vae_lora=True)` merges the VAE-encoder LoRA for a ~20% faster encoder (outputs ~60 dB
 from the exact ones).
 
-**Deployment.** `Refocuser.from_pretrained(fused=True)` runs the renderer's defocus-bias attention as one Triton kernel
-([`flashrefocus/rendering/fused.py`](flashrefocus/rendering/fused.py)): the defocus bias is computed inside the kernel
-and the attention uses an online softmax, so the per-row and per-column bias and attention matrices are never stored.
-Weights are unchanged; outputs match the reference path to ~61 dB in bf16 (within bf16 rounding) and ~80 dB in fp32.
-Peak renderer memory drops from 16.1 to 3.0 GiB at 3840×1728 and from 3.5 to 1.1 GiB at 1536×1536, and rendering is
-faster, most of all at high resolution. It is off by default so that the reported numbers are reproduced exactly, and
-falls back to the reference code without Triton or on CPU. `from flashrefocus.rendering.fused import enable_fused;
-enable_fused(renderer)` switches an already loaded renderer.
-`Refocuser.from_pretrained(compile="static")` (or `"dynamic"`) also compiles Stage I's two full-resolution parts, the
-decoder refiner and the VAE encoder, with `torch.compile`, which fuses their many normalization, activation and gating
-operations: restoration runs about 35-40% faster after a one-time compilation of one to two minutes, and outputs match
-the eager path to ~57-62 dB. `"static"` is fastest for many images of one size and recompiles for a new size;
-`"dynamic"` compiles shape-generic code once and is about 10% slower.
-
-**Expected speed of the deployment path** (fused attention, compiled Stage I, background PNG writing), at 1536×1536 on
-one RTX PRO 6000. These are **estimates** from per-component timings taken on a shared GPU, not yet clean
-measurements; they will be replaced by `scripts/benchmark_cost.py refocusing --fused --compile static --background-save`
-run on an idle GPU.
-
-| | Reported path (paper, Table 6) | Deployment path (estimate) |
-|---|---|---|
-| Each further focal edit, until the caller can show the result | 0.46 s | ~0.1 s (the PNG is written in the background) |
-| Each further focal edit, PNG written | 0.46 s | ~0.36 s |
-| Complete refocus (Stage I + depth + rendering) | 2.45 s | ~1.7-1.8 s |
-| Renderer alone at 3840×1728 | ~0.75 s, 16.1 GiB | ~0.23 s, 3.0 GiB |
-
-**Writing results.** At 1536×1536, PNG compression (single-threaded zlib) takes about as long as rendering a fused
-edit. `save_image(x, path, background=True)` copies the image to the CPU at once and compresses and writes it on a
-background thread (the same file, byte for byte), so an interactive caller can show the next edit without waiting;
-`wait_for_writes()` flushes the pending files. For video, write no per-frame images: `flashrefocus.video.VideoWriter`
-streams frames into one ffmpeg encode from a background thread, so encoding overlaps rendering, and picks a working
-encoder (NVENC on the GPU when the ffmpeg build has it, else libx264, libopenh264 or mpeg4); `audio_from=` copies the
-audio of the source clip. `Refocuser.render_batch` renders several frames with per-frame strengths and focal depths
-in one call.
-
-```python
-from flashrefocus.video import VideoWriter
-
-with VideoWriter("refocused.mp4", fps=30, audio_from="clip.mp4") as writer:
-    for scene, d_f in zip(scenes, focal_depths):
-        writer.write(refocuser.render(scene, 1.0, d_f))
-```
+**Optional speed-ups.** We additionally provide an optimized inference path, off by default so that the reported
+numbers are reproduced exactly: `Refocuser.from_pretrained(fused=True)` runs the renderer's attention as one fused
+Triton kernel ([`flashrefocus/rendering/fused.py`](flashrefocus/rendering/fused.py)), `compile="static"` compiles
+Stage I with `torch.compile`, `save_image(..., background=True)` writes PNGs on a background thread, and
+`flashrefocus.video.VideoWriter` streams video frames into one encode. Outputs match the default path up to
+floating-point rounding.
 
 **Video spotlight.** Keep one subject sharp in a sharp video and blur everyone around them:
 
